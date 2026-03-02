@@ -150,7 +150,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2026/09/02/os-evolution-and-future/" data-id="cuidHL3_-o0PqYF-cpxRqIIvB" data-title="操作系统的演进：从批处理到万物互联的架构变革" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2026/09/02/os-evolution-and-future/" data-id="cuidVM3VDB7ckNl01y55IlKSH" data-title="操作系统的演进：从批处理到万物互联的架构变革" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
@@ -216,94 +216,11 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2026/03/02/build-os-kernel-01/" data-id="cuidyThbPuw1ZkmJfO4VicOJ2" data-title="从零实现一个简易操作系统内核（一）：启动与保护模式" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2026/03/02/build-os-kernel-01/" data-id="cuid9JIxsH1zWo4X-e7I18i8q" data-title="从零实现一个简易操作系统内核（一）：启动与保护模式" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/x86/" rel="tag">x86</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" rel="tag">操作系统</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B1%87%E7%BC%96/" rel="tag">汇编</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/" rel="tag">项目实战</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-transformer-deep-dive" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2026/03/02/transformer-deep-dive/" class="article-date">
-  <time class="dt-published" datetime="2026-03-01T16:00:00.000Z" itemprop="datePublished">2026-03-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/AI-Research/">AI-Research</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2026/03/02/transformer-deep-dive/">Transformer 架构精读：从 Self-Attention 到 Multi-Head Attention</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>「Attention is All You Need」(Vaswani et al., 2017) 是现代 LLM 的基石，本文深入解析其核心机制。</p>
-</blockquote>
-<h2 id="Self-Attention-的本质"><a href="#Self-Attention-的本质" class="headerlink" title="Self-Attention 的本质"></a>Self-Attention 的本质</h2><p>Self-Attention 让序列中每个位置都能”看到”所有其他位置，从而捕获长距离依赖。</p>
-<h3 id="计算公式"><a href="#计算公式" class="headerlink" title="计算公式"></a>计算公式</h3><p>$$<br>\text{Attention}(Q, K, V) &#x3D; \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V<br>$$</p>
-<p>其中：</p>
-<ul>
-<li>$Q$（Query）、$K$（Key）、$V$（Value）均由输入线性变换得到</li>
-<li>$\sqrt{d_k}$ 是缩放因子，防止内积过大导致 softmax 梯度消失</li>
-</ul>
-<h3 id="PyTorch-实现片段"><a href="#PyTorch-实现片段" class="headerlink" title="PyTorch 实现片段"></a>PyTorch 实现片段</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">scaled_dot_product_attention</span>(<span class="params">Q, K, V, mask=<span class="literal">None</span></span>):</span><br><span class="line">    d_k = Q.size(-<span class="number">1</span>)</span><br><span class="line">    scores = torch.matmul(Q, K.transpose(-<span class="number">2</span>, -<span class="number">1</span>)) / (d_k ** <span class="number">0.5</span>)</span><br><span class="line">    <span class="keyword">if</span> mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        scores = scores.masked_fill(mask == <span class="number">0</span>, <span class="built_in">float</span>(<span class="string">&#x27;-inf&#x27;</span>))</span><br><span class="line">    attn_weights = F.softmax(scores, dim=-<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">return</span> torch.matmul(attn_weights, V), attn_weights</span><br></pre></td></tr></table></figure>
-
-<h2 id="Multi-Head-Attention"><a href="#Multi-Head-Attention" class="headerlink" title="Multi-Head Attention"></a>Multi-Head Attention</h2><p>将 Q&#x2F;K&#x2F;V 投影到 $h$ 个子空间分别计算 Attention，再拼接：</p>
-<p>$$<br>\text{MultiHead}(Q,K,V) &#x3D; \text{Concat}(\text{head}_1, \ldots, \text{head}_h)W^O<br>$$</p>
-<p><strong>好处</strong>：不同 head 可以关注不同语义维度（句法、语义、指代等）。</p>
-<h2 id="与-RNN-LSTM-的对比"><a href="#与-RNN-LSTM-的对比" class="headerlink" title="与 RNN&#x2F;LSTM 的对比"></a>与 RNN&#x2F;LSTM 的对比</h2><table>
-<thead>
-<tr>
-<th>维度</th>
-<th>RNN&#x2F;LSTM</th>
-<th>Transformer</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>并行度</td>
-<td>串行（时间步依赖）</td>
-<td>完全并行</td>
-</tr>
-<tr>
-<td>长依赖</td>
-<td>梯度消失</td>
-<td>O(1) 路径长度</td>
-</tr>
-<tr>
-<td>复杂度</td>
-<td>O(n)</td>
-<td>O(n²) 注意力</td>
-</tr>
-</tbody></table>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2026/03/02/transformer-deep-dive/" data-id="cuidz8IGIT4Eo4pv20GwBm-EK" data-title="Transformer 架构精读：从 Self-Attention 到 Multi-Head Attention" class="article-share-link"><span class="fa fa-share">分享</span></a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/NLP/" rel="tag">NLP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Transformer/" rel="tag">Transformer</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">深度学习</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BA%E6%96%87%E7%A0%94%E8%AF%BB/" rel="tag">论文研读</a></li></ul>
 
     </footer>
   </div>
@@ -487,7 +404,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2026/01/26/rust-shyper-embedded-hypervisor-analysis/" data-id="cuidNbyoNhaRln0JnslwVPoBG" data-title="Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2026/01/26/rust-shyper-embedded-hypervisor-analysis/" data-id="cuidV1a6yNJho9Mck705kXss0" data-title="Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
@@ -791,7 +708,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2026/01/10/imitation-learning-robotic-manipulation-generalization/" data-id="cuidFqMLs-EGCbA8XWIYCv3QB" data-title="Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2026/01/10/imitation-learning-robotic-manipulation-generalization/" data-id="cuidKXACQEnJe2BdSyrBO5X5C" data-title="Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
@@ -969,7 +886,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2026/01/02/cs-theory-automata-complexity-notes/" data-id="cuidcVCASNpq2B_kcUTEIKhQo" data-title="计算理论全景：从渐近记号到 NP 完全性" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2026/01/02/cs-theory-automata-complexity-notes/" data-id="cuidf7E_gWntrwA72RgPV7ZkK" data-title="计算理论全景：从渐近记号到 NP 完全性" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
@@ -1050,7 +967,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2025/12/28/memory-model-lockfree/" data-id="cuidfcw165muHQmnxRZAubgGZ" data-title="内存模型与无锁编程：从 CPU 缓存到 C++ 原子操作" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2025/12/28/memory-model-lockfree/" data-id="cuidCsHdKhinkwTCxTXK5qWci" data-title="内存模型与无锁编程：从 CPU 缓存到 C++ 原子操作" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
@@ -1257,7 +1174,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2025/12/20/memos-llm-memory-system-evaluation/" data-id="cuidw996dwURdTgQjcnO4lf-b" data-title="MemOS 记忆操作系统：LLM 长程记忆工程实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2025/12/20/memos-llm-memory-system-evaluation/" data-id="cuidRSsaV8_rtdIOgYXm_zZXh" data-title="MemOS 记忆操作系统：LLM 长程记忆工程实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
@@ -1352,7 +1269,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2025/12/17/seda-architecture-scalable-internet-services/" data-id="cuid96ayPXcf9amZZFy7USb1A" data-title="SEDA：面向高并发互联网服务的阶段式事件驱动架构" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2025/12/17/seda-architecture-scalable-internet-services/" data-id="cuidE8H8KCjZfpMajei8hoDT-" data-title="SEDA：面向高并发互联网服务的阶段式事件驱动架构" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
@@ -1550,11 +1467,164 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2025/11/25/concurrent-programming-traps-memory-model/" data-id="cuid7ZUB2BAL5AoqGGDUdLhvo" data-title="系统程序员视角：并发陷阱与内存模型精析" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2025/11/25/concurrent-programming-traps-memory-model/" data-id="cuidIbLiN-ap4nRrMuhmOeG-d" data-title="系统程序员视角：并发陷阱与内存模型精析" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/C/" rel="tag">C++</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" rel="tag">内存模型</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" rel="tag">并发编程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%97%A0%E9%94%81%E7%BC%96%E7%A8%8B/" rel="tag">无锁编程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag">缓存一致性</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-rudp-reliable-transport-over-udp" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2025/11/14/rudp-reliable-transport-over-udp/" class="article-date">
+  <time class="dt-published" datetime="2025-11-13T16:00:00.000Z" itemprop="datePublished">2025-11-14</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Projects/">Projects</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2025/11/14/rudp-reliable-transport-over-udp/">基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>TCP 的可靠性来自精心设计的重传机制，但其内部细节对上层应用透明。如果要在 UDP 这张”白纸”上手工绘制可靠传输，需要多少工程量？本文复盘了一次 RUDP（Reliable UDP）的完整实现，包括 Go-Back-N 与选择重传（SACK），以及针对各类异常场景的健壮性测试。</p>
+</blockquote>
+<h2 id="一、问题背景与协议设计"><a href="#一、问题背景与协议设计" class="headerlink" title="一、问题背景与协议设计"></a>一、问题背景与协议设计</h2><p>UDP 是面向无连接的无状态协议：快，但不可靠。数据包可能丢失、乱序、重复或损坏。在 UDP 之上实现可靠传输（RUDP），本质上是在应用层重新实现 TCP 的核心语义，但可以选择性地裁剪开销。</p>
+<h3 id="1-1-消息类型定义"><a href="#1-1-消息类型定义" class="headerlink" title="1.1 消息类型定义"></a>1.1 消息类型定义</h3><p>RUDP 协议定义四种消息类型：<code>start</code>、<code>data</code>、<code>end</code>、<code>ack</code>（及 <code>sack</code>）。每个数据包格式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;type&gt;|&lt;sequence number&gt;|&lt;data&gt;|&lt;checksum&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>checksum</code> 用于检测传输过程中的数据损坏，接收方在序列号确认前首先验证校验和。</p>
+<h3 id="1-2-核心发送策略"><a href="#1-2-核心发送策略" class="headerlink" title="1.2 核心发送策略"></a>1.2 核心发送策略</h3><p>发送端需要满足以下约束：</p>
+<ul>
+<li>数据包按序、可靠送达，支持丢包、乱序、重复等异常场景；</li>
+<li>支持 <strong>Go-Back-N</strong>（GBN）与<strong>选择重传</strong>（Selective ACK, SACK）两种模式；</li>
+<li>发送窗口大小为 5，超时时间 500ms。</li>
+</ul>
+<hr>
+<h2 id="二、发送端实现（Sender-py）"><a href="#二、发送端实现（Sender-py）" class="headerlink" title="二、发送端实现（Sender.py）"></a>二、发送端实现（Sender.py）</h2><h3 id="2-1-数据分片与窗口管理"><a href="#2-1-数据分片与窗口管理" class="headerlink" title="2.1 数据分片与窗口管理"></a>2.1 数据分片与窗口管理</h3><p>文件内容按最大 1472 字节分片，加上 <code>start</code> 和 <code>end</code> 包，构成完整报文序列。核心状态变量包括：</p>
+<ul>
+<li><code>base</code>：窗口左边界，指向最早未确认的包；</li>
+<li><code>next_seq_num</code>：下一个待发送包的序号；</li>
+<li><code>timer</code>：用于超时重传的时间戳。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 分片与打包</span></span><br><span class="line">chunks = [content[i:i+MAX_DATA_SIZE] <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="built_in">len</span>(content), MAX_DATA_SIZE)]</span><br><span class="line"><span class="variable language_">self</span>.packets.append(<span class="variable language_">self</span>.make_packet(<span class="string">&#x27;start&#x27;</span>, <span class="variable language_">self</span>.isn, <span class="string">&quot;&quot;</span>))</span><br><span class="line"><span class="keyword">for</span> i, chunk <span class="keyword">in</span> <span class="built_in">enumerate</span>(chunks[:-<span class="number">1</span>]):</span><br><span class="line">    seq = <span class="variable language_">self</span>.isn + <span class="number">1</span> + i</span><br><span class="line">    <span class="variable language_">self</span>.packets.append(<span class="variable language_">self</span>.make_packet(<span class="string">&#x27;data&#x27;</span>, seq, chunk))</span><br><span class="line"><span class="variable language_">self</span>.packets.append(<span class="variable language_">self</span>.make_packet(<span class="string">&#x27;end&#x27;</span>, <span class="variable language_">self</span>.isn + <span class="built_in">len</span>(<span class="variable language_">self</span>.packets), chunks[-<span class="number">1</span>]))</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-主循环：滑动窗口-超时重传"><a href="#2-2-主循环：滑动窗口-超时重传" class="headerlink" title="2.2 主循环：滑动窗口 + 超时重传"></a>2.2 主循环：滑动窗口 + 超时重传</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> <span class="variable language_">self</span>.base &lt; <span class="built_in">len</span>(<span class="variable language_">self</span>.packets):</span><br><span class="line">    <span class="comment"># 填满发送窗口</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="variable language_">self</span>.next_seq_num &lt; <span class="variable language_">self</span>.base + <span class="variable language_">self</span>.window_size</span><br><span class="line">           <span class="keyword">and</span> <span class="variable language_">self</span>.next_seq_num &lt; <span class="built_in">len</span>(<span class="variable language_">self</span>.packets)):</span><br><span class="line">        <span class="variable language_">self</span>.send(<span class="variable language_">self</span>.packets[<span class="variable language_">self</span>.next_seq_num])</span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.base == <span class="variable language_">self</span>.next_seq_num:</span><br><span class="line">            <span class="variable language_">self</span>.timer = time.time()    <span class="comment"># 仅当新窗口打开时启动计时器</span></span><br><span class="line">        <span class="variable language_">self</span>.next_seq_num += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 超时检测：重传窗口内所有未确认包</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="variable language_">self</span>.base &lt; <span class="variable language_">self</span>.next_seq_num</span><br><span class="line">            <span class="keyword">and</span> time.time() - <span class="variable language_">self</span>.timer &gt; <span class="variable language_">self</span>.timeout):</span><br><span class="line">        <span class="variable language_">self</span>.handle_timeout()</span><br></pre></td></tr></table></figure>
+
+<p>窗口语义的关键设计点：计时器仅在窗口从空变非空时启动，窗口滑动时重置，窗口归零时停止。这一逻辑若出现偏差，轻则包未及时重传，重则触发死锁。</p>
+<h3 id="2-3-ACK-SACK-处理：快速重传"><a href="#2-3-ACK-SACK-处理：快速重传" class="headerlink" title="2.3 ACK&#x2F;SACK 处理：快速重传"></a>2.3 ACK&#x2F;SACK 处理：快速重传</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">handle_new_ack</span>(<span class="params">self, ack</span>):</span><br><span class="line">    <span class="variable language_">self</span>.dup_ack_count = <span class="number">0</span></span><br><span class="line">    cum_idx, sack_indices = <span class="variable language_">self</span>._parse_ack_string(ack)</span><br><span class="line">    <span class="keyword">if</span> cum_idx &gt; <span class="variable language_">self</span>.base:</span><br><span class="line">        <span class="variable language_">self</span>.base = cum_idx    <span class="comment"># 滑动窗口左边界</span></span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.base &lt; <span class="variable language_">self</span>.next_seq_num:</span><br><span class="line">        <span class="variable language_">self</span>.timer = time.time()    <span class="comment"># 仍有未确认包，重启计时器</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="variable language_">self</span>.timer = <span class="literal">None</span>           <span class="comment"># 所有包已确认，停止计时器</span></span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.sackMode:</span><br><span class="line">        <span class="variable language_">self</span>._update_sack_bitmap(sack_indices)    <span class="comment"># 标记已选择确认的包</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>三次重复 ACK</strong> 触发快速重传（不等待超时），这是对 TCP Fast Retransmit 的直接移植，可在高丢包场景下显著缩短恢复延迟。</p>
+<p><strong>SACK 位图</strong>的核心价值在于：GBN 模式下一旦发生丢包，窗口内所有后续包必须全部重传；而 SACK 允许接收方精确告知哪些包已到达，发送端只需重传真正缺失的包，大幅降低重传放大倍数。</p>
+<hr>
+<h2 id="三、测试设计：覆盖各类异常场景"><a href="#三、测试设计：覆盖各类异常场景" class="headerlink" title="三、测试设计：覆盖各类异常场景"></a>三、测试设计：覆盖各类异常场景</h2><p>除了基础功能测试，以下健壮性测试用例专门针对不同类型的网络异常：</p>
+<table>
+<thead>
+<tr>
+<th>测试用例</th>
+<th>模拟场景</th>
+<th>验证目标</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AckCorruptionTest</code></td>
+<td>ACK&#x2F;SACK 包内容损坏</td>
+<td>发送端对无效确认的处理</td>
+</tr>
+<tr>
+<td><code>AckDuplicationTest</code></td>
+<td>ACK&#x2F;SACK 包重复</td>
+<td>防止重复确认触发不必要的重传</td>
+</tr>
+<tr>
+<td><code>AckLossTest</code></td>
+<td>ACK&#x2F;SACK 包丢失</td>
+<td>超时重传与窗口滑动正确性</td>
+</tr>
+<tr>
+<td><code>AckReorderTest</code></td>
+<td>ACK&#x2F;SACK 包乱序</td>
+<td>对乱序确认的兼容性</td>
+</tr>
+<tr>
+<td><code>DataCorruptionTest</code></td>
+<td>数据包内容损坏</td>
+<td>接收端丢弃损坏包并正确反馈</td>
+</tr>
+<tr>
+<td><code>DataDuplicationTest</code></td>
+<td>数据包重复</td>
+<td>接收端去重能力</td>
+</tr>
+<tr>
+<td><code>DataReorderTest</code></td>
+<td>数据包乱序</td>
+<td>接收端乱序缓存与窗口滑动</td>
+</tr>
+<tr>
+<td><code>GBNTests / SackTests</code></td>
+<td>上述场景分别用于两种模式</td>
+<td>双模式的全覆盖验证</td>
+</tr>
+<tr>
+<td><code>RandomDropTest</code></td>
+<td>随机丢包</td>
+<td>高丢包环境下的整体可靠性</td>
+</tr>
+</tbody></table>
+<h3 id="3-1-测试结果分析"><a href="#3-1-测试结果分析" class="headerlink" title="3.1 测试结果分析"></a>3.1 测试结果分析</h3><ul>
+<li><strong>GBN 模式</strong>：所有测试（含高丢包、乱序、重复）均通过，数据可靠送达，未出现死锁或永久丢包。</li>
+<li><strong>SACK 模式</strong>：选择重传有效减少重传量，在高丢包环境下吞吐量明显优于 GBN。</li>
+<li><strong>大文件 &#x2F; 二进制文件传输</strong>：均通过，无数据错误，证明校验与分片逻辑正确。</li>
+</ul>
+<hr>
+<h2 id="四、遇到的问题与解决策略"><a href="#四、遇到的问题与解决策略" class="headerlink" title="四、遇到的问题与解决策略"></a>四、遇到的问题与解决策略</h2><h3 id="4-1-窗口滑动与定时器同步"><a href="#4-1-窗口滑动与定时器同步" class="headerlink" title="4.1 窗口滑动与定时器同步"></a>4.1 窗口滑动与定时器同步</h3><p>初始实现中，定时器更新时机与窗口滑动逻辑耦合不紧，导致部分已发包在某些状态下既不在定时器覆盖范围内、也未收到确认，形成”灰色包”，最终被遗忘。</p>
+<p><strong>解决方案</strong>：明确定义”计时器生命周期”为”窗口非空→停机”，窗口任何变动（发包、收 ACK）都触发相应的计时器操作，消除中间状态。</p>
+<h3 id="4-2-SACK-位图的双计数问题"><a href="#4-2-SACK-位图的双计数问题" class="headerlink" title="4.2 SACK 位图的双计数问题"></a>4.2 SACK 位图的双计数问题</h3><p>SACK 模式下，如果位图更新逻辑与累计 ACK 解析之间存在重叠，可能对同一帧计数两次，导致提前重传或错误统计。通过将 <code>cum_idx</code> 推进逻辑与 <code>sack_indices</code> 位图更新逻辑严格串行化来消除此问题。</p>
+<h3 id="4-3-测试框架适配"><a href="#4-3-测试框架适配" class="headerlink" title="4.3 测试框架适配"></a>4.3 测试框架适配</h3><p>实验框架对命令行参数格式和包格式有严格要求，手动测试时通过的逻辑在自动化测试中可能因格式错误失败。应在开发阶段就对齐框架期望的格式，避免后期大量调试。</p>
+<hr>
+<h2 id="五、设计权衡总结"><a href="#五、设计权衡总结" class="headerlink" title="五、设计权衡总结"></a>五、设计权衡总结</h2><p>RUDP 的实现让两个关键权衡变得清晰：</p>
+<ol>
+<li><strong>窗口大小 vs 延迟</strong>：窗口越大，吞吐量越高，但重传代价（GBN 模式）也越大。SACK 通过精确重传打破了这一耦合。</li>
+<li><strong>超时值 vs 响应速度</strong>：超时过短导致误重传（假阳性），过长则恢复延迟高。三次重复 ACK 触发的快速重传是应对突发丢包的低延迟补偿机制，无需等待超时周期。</li>
+</ol>
+<p>从系统设计角度看，Go-Back-N 与 SACK 的选择实质上是”实现复杂度”与”网络效率”之间的权衡——在今天高丢包的无线网络环境中，SACK 早已是默认选择。</p>
+<hr>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><strong>[RFC 2018 TCP SACK 选项规范]</strong>：选择重传的标准定义，值得对照实现细节阅读。</li>
+<li><strong>[QUIC 协议设计]</strong>：Google 在 UDP 之上重新设计的可靠传输协议，融合了多路复用、0-RTT 握手等现代设计，是 RUDP 思想的工业级延伸。</li>
+<li>下一篇预告：从传输层向上走——应用层的长程记忆问题：MemOS 记忆操作系统的工程实践。</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://kevin589981.github.io/2025/11/14/rudp-reliable-transport-over-udp/" data-id="cuidW68scUw2PVRyCKLwI0uvy" data-title="基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Go-Back-N/" rel="tag">Go-Back-N</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Python/" rel="tag">Python</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SACK/" rel="tag">SACK</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/UDP/" rel="tag">UDP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%AF%E9%9D%A0%E4%BC%A0%E8%BE%93/" rel="tag">可靠传输</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" rel="tag">网络编程</a></li></ul>
 
     </footer>
   </div>
@@ -1608,7 +1678,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">归档</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/09/">九月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/03/">三月 2026</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">一月 2026</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/12/">十二月 2025</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/11/">十一月 2025</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/10/">十月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/09/">九月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">十二月 2023</a><span class="archive-list-count">2</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/09/">九月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/03/">三月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">一月 2026</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/12/">十二月 2025</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/11/">十一月 2025</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/10/">十月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/09/">九月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/03/">三月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">十二月 2023</a><span class="archive-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1629,15 +1699,15 @@
           </li>
         
           <li>
-            <a href="/2026/03/02/transformer-deep-dive/">Transformer 架构精读：从 Self-Attention 到 Multi-Head Attention</a>
-          </li>
-        
-          <li>
             <a href="/2026/01/26/rust-shyper-embedded-hypervisor-analysis/">Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践</a>
           </li>
         
           <li>
             <a href="/2026/01/10/imitation-learning-robotic-manipulation-generalization/">Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer</a>
+          </li>
+        
+          <li>
+            <a href="/2026/01/02/cs-theory-automata-complexity-notes/">计算理论全景：从渐近记号到 NP 完全性</a>
           </li>
         
       </ul>
