@@ -1,0 +1,175 @@
+#---------------------------
+# Fluid 主题覆盖配置
+# 文档: https://hexo.fluid-dev.com/docs/
+#---------------------------
+
+#---------------------------
+# 全局
+#---------------------------
+favicon: /img/favicon.png
+
+# 留空则使用 title 字段
+blog_title: "Kevin's Study Blog"
+
+navbar:
+  blog_title: "Kevin's Study Blog"
+  ground_glass:
+    enable: false
+  menu:
+    - key: "首页"
+      link: /
+      icon: "iconfont icon-home-fill"
+    - key: "归档"
+      link: /archives/
+      icon: "iconfont icon-archive-fill"
+    - key: "分类"
+      link: /categories/
+      icon: "iconfont icon-category-fill"
+    - key: "标签"
+      link: /tags/
+      icon: "iconfont icon-tags-fill"
+    - key: "关于"
+      link: /about/
+      icon: "iconfont icon-user-fill"
+
+#---------------------------
+# 首页 Banner
+#---------------------------
+index:
+  banner_img: https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80
+  banner_img_height: 70
+  banner_mask_alpha: 0.35
+  slogan:
+    enable: true
+    text: "Systems · AI · Research | 探索底层，理解智能"
+  auto_excerpt:
+    enable: true
+
+#---------------------------
+# 文章页
+#---------------------------
+post:
+  banner_img: https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1600&q=80
+  banner_img_height: 50
+  banner_mask_alpha: 0.3
+  meta:
+    author:
+      enable: false
+    date:
+      enable: true
+      format: "YYYY-MM-DD"
+    wordcount:
+      enable: true
+      count: true
+      min2read: true
+    views:
+      enable: false
+  updated:
+    enable: true
+    content: "本文最后更新于："
+    relative: false
+  toc:
+    enable: true
+    placement: right
+    sticky: true
+  copyright:
+    enable: true
+    content: '本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 协议。转载请注明出处！'
+  prev_next:
+    enable: true
+
+#---------------------------
+# 归档页
+#---------------------------
+archive:
+  banner_img: https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1600&q=80
+  banner_img_height: 45
+  banner_mask_alpha: 0.3
+
+#---------------------------
+# 分类页
+#---------------------------
+category:
+  banner_img: https://images.unsplash.com/photo-1555099962-4199c345e5dd?w=1600&q=80
+  banner_img_height: 45
+  banner_mask_alpha: 0.3
+
+#---------------------------
+# 标签页
+#---------------------------
+tag:
+  banner_img: https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1600&q=80
+  banner_img_height: 45
+  banner_mask_alpha: 0.3
+  tagcloud:
+    min_font: 15
+    max_font: 30
+
+#---------------------------
+# 关于页
+#---------------------------
+about:
+  banner_img: https://images.unsplash.com/photo-1550439062-609e1531270e?w=1600&q=80
+  banner_img_height: 55
+  banner_mask_alpha: 0.3
+  avatar: /img/avatar.png
+  name: "Kevin"
+  intro: "Systems & HPC | AI Research | C++ Enthusiast"
+  icons:
+    - icon: "iconfont icon-github-fill"
+      link: "https://github.com/Kevin589981"
+      tip: "GitHub"
+
+#---------------------------
+# 404 页
+#---------------------------
+page404:
+  enable: true
+  banner_img: https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80
+  banner_img_height: 85
+  banner_mask_alpha: 0.3
+
+#---------------------------
+# 页脚
+#---------------------------
+footer:
+  content: '由 <a href="https://hexo.io" target="_blank">Hexo</a> 驱动，主题 <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank">Fluid</a>'
+  statistics:
+    enable: false
+  beian:
+    enable: false
+
+#---------------------------
+# 代码高亮
+#---------------------------
+code:
+  copy_btn: true
+  language:
+    enable: true
+    default: "plaintext"
+  highlight:
+    enable: true
+    lib: "highlightjs"
+    highlightjs:
+      style: "atom-one-dark"
+      bg_color: false
+    prismjs:
+      style: "tomorrow"
+      preprocess: true
+
+#---------------------------
+# 搜索
+#---------------------------
+search:
+  enable: true
+  path: /local-search.xml
+  generate_path: /local-search.xml
+  type: local
+  image:
+    enable: true
+
+#---------------------------
+# 文章字数统计（需安装插件）
+#---------------------------
+web_analytics:
+  enable: false

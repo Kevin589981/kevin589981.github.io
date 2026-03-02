@@ -43,17 +43,12 @@ render_drafts: false
 post_asset_folder: false
 relative_link: false
 future: true
-syntax_highlighter: highlight.js
+# 代码高亮由 Fluid 主题接管，此处关闭内置高亮
+syntax_highlighter:
 highlight:
-  line_number: true
-  auto_detect: false
-  tab_replace: ''
-  wrap: true
-  hljs: false
+  enable: false
 prismjs:
-  preprocess: true
-  line_number: true
-  tab_replace: ''
+  enable: false
 
 # Home page setting
 # path: Root path for your blogs index page. (default = '')
@@ -96,12 +91,18 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: landscape
+theme: fluid
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: git
   repo: https://github.com/Kevin589981/kevin589981.github.io.git
+
+# 本地搜索（配合 hexo-generator-searchdb）
+search:
+  path: local-search.xml
+  field: post
+  content: true
   branch: main
   message: 'Site updated: {{ now("YYYY-MM-DD HH:mm:ss") }}'
