@@ -59,7 +59,4 @@ $$
 | 长依赖 | 梯度消失 | O(1) 路径长度 |
 | 复杂度 | O(n) | O(n²) 注意力 |
 
-## 下一篇预告
 
-- Positional Encoding 的设计原理与 RoPE 改进
-- Flash Attention：用 IO 感知算法将注意力计算降到 O(n)

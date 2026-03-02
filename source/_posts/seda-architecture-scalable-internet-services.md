@@ -1,6 +1,6 @@
 ---
 title: SEDA：面向高并发互联网服务的阶段式事件驱动架构
-date: 2026-03-02
+date: 2025-12-17
 categories:
   - Systems-HPC
 tags:

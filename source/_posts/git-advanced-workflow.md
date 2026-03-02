@@ -1,6 +1,6 @@
 ---
 title: Git 工作流进阶：从 rebase 到 worktree 的高效实践
-date: 2026-03-02
+date: 2023-12-02
 categories:
   - CS-Fundamentals
 tags:

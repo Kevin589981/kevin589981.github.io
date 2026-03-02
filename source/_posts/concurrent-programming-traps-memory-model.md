@@ -1,6 +1,6 @@
 ---
 title: 系统程序员视角：并发陷阱与内存模型精析
-date: 2026-03-02
+date: 2025-11-25
 categories:
   - Systems-HPC
 tags:

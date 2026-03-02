@@ -1,6 +1,6 @@
 ---
 title: 局部性原理：计算机系统资源管理的底层逻辑
-date: 2026-03-02
+date: 2025-10-11
 categories:
   - CS-Fundamentals
 tags:

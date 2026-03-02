@@ -1,6 +1,6 @@
 ---
 title: "Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer"
-date: 2026-03-02
+date: 2026-01-10
 categories:
   - AI-Research
 tags:
@@ -12,6 +12,9 @@ tags:
   - 数据增强
   - 深度学习
 ---
+
+Code of this article:
+https://github.com/Kevin589981/PRML-ROBOT
 
 > Imitation learning offers a deceptively straightforward path to robotic manipulation: collect expert demonstrations, train a policy to mimic them, and deploy. Yet the critical question — *how generalizable is the result?* — exposes a fundamental tension. This post systematically examines what it truly takes to train robust imitation policies, from architecture choices and data distribution design to scalable data augmentation and visual sim-to-real transfer using MimicGen and Cosmos-Transfer.
 
@@ -68,6 +71,9 @@ This forces the policy to rely on **visual localization of the basket** rather t
 ### 3.2 Apple Vision Pro Teleoperation
 
 For the stacking task in Isaac Sim, hand pose data (26-DoF per hand) was captured via OpenXR tracking, then retargeted to the robot's 7-DoF joint space via inverse kinematics (IK). The three cubes' initial positions were randomized within a $0.2 \times 0.2$ m area to introduce meaningful variability in relative placements and grasp sequences.
+
+The picture shows my collaborator
+[Qiu Qiming](https://github.com/MarshCurrant)
 
 ![Apple Vision Pro teleoperation data collection](/images/imitation-learning-robotic-manipulation-generalization/teleop.jpg)
 *Data collection via Apple Vision Pro teleoperation.*
