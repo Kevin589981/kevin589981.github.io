@@ -1,0 +1,179 @@
+# NexT 主题覆盖配置
+# 文档: https://theme-next.js.org/docs/
+
+# ---------------------------------------------------------------
+# 外观方案：Gemini（四选一：Muse / Mist / Pisces / Gemini）
+# ---------------------------------------------------------------
+scheme: Gemini
+
+# ---------------------------------------------------------------
+# 暗色模式
+# ---------------------------------------------------------------
+darkmode: false
+
+# ---------------------------------------------------------------
+# 导航菜单
+# ---------------------------------------------------------------
+menu:
+  home: / || fa fa-home
+  archives: /archives/ || fa fa-archive
+  categories: /categories/ || fa fa-th
+  tags: /tags/ || fa fa-tags
+  about: /about/ || fa fa-user
+
+menu_settings:
+  icons: true
+  badges: true
+
+# ---------------------------------------------------------------
+# 侧边栏
+# ---------------------------------------------------------------
+sidebar:
+  position: left
+  display: post      # post | always | hide | remove
+  padding: 18
+  offset: 12
+
+avatar:
+  url: /img/avatar.png
+  rounded: true
+  rotated: false
+
+social:
+  GitHub: https://github.com/Kevin589981 || fab fa-github
+  # E-Mail: mailto:yourmail@example.com || fa fa-envelope
+
+social_icons:
+  enable: true
+  icons_only: false
+  transition: true
+
+links_settings:
+  icon: fa fa-link
+  title: 友情链接
+  layout: block
+
+toc:
+  enable: true
+  number: true
+  wrap: false
+  expand_all: false
+  max_depth: 4
+
+# ---------------------------------------------------------------
+# 页脚
+# ---------------------------------------------------------------
+footer:
+  since: 2025
+  icon:
+    name: fa fa-heart
+    animated: true
+    color: "#ff0000"
+  copyright: Kevin
+  powered: true
+
+# ---------------------------------------------------------------
+# 文章
+# ---------------------------------------------------------------
+post_meta:
+  global:
+    title: false
+    date: true
+    date_format: YYYY-MM-DD
+    updated: false
+    category: true
+    tags: true
+    comment: false
+    link: false
+  index:
+    title: false
+    date: true
+    date_format: YYYY-MM-DD
+    category: true
+    tags: false
+    comment: false
+    link: false
+
+symbols_count_time:
+  separated_meta: true
+  item_text_total: false
+
+# 文章末尾版权声明
+creative_commons:
+  license: by-nc-sa
+  sidebar: false
+  post: true
+  language: deed.zh
+
+# 代码块
+codeblock:
+  theme:
+    light: default
+    dark: stackoverflow-dark
+  prism:
+    light: prism
+    dark: prism-dark
+  copy_button:
+    enable: true
+    style: default
+
+back2top:
+  enable: true
+  sidebar: false
+  scrollpercent: true
+
+reading_progress:
+  enable: true
+  start_at: left
+  position: top
+  reversed: false
+  color: "#37c6c0"
+  height: 3px
+
+bookmark:
+  enable: false
+
+github_banner:
+  enable: true
+  permalink: https://github.com/Kevin589981
+  title: Follow me on GitHub
+
+# ---------------------------------------------------------------
+# 数学公式（KaTeX）
+# ---------------------------------------------------------------
+math:
+  every_page: false
+  mathjax:
+    enable: false
+  katex:
+    enable: true
+    copy_tex: true
+
+# ---------------------------------------------------------------
+# 搜索（hexo-generator-searchdb 已安装）
+# ---------------------------------------------------------------
+local_search:
+  enable: true
+  trigger: auto
+  top_n_per_article: 1
+  unescape: false
+  preload: false
+
+# ---------------------------------------------------------------
+# 外部 URL 在新标签打开
+# ---------------------------------------------------------------
+exturl: false
+
+# ---------------------------------------------------------------
+# 动画
+# ---------------------------------------------------------------
+motion:
+  enable: true
+  async: false
+  transition:
+    menu_item: fadeInDown
+    post_block: fadeIn
+    post_header: fadeInDown
+    post_body: fadeInDown
+    coll_header: fadeInLeft
+    sidebar: fadeInDown

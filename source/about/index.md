@@ -1,7 +1,7 @@
 ---
 title: 关于我 / About Me
 date: 2026-03-02
-layout: about
+layout: page
 ---
 
 # Hi，我是 Kevin 👋
