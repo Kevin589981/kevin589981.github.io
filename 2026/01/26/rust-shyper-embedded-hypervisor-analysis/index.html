@@ -1,12 +1,25 @@
+
+
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/favicon.png">
   
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
   
-  <title>Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践 | Kevin&#39;s Tech Blog</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="随着嵌入式设备演化为混合关键性系统（Mixed-Criticality System），如何在同一块 SoC 上同时支撑硬实时控制任务与通用 Linux 工作负载，同时保证它们之间的强隔离，成为嵌入式虚拟化的核心挑战。服务器级 Hypervisor（KVM&#x2F;Xen）因调度抖动难以满足实时约束；静态分区方案（Jailhouse&#x2F;Bao）则牺牲了资源利用率与灵活性。本文围绕 Sh">
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Kevin">
+  <meta name="keywords" content="系统编程,AI,机器学习,C++,操作系统">
+  
+    <meta name="description" content="随着嵌入式设备演化为混合关键性系统（Mixed-Criticality System），如何在同一块 SoC 上同时支撑硬实时控制任务与通用 Linux 工作负载，同时保证它们之间的强隔离，成为嵌入式虚拟化的核心挑战。服务器级 Hypervisor（KVM&#x2F;Xen）因调度抖动难以满足实时约束；静态分区方案（Jailhouse&#x2F;Bao）则牺牲了资源利用率与灵活性。本文围绕 Sh">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践">
 <meta property="og:url" content="https://kevin589981.github.io/2026/01/26/rust-shyper-embedded-hypervisor-analysis/index.html">
@@ -22,104 +35,262 @@
 <meta property="article:tag" content="性能优化">
 <meta property="article:tag" content="操作系统">
 <meta property="article:tag" content="虚拟化">
-<meta name="twitter:card" content="summary">
-  
-    <link rel="alternate" href="/atom.xml" title="Kevin's Tech Blog" type="application/atom+xml">
-  
-  
-    <link rel="shortcut icon" href="/favicon.png">
+<meta name="twitter:card" content="summary_large_image">
   
   
   
-<link rel="stylesheet" href="/css/style.css">
+  <title>Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践 - Kevin&#39;s Tech Blog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"kevin589981.github.io","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"plaintext"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0,"sticky":true},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
 
   
-    
-<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
-
-  
-  
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
-
 <meta name="generator" content="Hexo 8.1.1"></head>
 
+
 <body>
-  <div id="container">
-    <div id="wrap">
-      <header id="header">
-  <div id="banner"></div>
-  <div id="header-outer" class="outer">
-    <div id="header-title" class="inner">
-      <h1 id="logo-wrap">
-        <a href="/" id="logo">Kevin&#39;s Tech Blog</a>
-      </h1>
-      
-        <h2 id="subtitle-wrap">
-          <a href="/" id="subtitle">Systems | AI | Research</a>
-        </h2>
-      
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 50vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Kevin&#39;s Study Blog</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
     </div>
-    <div id="header-inner" class="inner">
-      <nav id="main-nav">
-        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1600&q=80') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践"></span>
+          
+        </div>
+
         
-          <a class="main-nav-link" href="/">Home</a>
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-01-26 00:00" pubdate>
+          2026-01-26
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
         
-          <a class="main-nav-link" href="/archives">Archives</a>
+          3.3k 字
         
-          <a class="main-nav-link" href="/">主页</a>
-        
-          <a class="main-nav-link" href="/about/">关于我</a>
-        
-          <a class="main-nav-link" href="/archives/">归档</a>
-        
-          <a class="main-nav-link" href="/categories/">分类</a>
-        
-          <a class="main-nav-link" href="/tags/">标签</a>
-        
-      </nav>
-      <nav id="sub-nav">
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
         
         
-          <a class="nav-icon" href="/atom.xml" title="RSS 订阅"><span class="fa fa-rss"></span></a>
         
-        <a class="nav-icon nav-search-btn" title="搜索"><span class="fa fa-search"></span></a>
-      </nav>
-      <div id="search-form-wrap">
-        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="搜索"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://kevin589981.github.io"></form>
+          28 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
       </div>
+
+      
     </div>
   </div>
-</header>
+</div>
 
-      <div class="outer">
-        <section id="main"><article id="post-rust-shyper-embedded-hypervisor-analysis" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2026/01/26/rust-shyper-embedded-hypervisor-analysis/" class="article-date">
-  <time class="dt-published" datetime="2026-01-25T16:00:00.000Z" itemprop="datePublished">2026-01-26</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Systems-HPC/">Systems-HPC</a>
-  </div>
+</div>
 
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 class="p-name article-title" itemprop="headline name">
-      Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践
-    </h1>
-  
+  </header>
 
-      </header>
+  <main>
     
-    <div class="e-content article-entry" itemprop="articleBody">
       
-        <blockquote>
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践</h1>
+            
+              <p id="updated-time" class="note note-info" style="">
+                
+                  
+                    <!-- compatible with older versions-->
+                    本文最后更新于：2026年3月2日 晚上
+                  
+                
+              </p>
+            
+            
+              <div class="markdown-body">
+                
+                <blockquote>
 <p>随着嵌入式设备演化为混合关键性系统（Mixed-Criticality System），如何在同一块 SoC 上同时支撑硬实时控制任务与通用 Linux 工作负载，同时保证它们之间的强隔离，成为嵌入式虚拟化的核心挑战。服务器级 Hypervisor（KVM&#x2F;Xen）因调度抖动难以满足实时约束；静态分区方案（Jailhouse&#x2F;Bao）则牺牲了资源利用率与灵活性。本文围绕 Shyper 系列论文及其 Rust 重实现 Rust-Shyper，从架构设计、关键优化机制、可靠性工程，以及 Rust 语言安全实践四个维度展开深度分析，并结合 <code>rust_shyper</code> 仓库源码进行印证。</p>
 </blockquote>
 <h2 id="1-背景：嵌入式虚拟化的设计困境"><a href="#1-背景：嵌入式虚拟化的设计困境" class="headerlink" title="1. 背景：嵌入式虚拟化的设计困境"></a>1. 背景：嵌入式虚拟化的设计困境</h2><p>现代嵌入式设备（汽车 ECU、工业控制器、无人机飞控）正面临一个典型的二元悖论：</p>
@@ -177,7 +348,7 @@
 <p>这一分层并非简单的优先级标注，而是驱动了内存策略、中断路径和调度机制的差异化设计——这是 Shyper 区别于 KVM 和 Jailhouse 的核心创新。</p>
 <h3 id="2-2-代码层面的抽象"><a href="#2-2-代码层面的抽象" class="headerlink" title="2.2 代码层面的抽象"></a>2.2 代码层面的抽象</h3><p>在 <code>src/kernel/vm.rs</code> 中，<code>VmType</code> 枚举（第 101–118 行）将上述分类编码为类型系统的一部分。统一的 <code>Vm</code> 结构体聚合了配置信息 <code>config</code>、vCPU 列表 <code>vcpu_list</code>、二级页表 <code>pt</code> 和模拟设备列表 <code>emu_devs</code>，通过差异化配置而非多态继承实现分层。</p>
 <p><code>src/config/qemu_riscv64_def.rs</code> 中，MVM（VM0）的 <code>allocate_bitmap</code> 字段被静态设置为 <code>0b0001</code>，强制将其绑定在 Hart0 上，从代码层面落实了”固定核心减少上下文切换干扰”的设计原则。</p>
-<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// src/config/qemu_riscv64_def.rs（示意）</span></span><br><span class="line">VmConfigEntry &#123;</span><br><span class="line">    id: <span class="number">0</span>,</span><br><span class="line">    name: <span class="string">&quot;MVM&quot;</span>,</span><br><span class="line">    vm_type: VmType::VmTMvm,</span><br><span class="line">    allocate_bitmap: <span class="number">0b0001</span>,  <span class="comment">// 绑定 Hart0</span></span><br><span class="line">    master: <span class="title function_ invoke__">Some</span>(<span class="number">0</span>),</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs rust"><span class="hljs-comment">// src/config/qemu_riscv64_def.rs（示意）</span><br>VmConfigEntry &#123;<br>    id: <span class="hljs-number">0</span>,<br>    name: <span class="hljs-string">&quot;MVM&quot;</span>,<br>    vm_type: VmType::VmTMvm,<br>    allocate_bitmap: <span class="hljs-number">0b0001</span>,  <span class="hljs-comment">// 绑定 Hart0</span><br>    master: <span class="hljs-title function_ invoke__">Some</span>(<span class="hljs-number">0</span>),<br>    <span class="hljs-comment">// ...</span><br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>GVM 的镜像则由 MVM 在运行时通过管理接口动态加载（<code>src/vmm/init.rs</code> 中的 <code>vmm_init_image</code> 分支逻辑），实现了管理平面与计算平面的解耦。</p>
 <hr>
@@ -197,10 +368,10 @@
 <li>问题：IPI 本身存在延迟，且 RTVM 仍需经历一次阻塞等待。</li>
 </ul>
 <p><strong>Rust-Shyper 中的 RATS（Rust Asynchronous Task Scheduling）</strong> 利用 <code>async/await</code> 将同步阻塞改造为异步调度：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">RTVM 发起 I/O</span><br><span class="line">    ↓ 陷入 EL2</span><br><span class="line">RATS 生成 AsyncIoTask，推入共享任务队列</span><br><span class="line">    ↓ 立即退出 EL2，RTVM vCPU 恢复运行</span><br><span class="line">MVM 在空闲时通过 poll 执行队列中的任务</span><br><span class="line">    ↓ 完成后注入虚拟中断通知 RTVM</span><br></pre></td></tr></table></figure>
+<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs mathematica"><span class="hljs-variable">RTVM</span> 发起 <span class="hljs-built_in">I</span><span class="hljs-operator">/</span><span class="hljs-built_in">O</span><br>    ↓ 陷入 <span class="hljs-variable">EL2</span><br><span class="hljs-variable">RATS</span> 生成 <span class="hljs-variable">AsyncIoTask</span>，推入共享任务队列<br>    ↓ 立即退出 <span class="hljs-variable">EL2</span>，<span class="hljs-variable">RTVM</span> <span class="hljs-variable">vCPU</span> 恢复运行<br><span class="hljs-variable">MVM</span> 在空闲时通过 <span class="hljs-variable">poll</span> 执行队列中的任务<br>    ↓ 完成后注入虚拟中断通知 <span class="hljs-variable">RTVM</span><br></code></pre></td></tr></table></figure>
 
 <p>核心实现位于 <code>src/kernel/async_task.rs</code>，第 191–209 行通过 <code>Pin&lt;Box&lt;dyn Future&lt;Output=()&gt; + ...&gt;&gt;</code> 持有 Rust 编译器生成的状态机，将 C 语言中复杂的手工状态机转换为语言层面的异步逻辑：</p>
-<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// src/kernel/async_task.rs（示意）</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">AsyncTask</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> task_data: AsyncTaskData,</span><br><span class="line">    future: Mutex&lt;Pin&lt;<span class="type">Box</span>&lt;<span class="keyword">dyn</span> Future&lt;Output = ()&gt; + <span class="built_in">Send</span> + <span class="symbol">&#x27;static</span>&gt;&gt;&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">AsyncTask</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">poll</span>(&amp;<span class="keyword">self</span>, cx: &amp;<span class="keyword">mut</span> Context&lt;<span class="symbol">&#x27;_</span>&gt;) <span class="punctuation">-&gt;</span> Poll&lt;()&gt; &#123;</span><br><span class="line">        <span class="keyword">self</span>.future.<span class="title function_ invoke__">lock</span>().<span class="title function_ invoke__">as_mut</span>().<span class="title function_ invoke__">poll</span>(cx)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs rust"><span class="hljs-comment">// src/kernel/async_task.rs（示意）</span><br><span class="hljs-keyword">pub</span> <span class="hljs-keyword">struct</span> <span class="hljs-title class_">AsyncTask</span> &#123;<br>    <span class="hljs-keyword">pub</span> task_data: AsyncTaskData,<br>    future: Mutex&lt;Pin&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> Future&lt;Output = ()&gt; + <span class="hljs-built_in">Send</span> + <span class="hljs-symbol">&#x27;static</span>&gt;&gt;&gt;,<br>&#125;<br><br><span class="hljs-keyword">impl</span> <span class="hljs-title class_">AsyncTask</span> &#123;<br>    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">poll</span>(&amp;<span class="hljs-keyword">self</span>, cx: &amp;<span class="hljs-keyword">mut</span> Context&lt;<span class="hljs-symbol">&#x27;_</span>&gt;) <span class="hljs-punctuation">-&gt;</span> Poll&lt;()&gt; &#123;<br>        <span class="hljs-keyword">self</span>.future.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">as_mut</span>().<span class="hljs-title function_ invoke__">poll</span>(cx)<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>相比 TRCA，RATS 的改进体现在两个维度：</p>
 <ul>
@@ -223,7 +394,7 @@
 </ol>
 <p>实测停机时间约为 <strong>798 μs</strong>，远优于 KVM 的 2 ms，原因在于 Shyper 的 TCB 极小，VM 状态数据量远少于 KVM。</p>
 <h3 id="5-2-Hypervisor-热更新"><a href="#5-2-Hypervisor-热更新" class="headerlink" title="5.2 Hypervisor 热更新"></a>5.2 Hypervisor 热更新</h3><p>Shyper 支持在不重启任何 VM 的情况下在线替换 Hypervisor 自身——这是嵌入式领域极为罕见的能力：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">旧 Hypervisor 将所有 VM 状态序列化到预留内存区域</span><br><span class="line">    ↓</span><br><span class="line">MVM 加载新 Hypervisor 镜像到隔离内存</span><br><span class="line">    ↓</span><br><span class="line">Core 0 发送 IPI 暂停所有核心</span><br><span class="line">    ↓</span><br><span class="line">位置无关汇编重置 vbar_el2，指向新镜像入口</span><br><span class="line">    ↓</span><br><span class="line">新 Hypervisor 初始化后解析旧版数据结构指针，重建运行时状态</span><br></pre></td></tr></table></figure>
+<figure class="highlight tap"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs tap">旧 Hypervisor 将所有 VM 状态序列化到预留内存区域<br>    ↓<br>MVM 加载新 Hypervisor 镜像到隔离内存<br>    ↓<br>Core<span class="hljs-number"> 0 </span>发送 IPI 暂停所有核心<br>    ↓<br>位置无关汇编重置 vbar_el2，指向新镜像入口<br>    ↓<br>新 Hypervisor 初始化后解析旧版数据结构指针，重建运行时状态<br></code></pre></td></tr></table></figure>
 
 <p>“两阶段更新法”的设计目标是兼容新旧版本数据结构的 ABI 变化。整个过程最大系统停顿仅为 <strong>36 μs</strong>，对硬实时任务的干扰具有<strong>确定性</strong>——相比 KVM 毫秒级不可预测抖动，嵌入式系统更需要的是”干扰可预测”，而非”干扰消失”。</p>
 <blockquote>
@@ -231,7 +402,7 @@
 </blockquote>
 <hr>
 <h2 id="6-Rust-的安全工程实践"><a href="#6-Rust-的安全工程实践" class="headerlink" title="6. Rust 的安全工程实践"></a>6. Rust 的安全工程实践</h2><h3 id="6-1-所有权与生命周期：消除-Use-After-Free"><a href="#6-1-所有权与生命周期：消除-Use-After-Free" class="headerlink" title="6.1 所有权与生命周期：消除 Use-After-Free"></a>6.1 所有权与生命周期：消除 Use-After-Free</h3><p>C 版 Shyper 中，VM 销毁时的页帧释放依赖手工管理，历史上出现过 Use-After-Free 漏洞。Rust-Shyper 中，<code>Vm</code> 结构体通过 <code>Box&lt;Vm&gt;</code> 和 <code>Arc&lt;Vm&gt;</code> 管理所有权：</p>
-<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// VM 销毁时，Drop trait 自动回收所有关联资源</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">Vm</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="comment">// 编译器保证此处必然执行，页帧自动归还分配器</span></span><br><span class="line">        <span class="keyword">self</span>.<span class="title function_ invoke__">free_page_frames</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs rust"><span class="hljs-comment">// VM 销毁时，Drop trait 自动回收所有关联资源</span><br><span class="hljs-keyword">impl</span> <span class="hljs-title class_">Drop</span> <span class="hljs-keyword">for</span> <span class="hljs-title class_">Vm</span> &#123;<br>    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">drop</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>) &#123;<br>        <span class="hljs-comment">// 编译器保证此处必然执行，页帧自动归还分配器</span><br>        <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">free_page_frames</span>();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
 
 <p>当 <code>Vm</code> 实例从全局列表中移除时，引用计数归零，<code>Drop</code> 自动触发，从根本上消除了内存泄漏与悬垂指针。</p>
 <h3 id="6-2-类型系统驱动的并发安全"><a href="#6-2-类型系统驱动的并发安全" class="headerlink" title="6.2 类型系统驱动的并发安全"></a>6.2 类型系统驱动的并发安全</h3><p>所有共享可变状态均被 <code>SpinLock&lt;T&gt;</code> 或 <code>Mutex&lt;T&gt;</code> 封装。Rust 编译器在类型层面强制要求”访问 <code>T</code> 必须先持有锁”，数据竞争在编译期即被拒绝，无需依赖 ThreadSanitizer 等运行时检测工具。</p>
@@ -264,167 +435,381 @@
 <li>下一篇预告：内存模型与无锁编程——从 MESI 协议到 C++11 <code>memory_order</code> 的精确语义</li>
 </ul>
 
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
       
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2026/01/26/rust-shyper-embedded-hypervisor-analysis/" data-id="cuidMg-DTSQuqk6C7qPlaHcPr" data-title="Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Rust/" rel="tag">Rust</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%BE%AE%E5%86%85%E6%A0%B8/" rel="tag">微内核</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag">性能优化</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" rel="tag">操作系统</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%8C%96/" rel="tag">虚拟化</a></li></ul>
 
-    </footer>
-  </div>
+<span class="category-chains">
+  
   
     
-<nav id="article-nav">
+      <span class="category-chain">
+        
+  <a href="/categories/Systems-HPC/" class="category-chain-item">Systems-HPC</a>
   
-    <a href="/2026/03/02/build-os-kernel-01/" id="article-nav-newer" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">前一篇</strong>
-      <div class="article-nav-title">
-        
-          从零实现一个简易操作系统内核（一）：启动与保护模式
-        
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" class="print-no-link">#操作系统</a>
+      
+        <a href="/tags/ARM/" class="print-no-link">#ARM</a>
+      
+        <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" class="print-no-link">#性能优化</a>
+      
+        <a href="/tags/%E5%BE%AE%E5%86%85%E6%A0%B8/" class="print-no-link">#微内核</a>
+      
+        <a href="/tags/Rust/" class="print-no-link">#Rust</a>
+      
+        <a href="/tags/%E8%99%9A%E6%8B%9F%E5%8C%96/" class="print-no-link">#虚拟化</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践</div>
+      <div>https://kevin589981.github.io/2026/01/26/rust-shyper-embedded-hypervisor-analysis/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Kevin</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年1月26日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2026/03/02/build-os-kernel-01/" title="从零实现一个简易操作系统内核（一）：启动与保护模式">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">从零实现一个简易操作系统内核（一）：启动与保护模式</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2026/01/10/imitation-learning-robotic-manipulation-generalization/" title="Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer">
+                        <span class="hidden-mobile">Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
       </div>
-    </a>
-  
-  
-    <a href="/2026/01/10/imitation-learning-robotic-manipulation-generalization/" id="article-nav-older" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">后一篇</strong>
-      <div class="article-nav-title">Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer</div>
-    </a>
-  
-</nav>
-
-  
-</article>
-
-
-</section>
-        
-          <aside id="sidebar">
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">分类</h3>
-    <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/AI-Research/">AI-Research</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CS-Fundamentals/">CS-Fundamentals</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Projects/">Projects</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Systems-HPC/">Systems-HPC</a><span class="category-list-count">5</span></li></ul>
     </div>
-  </div>
 
-
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">标签</h3>
-    <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ARM/" rel="tag">ARM</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/C/" rel="tag">C++</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Git/" rel="tag">Git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Go-Back-N/" rel="tag">Go-Back-N</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LFS/" rel="tag">LFS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LLM%E8%AE%B0%E5%BF%86/" rel="tag">LLM记忆</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LoCoMo/" rel="tag">LoCoMo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MemOS/" rel="tag">MemOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MimicGen/" rel="tag">MimicGen</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NLP/" rel="tag">NLP</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NP%E5%AE%8C%E5%85%A8%E6%80%A7/" rel="tag">NP完全性</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Prompt%E5%B7%A5%E7%A8%8B/" rel="tag">Prompt工程</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAG/" rel="tag">RAG</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rust/" rel="tag">Rust</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SACK/" rel="tag">SACK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spatial-Softmax/" rel="tag">Spatial-Softmax</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Transformer/" rel="tag">Transformer</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/UDP/" rel="tag">UDP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sim-to-real/" rel="tag">sim-to-real</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/x86/" rel="tag">x86</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8/" rel="tag">事件驱动</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E8%AE%A1%E7%AE%97/" rel="tag">云计算</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" rel="tag">内存模型</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8F%AF%E9%9D%A0%E4%BC%A0%E8%BE%93/" rel="tag">可靠传输</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9B%BE%E7%81%B5%E6%9C%BA/" rel="tag">图灵机</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%8D%E6%9D%82%E5%BA%A6%E7%90%86%E8%AE%BA/" rel="tag">复杂度理论</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%98%E5%82%A8%E7%B3%BB%E7%BB%9F/" rel="tag">存储系统</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B1%80%E9%83%A8%E6%80%A7%E5%8E%9F%E7%90%86/" rel="tag">局部性原理</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E4%BD%9C%E9%9B%86%E6%A8%A1%E5%9E%8B/" rel="tag">工作集模型</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7%E6%B5%81/" rel="tag">工具流</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B9%B6%E5%8F%91/" rel="tag">并发</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" rel="tag">并发编程</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%BC%80%E5%8F%91%E6%95%88%E7%8E%87/" rel="tag">开发效率</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%BC%82%E6%9E%84%E8%AE%A1%E7%AE%97/" rel="tag">异构计算</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%BE%AE%E5%86%85%E6%A0%B8/" rel="tag">微内核</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag">性能优化</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" rel="tag">操作系统</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA/" rel="tag">数据增强</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">文件系统</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%97%A0%E9%94%81%E7%BC%96%E7%A8%8B/" rel="tag">无锁编程</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%9E%B6%E6%9E%84/" rel="tag">服务器架构</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%93%8D%E6%8E%A7/" rel="tag">机器人操控</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%A8%A1%E4%BB%BF%E5%AD%A6%E4%B9%A0/" rel="tag">模仿学习</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B1%87%E7%BC%96/" rel="tag">汇编</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">深度学习</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%90%E8%BF%91%E8%AE%B0%E5%8F%B7/" rel="tag">渐近记号</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/" rel="tag">系统架构</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%93%E5%AD%98/" rel="tag">缓存</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag">缓存一致性</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" rel="tag">网络编程</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/" rel="tag">自动机</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98/" rel="tag">虚拟内存</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%8C%96/" rel="tag">虚拟化</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%A1%E7%AE%97%E7%90%86%E8%AE%BA/" rel="tag">计算理论</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%BA%E6%96%87%E7%A0%94%E8%AF%BB/" rel="tag">论文研读</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%B4%9F%E8%BD%BD%E6%8E%A7%E5%88%B6/" rel="tag">负载控制</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9A%8F%E7%AC%94/" rel="tag">随笔</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/" rel="tag">项目实战</a><span class="tag-list-count">1</span></li></ul>
-    </div>
-  </div>
-
-
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">标签云</h3>
-    <div class="widget tagcloud">
-      <a href="/tags/ARM/" style="font-size: 13.33px;">ARM</a> <a href="/tags/C/" style="font-size: 13.33px;">C++</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Go-Back-N/" style="font-size: 10px;">Go-Back-N</a> <a href="/tags/LFS/" style="font-size: 10px;">LFS</a> <a href="/tags/LLM%E8%AE%B0%E5%BF%86/" style="font-size: 10px;">LLM记忆</a> <a href="/tags/LoCoMo/" style="font-size: 10px;">LoCoMo</a> <a href="/tags/MemOS/" style="font-size: 10px;">MemOS</a> <a href="/tags/MimicGen/" style="font-size: 10px;">MimicGen</a> <a href="/tags/NLP/" style="font-size: 13.33px;">NLP</a> <a href="/tags/NP%E5%AE%8C%E5%85%A8%E6%80%A7/" style="font-size: 10px;">NP完全性</a> <a href="/tags/Prompt%E5%B7%A5%E7%A8%8B/" style="font-size: 10px;">Prompt工程</a> <a href="/tags/Python/" style="font-size: 10px;">Python</a> <a href="/tags/RAG/" style="font-size: 10px;">RAG</a> <a href="/tags/Rust/" style="font-size: 10px;">Rust</a> <a href="/tags/SACK/" style="font-size: 10px;">SACK</a> <a href="/tags/Spatial-Softmax/" style="font-size: 10px;">Spatial-Softmax</a> <a href="/tags/Transformer/" style="font-size: 10px;">Transformer</a> <a href="/tags/UDP/" style="font-size: 10px;">UDP</a> <a href="/tags/sim-to-real/" style="font-size: 10px;">sim-to-real</a> <a href="/tags/x86/" style="font-size: 10px;">x86</a> <a href="/tags/%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8/" style="font-size: 10px;">事件驱动</a> <a href="/tags/%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 10px;">云计算</a> <a href="/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" style="font-size: 13.33px;">内存模型</a> <a href="/tags/%E5%8F%AF%E9%9D%A0%E4%BC%A0%E8%BE%93/" style="font-size: 10px;">可靠传输</a> <a href="/tags/%E5%9B%BE%E7%81%B5%E6%9C%BA/" style="font-size: 10px;">图灵机</a> <a href="/tags/%E5%A4%8D%E6%9D%82%E5%BA%A6%E7%90%86%E8%AE%BA/" style="font-size: 10px;">复杂度理论</a> <a href="/tags/%E5%AD%98%E5%82%A8%E7%B3%BB%E7%BB%9F/" style="font-size: 10px;">存储系统</a> <a href="/tags/%E5%B1%80%E9%83%A8%E6%80%A7%E5%8E%9F%E7%90%86/" style="font-size: 10px;">局部性原理</a> <a href="/tags/%E5%B7%A5%E4%BD%9C%E9%9B%86%E6%A8%A1%E5%9E%8B/" style="font-size: 10px;">工作集模型</a> <a href="/tags/%E5%B7%A5%E5%85%B7%E6%B5%81/" style="font-size: 10px;">工具流</a> <a href="/tags/%E5%B9%B6%E5%8F%91/" style="font-size: 10px;">并发</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 13.33px;">并发编程</a> <a href="/tags/%E5%BC%80%E5%8F%91%E6%95%88%E7%8E%87/" style="font-size: 10px;">开发效率</a> <a href="/tags/%E5%BC%82%E6%9E%84%E8%AE%A1%E7%AE%97/" style="font-size: 10px;">异构计算</a> <a href="/tags/%E5%BE%AE%E5%86%85%E6%A0%B8/" style="font-size: 13.33px;">微内核</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 16.67px;">性能优化</a> <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" style="font-size: 20px;">操作系统</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA/" style="font-size: 10px;">数据增强</a> <a href="/tags/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 10px;">文件系统</a> <a href="/tags/%E6%97%A0%E9%94%81%E7%BC%96%E7%A8%8B/" style="font-size: 13.33px;">无锁编程</a> <a href="/tags/%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%9E%B6%E6%9E%84/" style="font-size: 10px;">服务器架构</a> <a href="/tags/%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%93%8D%E6%8E%A7/" style="font-size: 10px;">机器人操控</a> <a href="/tags/%E6%A8%A1%E4%BB%BF%E5%AD%A6%E4%B9%A0/" style="font-size: 10px;">模仿学习</a> <a href="/tags/%E6%B1%87%E7%BC%96/" style="font-size: 10px;">汇编</a> <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" style="font-size: 13.33px;">深度学习</a> <a href="/tags/%E6%B8%90%E8%BF%91%E8%AE%B0%E5%8F%B7/" style="font-size: 10px;">渐近记号</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/" style="font-size: 10px;">系统架构</a> <a href="/tags/%E7%BC%93%E5%AD%98/" style="font-size: 10px;">缓存</a> <a href="/tags/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/" style="font-size: 10px;">缓存一致性</a> <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">网络编程</a> <a href="/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/" style="font-size: 10px;">自动机</a> <a href="/tags/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98/" style="font-size: 10px;">虚拟内存</a> <a href="/tags/%E8%99%9A%E6%8B%9F%E5%8C%96/" style="font-size: 10px;">虚拟化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E7%90%86%E8%AE%BA/" style="font-size: 10px;">计算理论</a> <a href="/tags/%E8%AE%BA%E6%96%87%E7%A0%94%E8%AF%BB/" style="font-size: 10px;">论文研读</a> <a href="/tags/%E8%B4%9F%E8%BD%BD%E6%8E%A7%E5%88%B6/" style="font-size: 10px;">负载控制</a> <a href="/tags/%E9%9A%8F%E7%AC%94/" style="font-size: 10px;">随笔</a> <a href="/tags/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/" style="font-size: 10px;">项目实战</a>
-    </div>
-  </div>
-
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">归档</h3>
-    <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/03/">三月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">一月 2026</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/12/">十二月 2025</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/11/">十一月 2025</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/10/">十月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/09/">九月 2025</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/03/">三月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">十二月 2023</a><span class="archive-list-count">2</span></li></ul>
-    </div>
-  </div>
-
-
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">最新文章</h3>
-    <div class="widget">
-      <ul>
-        
-          <li>
-            <a href="/2026/03/02/build-os-kernel-01/">从零实现一个简易操作系统内核（一）：启动与保护模式</a>
-          </li>
-        
-          <li>
-            <a href="/2026/01/26/rust-shyper-embedded-hypervisor-analysis/">Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践</a>
-          </li>
-        
-          <li>
-            <a href="/2026/01/10/imitation-learning-robotic-manipulation-generalization/">Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer</a>
-          </li>
-        
-          <li>
-            <a href="/2026/01/02/cs-theory-automata-complexity-notes/">计算理论全景：从渐近记号到 NP 完全性</a>
-          </li>
-        
-          <li>
-            <a href="/2025/12/28/memory-model-lockfree/">内存模型与无锁编程：从 CPU 缓存到 C++ 原子操作</a>
-          </li>
-        
-      </ul>
-    </div>
-  </div>
-
-  
-</aside>
-        
-      </div>
-      <footer id="footer">
-  
-  <div class="outer">
-    <div id="footer-info" class="inner">
+    <div class="side-col d-none d-lg-block col-lg-2">
       
-      &copy; 2026 Kevin<br>
-      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
-    </div>
-  </div>
-</footer>
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
 
     </div>
-    <nav id="mobile-nav">
+  </div>
+</div>
+
+
+
+
+
   
-    <a href="/" class="mobile-nav-link">Home</a>
+
+
+
   
-    <a href="/archives" class="mobile-nav-link">Archives</a>
+
+
+
   
-    <a href="/" class="mobile-nav-link">主页</a>
+
+
+
   
-    <a href="/about/" class="mobile-nav-link">关于我</a>
+
+
+
   
-    <a href="/archives/" class="mobile-nav-link">归档</a>
-  
-    <a href="/categories/" class="mobile-nav-link">分类</a>
-  
-    <a href="/tags/" class="mobile-nav-link">标签</a>
-  
-</nav>
+
+
+
+
+
+
+
     
 
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
 
-<script src="/js/jquery-3.6.4.min.js"></script>
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+      由 <a href="https://hexo.io" target="_blank">Hexo</a> 驱动，主题 <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank">Fluid</a>
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
 
 
 
   
-<script src="/fancybox/jquery.fancybox.min.js"></script>
+    <script  src="/js/img-lazyload.js" ></script>
+  
 
 
 
 
-<script src="/js/script.js"></script>
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
 
 
 
 
 
-  </div>
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
 </body>
 </html>
