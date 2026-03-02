@@ -1,0 +1,42 @@
+# Landscape 主题配置
+# Docs: https://github.com/hexojs/hexo-theme-landscape
+
+# Header
+menu:
+  主页: /
+  关于我: /about/
+  归档: /archives/
+  分类: /categories/
+  标签: /tags/
+
+# Content
+excerpt_link: 继续阅读 &raquo;
+fancybox: true
+
+# Sidebar
+sidebar: right
+widgets:
+  - category
+  - tag
+  - tagcloud
+  - archive
+  - recent_posts
+
+# display widgets at the bottom of index pages (pagination == 2)
+# available widgets: `search`, `category`, `tag`, `tagcloud`, `archive`, `recent_posts`
+index_widgets:
+
+# widget behavior
+archive_type: 'monthly'
+show_count: true
+
+# Banner
+banner: css/images/banner.jpg
+
+# Miscellaneous
+google_analytics:
+favicon: /favicon.png
+twitter:
+google_plus:
+fb_admins:
+fb_app_id:
