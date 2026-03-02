@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer | Kevin&#39;s Tech Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Code of this article:https:&#x2F;&#x2F;github.com&#x2F;Kevin589981&#x2F;PRML-ROBOT  Imitation learning offers a deceptively straightforward path to robotic manipulation: collect expert demonstrations, train a policy to m">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer">
+<meta property="og:url" content="https://kevin589981.github.io/2026/01/10/imitation-learning-robotic-manipulation-generalization/index.html">
+<meta property="og:site_name" content="Kevin&#39;s Tech Blog">
+<meta property="og:description" content="Code of this article:https:&#x2F;&#x2F;github.com&#x2F;Kevin589981&#x2F;PRML-ROBOT  Imitation learning offers a deceptively straightforward path to robotic manipulation: collect expert demonstrations, train a policy to m">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/environment-setting.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/isaac-setting.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/teleop.jpg">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/teleop-pipeline.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/generalization-basic.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/generalization-extra.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/vision-generalization.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/distribution-study.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/mimic.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/cosmos-transfer.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/rgb.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/depth.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/seg.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/output.png">
+<meta property="article:published_time" content="2026-01-09T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-02T15:21:06.113Z">
+<meta property="article:author" content="Kevin">
+<meta property="article:tag" content="MimicGen">
+<meta property="article:tag" content="Spatial-Softmax">
+<meta property="article:tag" content="sim-to-real">
+<meta property="article:tag" content="数据增强">
+<meta property="article:tag" content="机器人操控">
+<meta property="article:tag" content="模仿学习">
+<meta property="article:tag" content="深度学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/environment-setting.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Kevin's Tech Blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Kevin&#39;s Tech Blog</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">Systems | AI | Research</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/">主页</a>
+        
+          <a class="main-nav-link" href="/about/">关于我</a>
+        
+          <a class="main-nav-link" href="/archives/">归档</a>
+        
+          <a class="main-nav-link" href="/categories/">分类</a>
+        
+          <a class="main-nav-link" href="/tags/">标签</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS 订阅"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="搜索"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="搜索"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://kevin589981.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-imitation-learning-robotic-manipulation-generalization" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2026/01/10/imitation-learning-robotic-manipulation-generalization/" class="article-date">
+  <time class="dt-published" datetime="2026-01-09T16:00:00.000Z" itemprop="datePublished">2026-01-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/AI-Research/">AI-Research</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Code of this article:<br><a target="_blank" rel="noopener" href="https://github.com/Kevin589981/PRML-ROBOT">https://github.com/Kevin589981/PRML-ROBOT</a></p>
+<blockquote>
+<p>Imitation learning offers a deceptively straightforward path to robotic manipulation: collect expert demonstrations, train a policy to mimic them, and deploy. Yet the critical question — <em>how generalizable is the result?</em> — exposes a fundamental tension. This post systematically examines what it truly takes to train robust imitation policies, from architecture choices and data distribution design to scalable data augmentation and visual sim-to-real transfer using MimicGen and Cosmos-Transfer.</p>
+</blockquote>
+<h2 id="1-The-Core-Challenge-Generalization-in-Imitation-Learning"><a href="#1-The-Core-Challenge-Generalization-in-Imitation-Learning" class="headerlink" title="1. The Core Challenge: Generalization in Imitation Learning"></a>1. The Core Challenge: Generalization in Imitation Learning</h2><p>Imitation learning (IL), particularly Behavioral Cloning (BC), is a supervised regression framework: given expert state-action pairs $(s_t, a_t)$, train a policy $\pi_\theta$ to replicate them. Unlike reinforcement learning, there is no explicit reward signal to encode <em>why</em> certain behaviors are preferable — the policy purely mimics the demonstrations it has seen.</p>
+<p>This simplicity is a double-edged sword. In controlled simulation with perfectly aligned demonstrations, BC can achieve near-perfect performance with minimal engineering. But the moment the deployment distribution diverges from training — different lighting, object poses, friction coefficients, or camera viewpoints — performance degrades sharply. The underlying reason is structural: <strong>BC lacks any mechanism for recovery or exploration</strong>, so compounding errors snowball unchecked once the agent leaves the training support.</p>
+<p>Bridging this gap requires large-scale, diverse expert datasets. Yet data collection remains a major bottleneck, especially for complex systems involving multi-step manipulation, dual-arm coordination, or multi-fingered hands. Automated data generation in simulation thus provides a scalable alternative — provided we can also close the visual sim-to-real gap.</p>
+<hr>
+<h2 id="2-Environment-and-Task-Design"><a href="#2-Environment-and-Task-Design" class="headerlink" title="2. Environment and Task Design"></a>2. Environment and Task Design</h2><h3 id="2-1-PyBullet-Pick-and-Place"><a href="#2-1-PyBullet-Pick-and-Place" class="headerlink" title="2.1 PyBullet: Pick-and-Place"></a>2.1 PyBullet: Pick-and-Place</h3><p>A 7-DoF Franka Emika Panda robotic arm is tasked with a single pick-and-place operation: grasp a cube at a <strong>randomized initial position</strong> and place it into a <strong>basket at a randomized target position</strong>. This deceptively simple task serves as the primary testbed for studying generalization factors — because precise spatial reasoning and robust visual localization are both required.</p>
+<h3 id="2-2-Isaac-Sim-Multi-Step-Cube-Stacking"><a href="#2-2-Isaac-Sim-Multi-Step-Cube-Stacking" class="headerlink" title="2.2 Isaac Sim: Multi-Step Cube Stacking"></a>2.2 Isaac Sim: Multi-Step Cube Stacking</h3><p>To evaluate more complex, long-horizon behavior, a harder <strong>three-cube stacking task</strong> was designed in Isaac Sim. The arm must pick and stack three cubes in a vertical sequence, requiring:</p>
+<ul>
+<li>Precise alignment and stable grasping at each step</li>
+<li>Sequential placement without disturbing previously placed cubes</li>
+<li>Multi-phase planning over a longer action horizon</li>
+</ul>
+<p>Scripted expert generation is impractical here; <strong>human teleoperation via Apple Vision Pro</strong> was used instead.</p>
+<p><img src="/images/imitation-learning-robotic-manipulation-generalization/environment-setting.png" alt="PyBullet and Isaac Sim environments"><br><em>Left: PyBullet pick-and-place environment. Right: Isaac Sim three-cube stacking environment.</em></p>
+<p><img src="/images/imitation-learning-robotic-manipulation-generalization/isaac-setting.png" alt="Isaac Sim stacking task"></p>
+<hr>
+<h2 id="3-Data-Collection-Strategy"><a href="#3-Data-Collection-Strategy" class="headerlink" title="3. Data Collection Strategy"></a>3. Data Collection Strategy</h2><h3 id="3-1-Scripted-Expert-with-Anthropomorphic-Noise"><a href="#3-1-Scripted-Expert-with-Anthropomorphic-Noise" class="headerlink" title="3.1 Scripted Expert with Anthropomorphic Noise"></a>3.1 Scripted Expert with Anthropomorphic Noise</h3><p>For the PyBullet task, a 7-phase scripted expert policy was implemented:<br><code>(1) approach → (2) slow descent → (3) grasp → (4) lift → (5) transport → (6) slow descent to basket → (7) release</code></p>
+<p>Crucially, <strong>perfect noise-free trajectories were deliberately avoided</strong>. To encourage the policy to learn robust closed-loop behavior rather than memorize open-loop movements, two noise sources were injected at every timestep:</p>
+<ul>
+<li><strong>Gaussian noise</strong>: std &#x3D; 0.002, applied with probability 0.3</li>
+<li><strong>Ornstein–Uhlenbeck (OU) noise</strong>: regression coefficient $\alpha &#x3D; 0.15$, diffusion $\sigma &#x3D; 0.003$</li>
+</ul>
+<p>Additionally, extensive initial-condition randomization was applied:</p>
+<ul>
+<li>Cube position range: $x \in [0.25, 0.65]$ m</li>
+<li>Basket position noise: $\pm 8$ cm in the x-axis (<code>basket_pos_x_noise = 0.08</code>)</li>
+</ul>
+<p>This forces the policy to rely on <strong>visual localization of the basket</strong> rather than hardcoded displacement vectors, substantially enhancing spatial generalization.</p>
+<h3 id="3-2-Apple-Vision-Pro-Teleoperation"><a href="#3-2-Apple-Vision-Pro-Teleoperation" class="headerlink" title="3.2 Apple Vision Pro Teleoperation"></a>3.2 Apple Vision Pro Teleoperation</h3><p>For the stacking task in Isaac Sim, hand pose data (26-DoF per hand) was captured via OpenXR tracking, then retargeted to the robot’s 7-DoF joint space via inverse kinematics (IK). The three cubes’ initial positions were randomized within a $0.2 \times 0.2$ m area to introduce meaningful variability in relative placements and grasp sequences.</p>
+<p>The picture shows my collaborator<br><a target="_blank" rel="noopener" href="https://github.com/MarshCurrant">Qiu Qiming</a></p>
+<p><img src="/images/imitation-learning-robotic-manipulation-generalization/teleop.jpg" alt="Apple Vision Pro teleoperation data collection"><br><em>Data collection via Apple Vision Pro teleoperation.</em></p>
+<p><img src="/images/imitation-learning-robotic-manipulation-generalization/teleop-pipeline.png" alt="Teleoperation pipeline"><br><em>Complete pipeline: Vision Pro hand tracking → OpenXR → coordinate transformation &amp; kinematic retargeting → smooth joint commands for Franka Panda arm.</em></p>
+<hr>
+<h2 id="4-Policy-Architecture"><a href="#4-Policy-Architecture" class="headerlink" title="4. Policy Architecture"></a>4. Policy Architecture</h2><h3 id="4-1-Observation-Spaces"><a href="#4-1-Observation-Spaces" class="headerlink" title="4.1 Observation Spaces"></a>4.1 Observation Spaces</h3><p>Two distinct input modalities are compared:</p>
+<p><strong>Privileged State Space</strong> $\mathcal{O}<em>{priv}$:<br>$$\mathbf{s}</em>{priv} &#x3D; [\mathbf{q}, \dot{\mathbf{q}}, \mathbf{x}<em>{ee}, \mathbf{x}</em>{obj}^{ee}, \mathbf{x}<em>{target}^{ee}] \in \mathbb{R}^{d</em>{priv}}$$</p>
+<p>Ground-truth joint positions&#x2F;velocities plus relative object and target positions with respect to the end-effector. Fully observable and Markovian.</p>
+<p><strong>Visual Observation Space</strong> $\mathcal{O}<em>{vis}$:<br>$$\mathbf{o}</em>{vis} &#x3D; [\mathbf{I}<em>{front}, \mathbf{I}</em>{wrist}, \mathbf{p}_{proprio}]$$</p>
+<p>Stacked RGB-D images $\mathbf{I} \in \mathbb{R}^{4 \times 112 \times 112}$ from two camera views plus proprioceptive data. Critically, <strong>no ground-truth object coordinates</strong> are provided — the policy must localize objects purely from pixels.</p>
+<h3 id="4-2-MLP-Base-Privileged-Agent"><a href="#4-2-MLP-Base-Privileged-Agent" class="headerlink" title="4.2 MLP-Base (Privileged Agent)"></a>4.2 MLP-Base (Privileged Agent)</h3><p>Since $\mathcal{O}_{priv}$ is Markovian, a <strong>deep Residual MLP</strong> without temporal memory suffices. Architecture: input projection → 6 Residual Blocks, each following:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Linear → LayerNorm → Mish → Dropout(0.1) → Linear → LayerNorm</span><br></pre></td></tr></table></figure>
+
+<p>The relative position vector $(p_{obj} - p_{ee})$ at each timestep uniquely determines the next optimal action, rendering LSTM-style memory unnecessary.</p>
+<h3 id="4-3-Vision-Final-Visuomotor-Agent"><a href="#4-3-Vision-Final-Visuomotor-Agent" class="headerlink" title="4.3 Vision-Final (Visuomotor Agent)"></a>4.3 Vision-Final (Visuomotor Agent)</h3><p>To handle high-dimensional RGB-D inputs and partial observability, a <strong>Recurrent Convolutional Network</strong> with three components is designed:</p>
+<p><strong>1. Visual Encoder (ResNet-18 + Spatial Softmax)</strong></p>
+<p>A modified ResNet-18 backbone accepts 4-channel RGB-D input (depth channel initialized via mean-averaging of RGB weights). The final <code>Layer4</code> is removed to preserve spatial resolution; a projection layer reduces channels from 256 to $K&#x3D;64$.</p>
+<p>A <strong>Spatial Softmax</strong> layer then computes expected 2D keypoint coordinates for each feature map $k$:<br>$$(\mu_{x_k}, \mu_{y_k}) &#x3D; \sum_{i,j} (i, j) \cdot \text{Softmax}(\mathbf{F}<em>k)</em>{ij}$$</p>
+<p>This compresses the visual representation into $\mathbf{z}_{vis} \in \mathbb{R}^{2 \times K \times 2}$ (2 cameras × 64 keypoints × 2D coordinates), encoding <em>where</em> objects are geometrically rather than what pixels look like — a key enabler of implicit visual servoing.</p>
+<p><strong>2. Temporal Aggregation (LSTM)</strong></p>
+<p>Visual features $\mathbf{z}_{vis}$ are concatenated with proprioception $\mathbf{p}_t$ and fed into a 2-layer LSTM with hidden size 512. Without the Markov property, the LSTM serves as a <strong>state estimator</strong>: it integrates history to denoise perception, smooth execution, and implicitly model phase transitions.</p>
+<p><strong>3. Multitask Heads</strong></p>
+<p>Two parallel output heads:</p>
+<ul>
+<li><strong>Action Head</strong>: Predicts end-effector delta $\Delta \mathbf{x} \in \mathbb{R}^3$ and gripper action $a_{grip} \in [0,1]$</li>
+<li><strong>Phase Head (Auxiliary)</strong>: Predicts current sub-task phase $p_{phase} \in {1…7}$</li>
+</ul>
+<p>The composite loss:<br>$$\mathcal{L}<em>{total} &#x3D; \lambda</em>{pos} \mathcal{L}<em>{Huber}(\Delta \mathbf{x}, \Delta \hat{\mathbf{x}}) + \lambda</em>{grip} \mathcal{L}<em>{BCE}(a, \hat{a}) + \lambda</em>{phase} \mathcal{L}_{CE}(p, \hat{p})$$</p>
+<p>with $\lambda_{pos}&#x3D;1.0$, $\lambda_{grip}&#x3D;0.5$, $\lambda_{phase}&#x3D;0.2$. Dense phase supervision forces the LSTM to explicitly model the logical structure of the task, preventing oscillation at critical boundaries (e.g., “almost grasped” vs. “grasped”).</p>
+<hr>
+<h2 id="5-Experimental-Results"><a href="#5-Experimental-Results" class="headerlink" title="5. Experimental Results"></a>5. Experimental Results</h2><h3 id="5-1-Architecture-Comparison"><a href="#5-1-Architecture-Comparison" class="headerlink" title="5.1 Architecture Comparison"></a>5.1 Architecture Comparison</h3><table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Architecture</th>
+<th>Resolution</th>
+<th>Input Space</th>
+<th>Aux. Task</th>
+<th>Success Rate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MLP-Base</td>
+<td>Residual MLP</td>
+<td>N&#x2F;A</td>
+<td>$\mathcal{O}_{priv}$</td>
+<td>—</td>
+<td><strong>98.6%</strong> (500 runs)</td>
+</tr>
+<tr>
+<td>Vision-A</td>
+<td>CNN-LSTM</td>
+<td>64×64</td>
+<td>$\mathcal{O}<em>{vis} + \mathbf{x}</em>{obj}^{ee}$</td>
+<td>—</td>
+<td>100.0%</td>
+</tr>
+<tr>
+<td>Vision-B</td>
+<td>CNN-LSTM</td>
+<td>64×64</td>
+<td>$\mathcal{O}_{vis}$</td>
+<td>—</td>
+<td>47.4%</td>
+</tr>
+<tr>
+<td><strong>Vision-Final</strong></td>
+<td><strong>CNN-LSTM</strong></td>
+<td><strong>112×112</strong></td>
+<td>$\mathcal{O}_{vis}$</td>
+<td><strong>Phase Pred.</strong></td>
+<td><strong>84.8%</strong> (500 runs)</td>
+</tr>
+</tbody></table>
+<p>Key insight: Vision-A achieves 100% by cheating — it injects ground-truth object coordinates into the visual policy. Removing this privileged leakage drops performance to 47.4%. The combination of <strong>higher resolution</strong> (112×112 vs 64×64) and <strong>dense phase supervision</strong> recovers to 84.8%.</p>
+<h3 id="5-2-Privileged-MLP-Strengths-and-Brittleness"><a href="#5-2-Privileged-MLP-Strengths-and-Brittleness" class="headerlink" title="5.2 Privileged MLP: Strengths and Brittleness"></a>5.2 Privileged MLP: Strengths and Brittleness</h3><p>The MLP-Base establishes a near-perfect upper bound of 98.6% under ideal conditions, with:</p>
+<ul>
+<li><strong>Perfect geometric invariance</strong>: 100% success across cube shapes (<code>box_cube</code>, <code>cylinder</code>, <code>triangular_prism</code>), since privileged observation abstracts objects to centroid coordinates</li>
+<li><strong>Physical robustness</strong>: No degradation across friction $\in [0.5, 5.0]$, mass scaling $\pm 50%$, or external pushes up to 5 N</li>
+</ul>
+<p>However, it exhibits catastrophic stateless brittleness:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Condition</th>
+<th>Success Rate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sim Timestep</td>
+<td>240 Hz (training)</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Sim Timestep</td>
+<td>480 Hz (OOD)</td>
+<td><strong>0%</strong></td>
+</tr>
+<tr>
+<td>Action Noise</td>
+<td>$\sigma&#x3D;0.000$</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Action Noise</td>
+<td>$\sigma&#x3D;0.010$</td>
+<td><strong>0%</strong></td>
+</tr>
+<tr>
+<td>Height Offset</td>
+<td>+5 cm</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Height Offset</td>
+<td>+10 cm</td>
+<td><strong>0%</strong></td>
+</tr>
+</tbody></table>
+<p>The learned action $\Delta pos$ is <strong>time-dependent rather than velocity-based</strong>: halving $\Delta t$ halves effective velocity, causing timeouts. The stateless MLP cannot low-pass filter execution jitter. These failure modes underscore the necessity of temporal memory for real-world deployment.</p>
+<p><img src="/images/imitation-learning-robotic-manipulation-generalization/generalization-basic.png" alt="MLP-Base basic generalization evaluation"><br><em>Basic generalization evaluation of MLP-Base across spatial variations. The policy shows strong geometric invariance but fails at hard spatial boundaries (e.g., height +10 cm).</em></p>
+<p><img src="/images/imitation-learning-robotic-manipulation-generalization/generalization-extra.png" alt="MLP-Base advanced robustness sweep"><br><em>Full sweep of 12 robustness dimensions. Note the sharp drop-off in timestep and action_noise subplots — characteristic of stateless reactive control.</em></p>
+<h3 id="5-3-Vision-Final-Perceptual-Resilience-and-Fragility"><a href="#5-3-Vision-Final-Perceptual-Resilience-and-Fragility" class="headerlink" title="5.3 Vision-Final: Perceptual Resilience and Fragility"></a>5.3 Vision-Final: Perceptual Resilience and Fragility</h3><p>The vision policy achieves 84.8% success in fully randomized environments, showing impressive perceptual resilience:</p>
+<ul>
+<li><strong>Camera pose noise</strong> (up to 5 cm): graceful degradation from ~86% to ~65% — Spatial Softmax enables implicit visual servoing rather than pixel memorization</li>
+<li><strong>Basket position noise</strong> (±16 cm): &gt;80% success, directly attributable to training-time basket randomization</li>
+<li><strong>Friction</strong> (coefficient &gt; 1.0): stable ~88% performance</li>
+</ul>
+<p>Yet it exhibits sharp vulnerability in two regimes:</p>
+<ul>
+<li><strong>Spatial OOD extrapolation</strong>: success drops linearly to ~50% when initial cube area doubles beyond training range — perspective distortion degrades ResNet spatial features at distribution edges</li>
+<li><strong>Action execution noise</strong>: catastrophic failure at very low noise levels ($\sigma&#x3D;0.002 \rightarrow 30%$; $\sigma&#x3D;0.005 \rightarrow \sim10%$), far more sensitive than the privileged baseline. High-frequency jitter causes motion blur, feature jumps, and <strong>LSTM hidden-state divergence</strong>, trapping the arm in oscillatory behaviors</li>
+</ul>
+<p>This highlights the fundamental challenge of end-to-end visual control: achieving temporal stability under inherently noisy and ambiguous perception.</p>
+<p><img src="/images/imitation-learning-robotic-manipulation-generalization/vision-generalization.png" alt="Vision-Final policy generalization evaluation"><br><em>Success rates under varying degrees of perturbation across six dimensions. Strong robustness to visual noise and friction, but near-linear degradation with spatial OOD shift and extreme sensitivity to action execution noise.</em></p>
+<h3 id="5-4-Training-Distribution-vs-Generalization-Capability"><a href="#5-4-Training-Distribution-vs-Generalization-Capability" class="headerlink" title="5.4 Training Distribution vs. Generalization Capability"></a>5.4 Training Distribution vs. Generalization Capability</h3><p>A controlled study with 100 demonstrations per condition reveals three distinct behaviors:</p>
+<p><strong>Coverage-Dependent Generalization (Cube Range):</strong><br>Positive correlation between training distribution width and performance. Training on 25% of the full cube range → near-zero success (4.0%) on the hard evaluation set. The model <strong>cannot extrapolate</strong> to OOD spatial positions; coverage must encompass the test domain.</p>
+<p><strong>Stability-Inducing Generalization (Basket X Noise):</strong><br>Counter-intuitively, <em>less</em> randomization improves test performance under data scarcity. Training with full noise → 33.0% success; training at 25% noise level → 58.0%. Under extreme data constraints, high variance prevents convergence on stable visual representations.</p>
+<p><strong>The “Sweet Spot” for Closed-Loop Correction (Reset EE Init Noise):</strong><br>Performance peaks at 20mm noise (71.0%). Too little noise (10mm) → open-loop overfitting, failing to correct large deviations. Too much (30mm) → data too sparse to converge. The 20mm setting is an optimal balance: enough perturbation to induce <strong>closed-loop visual servoing</strong> without overwhelming model capacity.</p>
+<blockquote>
+<p><strong>Takeaway</strong>: Maximizing training randomization is not always optimal. Effective generalization requires balancing domain coverage with signal learnability, especially under data scarcity.</p>
+</blockquote>
+<p><img src="/images/imitation-learning-robotic-manipulation-generalization/distribution-study.png" alt="Distribution study: training distribution vs. model generalization"><br><em>Success rates on the fixed “Hard” baseline when trained on datasets with varying randomization scales (100 demos each). Top left: inverse scaling in basket noise. Top right: direct scaling in spatial range. Bottom: the 20mm sweet spot for initial condition noise.</em></p>
+<hr>
+<h2 id="6-Scalable-Data-Augmentation-Pipeline"><a href="#6-Scalable-Data-Augmentation-Pipeline" class="headerlink" title="6. Scalable Data Augmentation Pipeline"></a>6. Scalable Data Augmentation Pipeline</h2><h3 id="6-1-MimicGen-Geometric-Trajectory-Augmentation"><a href="#6-1-MimicGen-Geometric-Trajectory-Augmentation" class="headerlink" title="6.1 MimicGen: Geometric Trajectory Augmentation"></a>6.1 MimicGen: Geometric Trajectory Augmentation</h3><p>Starting from only <strong>10 human teleoperated demonstrations</strong> for the stacking task, a MimicGen-inspired augmentation pipeline expands them to thousands:</p>
+<ol>
+<li><strong>Key-Frame Extraction</strong>: Segment each demonstration into semantically meaningful subtasks; randomly sample anchor key frames per subtask</li>
+<li><strong>Interpolated Trajectory Construction</strong>: Cubic spline interpolation between key frames with segment-wise Gaussian perturbation</li>
+<li><strong>IK Re-solving</strong>: Re-solve end-effector trajectories via IK to guarantee kinematic validity; discard infeasible sequences</li>
+<li><strong>Hand Action Replay</strong>: Replay gripper commands exactly at corresponding key frames to avoid grasp distortions</li>
+</ol>
+<p>On an NVIDIA RTX 4090, 1000 augmented trajectories were generated from 10 source demonstrations in ~1 hour. Generation success rate (kinematically valid): <strong>72.3%</strong>.</p>
+<p><strong>Scaling results</strong> on the stacking task:</p>
+<table>
+<thead>
+<tr>
+<th>Training Dataset</th>
+<th>Trajectories</th>
+<th>Success Rate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MimicGen 1k</td>
+<td>1,000</td>
+<td>60.0%</td>
+</tr>
+<tr>
+<td><strong>MimicGen 2k</strong></td>
+<td><strong>2,000</strong></td>
+<td><strong>97.0%</strong></td>
+</tr>
+</tbody></table>
+<p>Doubling augmented data from 1k to 2k raises success from 60% to <strong>97%</strong> — a striking demonstration of data volume’s role in imitation learning for contact-rich, multi-step tasks. Even synthetically interpolated trajectories provide meaningful distributional coverage.</p>
+<p><img src="/images/imitation-learning-robotic-manipulation-generalization/mimic.png" alt="MimicGen augmentation pipeline"><br><em>MimicGen trajectory augmentation: key-frame extraction, cubic spline interpolation, IK re-solving, and gripper action replay.</em></p>
+<h3 id="6-2-Cosmos-Transfer-Visual-Domain-Randomization"><a href="#6-2-Cosmos-Transfer-Visual-Domain-Randomization" class="headerlink" title="6.2 Cosmos-Transfer: Visual Domain Randomization"></a>6.2 Cosmos-Transfer: Visual Domain Randomization</h3><p>To close the <em>perceptual</em> sim-to-real gap, <strong>Cosmos-Transfer 1.0</strong> (NVIDIA, 7B parameters) was applied. It is a diffusion-based multimodal controllable world generator that takes multiple conditional inputs — RGB video, semantic segmentation masks, and depth maps — and generates photorealistic video sequences conditioned on these modalities.</p>
+<p>For each control branch $i$ and diffusion block $l$, intermediate activations $h_l^i$ are modulated by the corresponding adaptive spatiotemporal control map $w_l^i \in \mathbb{R}^{H \times W \times T \times N}$. The contribution to the main branch is:<br>$$\text{output}_l &#x3D; w_l^i \cdot h_l^i$$</p>
+<p>This adaptive fusion allows the model to dynamically emphasize the most informative modality in different spatial regions and timesteps, enabling fine-grained appearance stylization while preserving the underlying robot motion and scene geometry.</p>
+<p><img src="/images/imitation-learning-robotic-manipulation-generalization/cosmos-transfer.png" alt="Cosmos-Transfer architecture"><br><em>Cosmos-Transfer1 contains multiple ControlNet branches to extract control information from different modality inputs (segmentation, depth, edge), enabling adaptive multimodal world generation.</em></p>
+<p><strong>Qualitative results</strong> demonstrate successful transfer of: indoor&#x2F;outdoor lighting, surface textures (wood, metal, plastic), background scenes, and rendering artifacts — all while keeping cube positions and robot trajectories intact.</p>
+<table>
+<thead>
+<tr>
+<th align="center">RGB Input</th>
+<th align="center">Depth</th>
+<th align="center">Segmentation</th>
+<th align="center">Stylized Output</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"><img src="/images/imitation-learning-robotic-manipulation-generalization/rgb.png" alt="rgb"></td>
+<td align="center"><img src="/images/imitation-learning-robotic-manipulation-generalization/depth.png" alt="depth"></td>
+<td align="center"><img src="/images/imitation-learning-robotic-manipulation-generalization/seg.png" alt="seg"></td>
+<td align="center"><img src="/images/imitation-learning-robotic-manipulation-generalization/output.png" alt="output"></td>
+</tr>
+</tbody></table>
+<p><em>Multimodal conditioning inputs (RGB, Depth, Segmentation) from one Isaac Sim frame, and the corresponding Cosmos-Transfer stylized output preserving robot motion while transferring photorealistic appearance.</em></p>
+<p><strong>Limitation</strong>: At 7B parameters, generating a single 10–20 second trajectory clip requires <strong>~20 minutes on an RTX 4090</strong>. Full quantitative evaluation was beyond project scope. This remains a key bottleneck for large-scale sim-to-real pipelines.</p>
+<hr>
+<h2 id="7-Discussion-What-Imitation-Learning-Reveals"><a href="#7-Discussion-What-Imitation-Learning-Reveals" class="headerlink" title="7. Discussion: What Imitation Learning Reveals"></a>7. Discussion: What Imitation Learning Reveals</h2><p>The privileged $\to$ visual performance gap (98.6% vs 84.8%) is not a model capacity problem — it reflects a fundamental information asymmetry. Privileged observation is Markovian: the current state uniquely determines the optimal action, and memory-free reactive control suffices. Visual observation lacks the Markov property: occlusion, lighting variation, and perceptual ambiguity require history integration, model-based filtering, and higher execution precision.</p>
+<p>The techniques that produced real gains:</p>
+<ul>
+<li><strong>High-resolution inputs</strong> (112×112 vs 64×64): more spatial information for Spatial Softmax keypoint extraction</li>
+<li><strong>Spatial Softmax</strong>: geometric feature extraction invariant to appearance, not memorizing pixel values</li>
+<li><strong>Dense phase supervision</strong>: LSTM learns the task’s logical structure, not just reactive mapping</li>
+<li><strong>Training-time randomization</strong>: prevents memorization of fixed configurations</li>
+<li><strong>Geometric data augmentation (MimicGen)</strong>: scalable path to diverse demonstration coverage</li>
+</ul>
+<p>Persistent challenges that remain open:</p>
+<ul>
+<li><strong>Spatial OOD extrapolation</strong>: IL cannot generalize beyond demonstration coverage — no reward signal guides recovery</li>
+<li><strong>Action execution noise sensitivity</strong>: visual feedback latency amplifies high-frequency jitter into irreversible state divergence</li>
+<li><strong>Compute cost of visual sim-to-real</strong>: world-model-based stylization is qualitatively promising but inference-limited at current scale</li>
+</ul>
+<hr>
+<h2 id="8-Conclusion"><a href="#8-Conclusion" class="headerlink" title="8. Conclusion"></a>8. Conclusion</h2><p>This work answers the deceptively simple question — <em>“How difficult is it to train a robotic arm to do imitation learning in simulation?”</em> — with a precise empirical answer: <strong>it may seem easy to train, but improving generalization remains a fundamental challenge</strong>.</p>
+<p>Even on a simple pick-and-place task, modest distribution shifts cause sharp degradation in vision-based policies. The pipeline from 10 human demonstrations to a 97% success rate on a complex stacking task — via MimicGen augmentation — demonstrates that the data bottleneck can be partially overcome through geometric interpolation. World-model-based visual stylization (Cosmos-Transfer) holds great promise for closing the perceptual gap, pending inference efficiency improvements.</p>
+<p>Future directions likely lie in:</p>
+<ul>
+<li><strong>Diffusion Transformers (DiT)</strong>: better out-of-distribution generalization over CNN-LSTM pipelines for complex demonstrations</li>
+<li><strong>Hybrid IL + RL fine-tuning</strong>: imitation pre-training provides a good initialization; limited online RL provides recovery mechanisms</li>
+<li><strong>Scaling world-model generation</strong>: orders-of-magnitude more diverse visual environments at lower inference cost</li>
+</ul>
+<p>These small-scale experiments on seemingly simple tasks serve as a microcosm of embodied intelligence: achieving reliable, adaptive behavior in the physical world remains one of the most profound open problems in robotics.</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><strong>[DexMimicGen]</strong>: Extends MimicGen to dexterous manipulation with multi-fingered hands via online simulation-based verification of generated trajectories</li>
+<li><strong>[Diffusion Policy]</strong>: Replaces BC’s MSE regression with a diffusion process over actions, substantially improving multi-modal behavior and OOD generalization</li>
+<li><strong>[MimicGen原论文]</strong>: Deep dive into the subtask decomposition and interpolation mechanics behind geometric trajectory augmentation</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://kevin589981.github.io/2026/01/10/imitation-learning-robotic-manipulation-generalization/" data-id="cuidLYWTgZKoX6k-lr1SIwIwp" data-title="Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MimicGen/" rel="tag">MimicGen</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spatial-Softmax/" rel="tag">Spatial-Softmax</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/sim-to-real/" rel="tag">sim-to-real</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA/" rel="tag">数据增强</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%93%8D%E6%8E%A7/" rel="tag">机器人操控</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%A8%A1%E4%BB%BF%E5%AD%A6%E4%B9%A0/" rel="tag">模仿学习</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">深度学习</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2026/01/26/rust-shyper-embedded-hypervisor-analysis/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">前一篇</strong>
+      <div class="article-nav-title">
+        
+          Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2026/01/02/cs-theory-automata-complexity-notes/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">后一篇</strong>
+      <div class="article-nav-title">计算理论全景：从渐近记号到 NP 完全性</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/AI-Research/">AI-Research</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/CS-Fundamentals/">CS-Fundamentals</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Projects/">Projects</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Systems-HPC/">Systems-HPC</a><span class="category-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ARM/" rel="tag">ARM</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/C/" rel="tag">C++</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Git/" rel="tag">Git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Go-Back-N/" rel="tag">Go-Back-N</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LFS/" rel="tag">LFS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LLM%E8%AE%B0%E5%BF%86/" rel="tag">LLM记忆</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/LoCoMo/" rel="tag">LoCoMo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MemOS/" rel="tag">MemOS</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MimicGen/" rel="tag">MimicGen</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NLP/" rel="tag">NLP</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NP%E5%AE%8C%E5%85%A8%E6%80%A7/" rel="tag">NP完全性</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Prompt%E5%B7%A5%E7%A8%8B/" rel="tag">Prompt工程</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Python/" rel="tag">Python</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RAG/" rel="tag">RAG</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rust/" rel="tag">Rust</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SACK/" rel="tag">SACK</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spatial-Softmax/" rel="tag">Spatial-Softmax</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Transformer/" rel="tag">Transformer</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/UDP/" rel="tag">UDP</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sim-to-real/" rel="tag">sim-to-real</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/x86/" rel="tag">x86</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8/" rel="tag">事件驱动</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E8%AE%A1%E7%AE%97/" rel="tag">云计算</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" rel="tag">内存模型</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8F%AF%E9%9D%A0%E4%BC%A0%E8%BE%93/" rel="tag">可靠传输</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9B%BE%E7%81%B5%E6%9C%BA/" rel="tag">图灵机</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%8D%E6%9D%82%E5%BA%A6%E7%90%86%E8%AE%BA/" rel="tag">复杂度理论</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%98%E5%82%A8%E7%B3%BB%E7%BB%9F/" rel="tag">存储系统</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B1%80%E9%83%A8%E6%80%A7%E5%8E%9F%E7%90%86/" rel="tag">局部性原理</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E4%BD%9C%E9%9B%86%E6%A8%A1%E5%9E%8B/" rel="tag">工作集模型</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7%E6%B5%81/" rel="tag">工具流</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B9%B6%E5%8F%91/" rel="tag">并发</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" rel="tag">并发编程</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%BC%80%E5%8F%91%E6%95%88%E7%8E%87/" rel="tag">开发效率</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%BC%82%E6%9E%84%E8%AE%A1%E7%AE%97/" rel="tag">异构计算</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%BE%AE%E5%86%85%E6%A0%B8/" rel="tag">微内核</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag">性能优化</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" rel="tag">操作系统</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA/" rel="tag">数据增强</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">文件系统</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%97%A0%E9%94%81%E7%BC%96%E7%A8%8B/" rel="tag">无锁编程</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%9E%B6%E6%9E%84/" rel="tag">服务器架构</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%93%8D%E6%8E%A7/" rel="tag">机器人操控</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%A8%A1%E4%BB%BF%E5%AD%A6%E4%B9%A0/" rel="tag">模仿学习</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B1%87%E7%BC%96/" rel="tag">汇编</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">深度学习</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%90%E8%BF%91%E8%AE%B0%E5%8F%B7/" rel="tag">渐近记号</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/" rel="tag">系统架构</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%93%E5%AD%98/" rel="tag">缓存</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag">缓存一致性</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" rel="tag">网络编程</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/" rel="tag">自动机</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98/" rel="tag">虚拟内存</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%8C%96/" rel="tag">虚拟化</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%A1%E7%AE%97%E7%90%86%E8%AE%BA/" rel="tag">计算理论</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%BA%E6%96%87%E7%A0%94%E8%AF%BB/" rel="tag">论文研读</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%B4%9F%E8%BD%BD%E6%8E%A7%E5%88%B6/" rel="tag">负载控制</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9A%8F%E7%AC%94/" rel="tag">随笔</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/" rel="tag">项目实战</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/ARM/" style="font-size: 13.33px;">ARM</a> <a href="/tags/C/" style="font-size: 13.33px;">C++</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Go-Back-N/" style="font-size: 10px;">Go-Back-N</a> <a href="/tags/LFS/" style="font-size: 10px;">LFS</a> <a href="/tags/LLM%E8%AE%B0%E5%BF%86/" style="font-size: 10px;">LLM记忆</a> <a href="/tags/LoCoMo/" style="font-size: 10px;">LoCoMo</a> <a href="/tags/MemOS/" style="font-size: 10px;">MemOS</a> <a href="/tags/MimicGen/" style="font-size: 10px;">MimicGen</a> <a href="/tags/NLP/" style="font-size: 13.33px;">NLP</a> <a href="/tags/NP%E5%AE%8C%E5%85%A8%E6%80%A7/" style="font-size: 10px;">NP完全性</a> <a href="/tags/Prompt%E5%B7%A5%E7%A8%8B/" style="font-size: 10px;">Prompt工程</a> <a href="/tags/Python/" style="font-size: 10px;">Python</a> <a href="/tags/RAG/" style="font-size: 10px;">RAG</a> <a href="/tags/Rust/" style="font-size: 10px;">Rust</a> <a href="/tags/SACK/" style="font-size: 10px;">SACK</a> <a href="/tags/Spatial-Softmax/" style="font-size: 10px;">Spatial-Softmax</a> <a href="/tags/Transformer/" style="font-size: 10px;">Transformer</a> <a href="/tags/UDP/" style="font-size: 10px;">UDP</a> <a href="/tags/sim-to-real/" style="font-size: 10px;">sim-to-real</a> <a href="/tags/x86/" style="font-size: 10px;">x86</a> <a href="/tags/%E4%BA%8B%E4%BB%B6%E9%A9%B1%E5%8A%A8/" style="font-size: 10px;">事件驱动</a> <a href="/tags/%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 10px;">云计算</a> <a href="/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" style="font-size: 13.33px;">内存模型</a> <a href="/tags/%E5%8F%AF%E9%9D%A0%E4%BC%A0%E8%BE%93/" style="font-size: 10px;">可靠传输</a> <a href="/tags/%E5%9B%BE%E7%81%B5%E6%9C%BA/" style="font-size: 10px;">图灵机</a> <a href="/tags/%E5%A4%8D%E6%9D%82%E5%BA%A6%E7%90%86%E8%AE%BA/" style="font-size: 10px;">复杂度理论</a> <a href="/tags/%E5%AD%98%E5%82%A8%E7%B3%BB%E7%BB%9F/" style="font-size: 10px;">存储系统</a> <a href="/tags/%E5%B1%80%E9%83%A8%E6%80%A7%E5%8E%9F%E7%90%86/" style="font-size: 10px;">局部性原理</a> <a href="/tags/%E5%B7%A5%E4%BD%9C%E9%9B%86%E6%A8%A1%E5%9E%8B/" style="font-size: 10px;">工作集模型</a> <a href="/tags/%E5%B7%A5%E5%85%B7%E6%B5%81/" style="font-size: 10px;">工具流</a> <a href="/tags/%E5%B9%B6%E5%8F%91/" style="font-size: 10px;">并发</a> <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" style="font-size: 13.33px;">并发编程</a> <a href="/tags/%E5%BC%80%E5%8F%91%E6%95%88%E7%8E%87/" style="font-size: 10px;">开发效率</a> <a href="/tags/%E5%BC%82%E6%9E%84%E8%AE%A1%E7%AE%97/" style="font-size: 10px;">异构计算</a> <a href="/tags/%E5%BE%AE%E5%86%85%E6%A0%B8/" style="font-size: 13.33px;">微内核</a> <a href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" style="font-size: 16.67px;">性能优化</a> <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" style="font-size: 20px;">操作系统</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%A2%9E%E5%BC%BA/" style="font-size: 10px;">数据增强</a> <a href="/tags/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 10px;">文件系统</a> <a href="/tags/%E6%97%A0%E9%94%81%E7%BC%96%E7%A8%8B/" style="font-size: 13.33px;">无锁编程</a> <a href="/tags/%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%9E%B6%E6%9E%84/" style="font-size: 10px;">服务器架构</a> <a href="/tags/%E6%9C%BA%E5%99%A8%E4%BA%BA%E6%93%8D%E6%8E%A7/" style="font-size: 10px;">机器人操控</a> <a href="/tags/%E6%A8%A1%E4%BB%BF%E5%AD%A6%E4%B9%A0/" style="font-size: 10px;">模仿学习</a> <a href="/tags/%E6%B1%87%E7%BC%96/" style="font-size: 10px;">汇编</a> <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" style="font-size: 13.33px;">深度学习</a> <a href="/tags/%E6%B8%90%E8%BF%91%E8%AE%B0%E5%8F%B7/" style="font-size: 10px;">渐近记号</a> <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/" style="font-size: 10px;">系统架构</a> <a href="/tags/%E7%BC%93%E5%AD%98/" style="font-size: 10px;">缓存</a> <a href="/tags/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/" style="font-size: 10px;">缓存一致性</a> <a href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" style="font-size: 10px;">网络编程</a> <a href="/tags/%E8%87%AA%E5%8A%A8%E6%9C%BA/" style="font-size: 10px;">自动机</a> <a href="/tags/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98/" style="font-size: 10px;">虚拟内存</a> <a href="/tags/%E8%99%9A%E6%8B%9F%E5%8C%96/" style="font-size: 10px;">虚拟化</a> <a href="/tags/%E8%AE%A1%E7%AE%97%E7%90%86%E8%AE%BA/" style="font-size: 10px;">计算理论</a> <a href="/tags/%E8%AE%BA%E6%96%87%E7%A0%94%E8%AF%BB/" style="font-size: 10px;">论文研读</a> <a href="/tags/%E8%B4%9F%E8%BD%BD%E6%8E%A7%E5%88%B6/" style="font-size: 10px;">负载控制</a> <a href="/tags/%E9%9A%8F%E7%AC%94/" style="font-size: 10px;">随笔</a> <a href="/tags/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/" style="font-size: 10px;">项目实战</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/11/">十一月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/09/">九月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/03/">三月 2026</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">一月 2026</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/12/">十二月 2025</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/11/">十一月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/10/">十月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/09/">九月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">十二月 2023</a><span class="archive-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2026/11/14/rudp-reliable-transport-over-udp/">基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践</a>
+          </li>
+        
+          <li>
+            <a href="/2026/09/02/os-evolution-and-future/">操作系统的演进：从批处理到万物互联的架构变革</a>
+          </li>
+        
+          <li>
+            <a href="/2026/03/02/build-os-kernel-01/">从零实现一个简易操作系统内核（一）：启动与保护模式</a>
+          </li>
+        
+          <li>
+            <a href="/2026/03/02/transformer-deep-dive/">Transformer 架构精读：从 Self-Attention 到 Multi-Head Attention</a>
+          </li>
+        
+          <li>
+            <a href="/2026/01/26/rust-shyper-embedded-hypervisor-analysis/">Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2026 Kevin<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+    <a href="/" class="mobile-nav-link">主页</a>
+  
+    <a href="/about/" class="mobile-nav-link">关于我</a>
+  
+    <a href="/archives/" class="mobile-nav-link">归档</a>
+  
+    <a href="/categories/" class="mobile-nav-link">分类</a>
+  
+    <a href="/tags/" class="mobile-nav-link">标签</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
