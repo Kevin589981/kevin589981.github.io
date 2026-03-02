@@ -1,6 +1,6 @@
 ---
 title: Transformer 架构精读：从 Self-Attention 到 Multi-Head Attention
-date: 2026-03-02
+date: 2025-03-02
 categories:
   - AI-Research
 tags:
