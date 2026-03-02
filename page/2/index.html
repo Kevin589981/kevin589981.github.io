@@ -88,132 +88,6 @@
       <div class="outer">
         <section id="main">
   
-    <article id="post-locality-principle-in-os-and-computer-systems" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2025/10/11/locality-principle-in-os-and-computer-systems/" class="article-date">
-  <time class="dt-published" datetime="2025-10-10T16:00:00.000Z" itemprop="datePublished">2025-10-11</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CS-Fundamentals/">CS-Fundamentals</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2025/10/11/locality-principle-in-os-and-computer-systems/">局部性原理：计算机系统资源管理的底层逻辑</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>局部性原理（Locality Principle）是计算机系统设计中最具普适性的基础理论之一。它揭示了计算过程中资源引用的聚集性规律，为虚拟内存、CPU 缓存、数据库索引乃至推荐系统提供了统一的理论基础。本文以 Denning（2008）的综述论文为线索，系统梳理局部性原理的数学建模、历史渊源与跨领域应用。</p>
-</blockquote>
-<h2 id="1-局部性的核心定义"><a href="#1-局部性的核心定义" class="headerlink" title="1. 局部性的核心定义"></a>1. 局部性的核心定义</h2><p>在几乎所有计算过程中，程序在<strong>长时间尺度内只会反复使用资源全集的某个子集</strong>，这一普遍规律被称为局部性。</p>
-<p>局部性表现为两种基本形式：</p>
-<ul>
-<li><strong>时间局部性（Temporal Locality）</strong>：近期被访问的对象在不久的将来大概率再次被访问。典型场景是循环体内的变量反复读写。</li>
-<li><strong>空间局部性（Spatial Locality）</strong>：被访问对象的邻近对象也将很快被访问。典型场景是数组的顺序遍历。</li>
-</ul>
-<p>这一规律的工程价值在于：无需将完整地址空间驻留内存，只保留当前活跃的局部子集（称为<strong>局部集</strong>），即可在不显著损失性能的前提下大幅降低内存占用，同时支持对近未来访问的精准预测。</p>
-<h2 id="2-局部性的数学建模"><a href="#2-局部性的数学建模" class="headerlink" title="2. 局部性的数学建模"></a>2. 局部性的数学建模</h2><h3 id="2-1-静态模型的局限"><a href="#2-1-静态模型的局限" class="headerlink" title="2.1 静态模型的局限"></a>2.1 静态模型的局限</h3><p>早期研究将局部性表述为<strong>引用概率的非均匀分布</strong>：假设对象 $k$ 的访问概率 $p_k \propto 1&#x2F;k$（即齐普夫定律，Zipf’s Law），在整个运行时间内保持不变。</p>
-<p>然而，静态模型存在根本缺陷：它忽略了程序执行的<strong>阶段性</strong>，将不同阶段的访问模式混为一谈，会系统性地高估平均局部性 2 到 3 倍。</p>
-<h3 id="2-2-动态局部性模型"><a href="#2-2-动态局部性模型" class="headerlink" title="2.2 动态局部性模型"></a>2.2 动态局部性模型</h3><p>动态模型的核心改进在于引入了**阶段（Phase）**的概念。程序执行可拆分为若干阶段，每个阶段具有独立的访问概率分布；阶段间存在短暂的过渡区间，此期间对任意对象均可能发生访问。</p>
-<p>形式化地，动态局部性由两个层次描述：</p>
-<ul>
-<li><strong>宏观模型</strong>：定义阶段的生成方式、阶段持续时间分布 $\tau$ 以及阶段间过渡概率；</li>
-<li><strong>微观模型</strong>：在每个阶段内，以固定的静态概率分布生成对局部集成员的引用序列。</li>
-</ul>
-<p>阶段平均持续时间远长于过渡区间，这保证了在活跃阶段内缓存或模型可以有效发挥作用。</p>
-<h3 id="2-3-工作集模型"><a href="#2-3-工作集模型" class="headerlink" title="2.3 工作集模型"></a>2.3 工作集模型</h3><p>工作集模型（Working Set Model）是动态局部性的最重要工程化实现，由 Denning 于 1968 年提出。</p>
-<p><strong>定义</strong>：$W(t, T)$ 为在时刻 $t$ 回溯时间窗口 $[t-T, t]$ 内被引用过的对象集合：</p>
-<p>$$W(t, T) &#x3D; { p \mid \exists t’ \in [t-T, t], \ \text{page}(t’) &#x3D; p }$$</p>
-<p>选取合适的窗口大小 $T$，工作集能够动态追踪程序的当前局部集，且随阶段切换自然演化。工作集模型的关键应用是<strong>防止抖动（Thrashing）</strong>：当系统为各进程分配的内存帧数之和小于所有进程工作集大小之和时，页面置换将陷入死循环，导致 CPU 有效利用率趋近于零。操作系统通过监控工作集大小并动态调整多程序度，可将系统维持在稳定工作区。</p>
-<h2 id="3-历史沿革：从-Atlas-到工作集理论"><a href="#3-历史沿革：从-Atlas-到工作集理论" class="headerlink" title="3. 历史沿革：从 Atlas 到工作集理论"></a>3. 历史沿革：从 Atlas 到工作集理论</h2><p>局部性原理的形成经历了若干关键节点：</p>
-<p><strong>Atlas 系统（1950s–60s）</strong>：最早的虚拟内存系统之一，其基于”程序具有访问循环”的假设，开发了预测未来最长时间不会使用的页面并置换之的 OPT（最优置换）算法。然而，许多程序并不具有明确循环，OPT 的预测总体表现不佳。</p>
-<p><strong>IBM 沃森实验室研究</strong>：通过大量实验发现，LRU（最近最少使用，Least Recently Used）置换策略在最广泛的程序范围内表现最优，其理论根基正是引用的时间局部性聚集行为——最近被使用过的页面，在近未来被再次使用的概率最高。</p>
-<p><strong>MIT MAC 项目</strong>：提出了工作集的形式化定义，并验证了其预防抖动的有效性。局部性的物理成因被归结为两点：循环执行带来的<strong>时间聚集效应</strong>，以及数据结构内部的相关数值分配带来的<strong>空间聚集效应</strong>——两者均源于人类”分而治之”的编程实践。</p>
-<h2 id="4-局部性的经典应用"><a href="#4-局部性的经典应用" class="headerlink" title="4. 局部性的经典应用"></a>4. 局部性的经典应用</h2><p>局部性原理被操作系统、数据库和硬件架构师广泛采纳：</p>
-<table>
-<thead>
-<tr>
-<th>领域</th>
-<th>应用方式</th>
-<th>核心收益</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><strong>虚拟内存</strong></td>
-<td>工作集驱动的页面置换与多程序度调控</td>
-<td>防止抖动，提升 CPU 利用率</td>
-</tr>
-<tr>
-<td><strong>CPU 缓存（L1&#x2F;L2&#x2F;L3）</strong></td>
-<td>将近期引用的内存块缓存于高速存储</td>
-<td>弥合处理器与内存间的速度鸿沟</td>
-</tr>
-<tr>
-<td><strong>数据库 B 树索引</strong></td>
-<td>将同一查询可能引用的记录聚集存储，以 B 树组织索引块</td>
-<td>减少磁盘随机访问次数</td>
-</tr>
-<tr>
-<td><strong>文件系统</strong></td>
-<td>将频繁共同访问的文件块分组存储</td>
-<td>降低磁头寻道延迟</td>
-</tr>
-<tr>
-<td><strong>编译器代码生成</strong></td>
-<td>将代码与数据布局于同一缓存行，减少 cache miss</td>
-<td>提升指令流水线效率</td>
-</tr>
-<tr>
-<td><strong>搜索引擎</strong></td>
-<td>对高频查询结果缓存，热点文档优先驻留内存</td>
-<td>降低平均查询延迟</td>
-</tr>
-</tbody></table>
-<h2 id="5-现代局部性模型：上下文感知扩展"><a href="#5-现代局部性模型：上下文感知扩展" class="headerlink" title="5. 现代局部性模型：上下文感知扩展"></a>5. 现代局部性模型：上下文感知扩展</h2><p>经典局部性以”地址空间中的内存页”作为被管理的对象，现代模型将其进一步泛化，引入四个核心概念：</p>
-<ul>
-<li><strong>观察者（Observer）</strong>：期望利用系统完成任务的代理，可以是用户或内置程序；</li>
-<li><strong>邻域（Neighborhood）</strong>：观察者当前最相关的对象集合，不再局限于地址空间；</li>
-<li><strong>推理（Inference）</strong>：从邻域出发预测未来最可能访问的对象集合；</li>
-<li><strong>最优行动（Optimal Action）</strong>：以最小代价完成任务目标的策略。</li>
-</ul>
-<p>这一框架将局部性从内存管理推广至推荐系统、上下文感知应用等场景：例如，贝叶斯垃圾邮件过滤器在用户邮件的”邻域”中推断相关性并采取过滤行动；Google 则在网页的”邻域”（链接关系、内容语义）中推断相关性并排序搜索结果。</p>
-<h2 id="6-总结"><a href="#6-总结" class="headerlink" title="6. 总结"></a>6. 总结</h2><p>局部性原理的意义在于揭示了<strong>计算行为与资源调度需求之间的深层关联</strong>。通过捕捉程序执行的阶段性和引用的聚集性，操作系统得以实现按需分配而非全量驻留，从而在有限的物理资源上支撑复杂的多道程序环境。</p>
-<p>从虚拟内存的工作集理论，到 CPU 缓存的 LRU 置换，再到数据库索引的聚集存储，局部性原理始终是系统性能优化的核心推手。随着上下文感知计算的兴起，这一原理的适用边界仍在持续扩展。</p>
-<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
-<li><strong>[缓存替换算法]</strong>：从 OPT、LRU 到 ARC（Adaptive Replacement Cache）的演进，以及在 NVM 存储层次下替换策略的新挑战。</li>
-<li><strong>[NUMA 与局部性]</strong>：非均匀内存访问架构（NUMA）中，远程内存访问如何打破经典局部性假设，以及 <code>numactl</code> 等工具的使用实践。</li>
-<li>下一篇预告：日志结构文件系统（LFS）——顺序写如何将磁盘带宽利用率推向极限。</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2025/10/11/locality-principle-in-os-and-computer-systems/" data-id="cuidZvpxw6UZ1YpKkPaOWYrvI" data-title="局部性原理：计算机系统资源管理的底层逻辑" class="article-share-link"><span class="fa fa-share">分享</span></a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B1%80%E9%83%A8%E6%80%A7%E5%8E%9F%E7%90%86/" rel="tag">局部性原理</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E4%BD%9C%E9%9B%86%E6%A8%A1%E5%9E%8B/" rel="tag">工作集模型</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" rel="tag">操作系统</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%93%E5%AD%98/" rel="tag">缓存</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98/" rel="tag">虚拟内存</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
     <article id="post-log-structured-filesystem-design" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2025/09/23/log-structured-filesystem-design/" class="article-date">
@@ -325,11 +199,87 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2025/09/23/log-structured-filesystem-design/" data-id="cuidb_2XTTU4FT9obegOByycw" data-title="日志结构文件系统：磁盘带宽利用的极致追求" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2025/09/23/log-structured-filesystem-design/" data-id="cuidyZ_lAgJZ5_AjPuOas_9z6" data-title="日志结构文件系统：磁盘带宽利用的极致追求" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/LFS/" rel="tag">LFS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AD%98%E5%82%A8%E7%B3%BB%E7%BB%9F/" rel="tag">存储系统</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag">性能优化</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" rel="tag">操作系统</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">文件系统</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-os-evolution-and-future" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2025/09/02/os-evolution-and-future/" class="article-date">
+  <time class="dt-published" datetime="2025-09-01T16:00:00.000Z" itemprop="datePublished">2025-09-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CS-Fundamentals/">CS-Fundamentals</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2025/09/02/os-evolution-and-future/">操作系统的演进：从批处理到万物互联的架构变革</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>操作系统（OS）是计算机系统中最具历史厚度的软件层。它的每一次范式转移，都深刻地折射出硬件能力的跃升与应用需求的演变。本文尝试梳理操作系统半个世纪以来的发展脉络，并对其未来走向作出前瞻性思考。</p>
+</blockquote>
+<h2 id="1-两大阶段：从”操作自动化”到”资源管理者”"><a href="#1-两大阶段：从”操作自动化”到”资源管理者”" class="headerlink" title="1. 两大阶段：从”操作自动化”到”资源管理者”"></a>1. 两大阶段：从”操作自动化”到”资源管理者”</h2><p>操作系统的历史可以划分为两个性质截然不同的大阶段。</p>
+<p><strong>第一阶段（1950s）：批处理操作系统</strong>。彼时的操作系统是对”操作员”角色的自动化替代，其核心功能是将人工的磁带换装、卡片递交等流程自动化，以批处理方式串行执行用户作业。系统对资源没有动态调度，程序员需手动规划所有资源使用。</p>
+<p><strong>第二阶段（1965 年后）：多道程序与资源管理框架</strong>。随着计算机开始服务于多个用户和多个并发任务，一个根本性的矛盾浮现：<strong>程序员对资源的手动控制既不充分（无法感知冲突），也不全面（无法充分利用空闲资源）</strong>。操作系统因此从”自动化批处理程序”升级为一个具备<strong>控制权和调度权</strong>的资源管理框架，以供其他程序在其上受控地运行。</p>
+<p>这一阶段的标志性成果是”计算机系统工程师”总结出的八条操作系统基本原则：<strong>交互式计算、分层文件系统、容错结构、中断系统、虚拟内存、多道程序设计、模块化设计</strong>。此后几乎所有主流操作系统都是在这八条原则的基础上构建的。</p>
+<h2 id="2-三次关键转型"><a href="#2-三次关键转型" class="headerlink" title="2. 三次关键转型"></a>2. 三次关键转型</h2><h3 id="2-1-从汇编语言到高级语言"><a href="#2-1-从汇编语言到高级语言" class="headerlink" title="2.1 从汇编语言到高级语言"></a>2.1 从汇编语言到高级语言</h3><p>早期操作系统以汇编语言编写，与特定硬件强绑定，不同架构的机器需要独立开发操作系统。<strong>Multics</strong> 的出现打破了这一局面：它证明了用高级语言（PL&#x2F;I）编写的操作系统不仅可行，而且在可维护性和可移植性上具有显著优势。此后，以 C 语言编写 Unix 成为里程碑式的实践，将”操作系统用高级语言实现”确立为行业共识。</p>
+<h3 id="2-2-从通用主义到精简内核"><a href="#2-2-从通用主义到精简内核" class="headerlink" title="2.2 从通用主义到精简内核"></a>2.2 从通用主义到精简内核</h3><p>Multics 的设计哲学是<strong>最大通用性</strong>——尽可能解决一切问题，导致系统庞大、运行成本高昂。这一经验教训推动了反向思考：操作系统应当尽可能<strong>精简（Minimal）</strong>，只提供最核心的机制，其余由用户空间程序实现。</p>
+<p>这一思想的产物正是 <strong>Unix</strong>，以及后来的 <strong>Linux</strong>。微内核（Microkernel）架构将内核功能精简至线程调度、基本 IPC 和最小内存管理，其他服务以独立进程形式运行于用户空间，实现了出色的模块化与可移植性。</p>
+<h3 id="2-3-不同设计目标催生多元内核形态"><a href="#2-3-不同设计目标催生多元内核形态" class="headerlink" title="2.3 不同设计目标催生多元内核形态"></a>2.3 不同设计目标催生多元内核形态</h3><p>微内核并非唯一正确答案。<strong>Windows</strong> 将图形子系统（GUI）集成进内核，以牺牲部分安全隔离性为代价，换取了极低的用户态-内核态切换开销，满足了消费级用户对交互响应速度的需求。<strong>实时操作系统（RTOS）</strong> 则为了保证极低且可预测的调度延迟，甚至省去了内核态&#x2F;用户态的权限分离。</p>
+<p>这说明操作系统的架构选择本质上是<strong>设计目标之间的权衡</strong>，不存在普适的最优方案，只有在特定约束下的最优解。</p>
+<h2 id="3-未来操作系统的演进方向"><a href="#3-未来操作系统的演进方向" class="headerlink" title="3. 未来操作系统的演进方向"></a>3. 未来操作系统的演进方向</h2><h3 id="3-1-从”人机交互接口”到”世界连接层”"><a href="#3-1-从”人机交互接口”到”世界连接层”" class="headerlink" title="3.1 从”人机交互接口”到”世界连接层”"></a>3.1 从”人机交互接口”到”世界连接层”</h3><p>当下的操作系统概念正在经历一次深刻的语义扩展。传统意义上的操作系统是”设备硬件资源的管理者”，但当数十亿设备接入物联网（IoT），当数字与物理世界的边界消融，<strong>操作系统开始被抽象为连接数字世界与物理世界的数字纽带</strong>。</p>
+<p>在这一框架下，一套分布于医疗设备、工厂机器人和家庭电器的协同调度层，在逻辑上构成了一个超宏观的”操作系统”，尽管不再与任何单一设备绑定。</p>
+<h3 id="3-2-自然人机交互的新形态"><a href="#3-2-自然人机交互的新形态" class="headerlink" title="3.2 自然人机交互的新形态"></a>3.2 自然人机交互的新形态</h3><p>当前人与操作系统的交互仍以”硬交互”为主——键盘、触摸屏。然而新兴的交互技术正在重塑这一范式：Apple Vision Pro 通过眼动追踪实现光标定位，脑机接口尝试建立意图与指令之间的直接通道。这些方向预示着操作系统的<strong>输入层将向感知融合（Perceptual Integration）演进</strong>，要求 OS 能够处理高维、低延迟的感知数据流。</p>
+<h3 id="3-3-元-OS-Kit：面向多样设备的组件化架构"><a href="#3-3-元-OS-Kit：面向多样设备的组件化架构" class="headerlink" title="3.3 元 OS Kit：面向多样设备的组件化架构"></a>3.3 元 OS Kit：面向多样设备的组件化架构</h3><p>面对从微控制器到超级计算机的巨大设备异质性，未来可能出现一种<strong>元 OS（Meta-OS）<strong>思路：操作系统不再是针对特定设备类型的固定实现，而是一套</strong>可按需组装的组件库（Kit）</strong>——不同场景选取不同组件子集，通过标准化接口实现跨设备互操作，让物理设备在操作系统层面实现原生协同，而非依赖复杂的软件适配层。</p>
+<h3 id="3-4-异构计算与-CPU-XPU-融合"><a href="#3-4-异构计算与-CPU-XPU-融合" class="headerlink" title="3.4 异构计算与 CPU&#x2F;XPU 融合"></a>3.4 异构计算与 CPU&#x2F;XPU 融合</h3><p>高性能计算（HPC）与人工智能对计算精度和并行度的要求迥异，二者长期处于不同的硬件生态。随着 AI 工作负载向 HPC 基础设施融合，操作系统需要统一调度 CPU（通用标量计算）与各类 XPU（GPU、TPU、NPU 等专用加速器），实现<strong>异构计算资源的透明化调度</strong>，降低数据在不同计算单元间迁移带来的能效损耗。</p>
+<h3 id="3-5-机密计算：不可信基础设施下的安全保障"><a href="#3-5-机密计算：不可信基础设施下的安全保障" class="headerlink" title="3.5 机密计算：不可信基础设施下的安全保障"></a>3.5 机密计算：不可信基础设施下的安全保障</h3><p>传统操作系统的安全模型建立在”信任硬件”的前提下：只要物理设备不被篡改，数据即可视为安全。然而在云计算模式下，<strong>基础设施提供商对底层硬件具有完全控制权，应用数据面临来自”受信任但不透明”的基础设施的威胁</strong>。</p>
+<p>**机密计算（Confidential Computing）**架构（如 Intel SGX、AMD SEV、ARM TrustZone）通过硬件隔离的可信执行环境（TEE），使应用数据即便在不可信的基础设施上运行，也能维持端到端的隐私保护，实现”信任自己的应用，而无需信任基础设施提供商”的新安全模式。</p>
+<h3 id="3-6-垂直整合：消除抽象层的冗余开销"><a href="#3-6-垂直整合：消除抽象层的冗余开销" class="headerlink" title="3.6 垂直整合：消除抽象层的冗余开销"></a>3.6 垂直整合：消除抽象层的冗余开销</h3><p>传统的”硬件 → 操作系统 → 运行时 → 应用”分层抽象带来了大量通用化开销。**垂直整合（Vertical Integration）**通过针对特定业务场景对各层进行协同设计，消除不必要的通用抽象，实现”短链条”协同：</p>
+<ul>
+<li>苹果 M 系列芯片与 macOS&#x2F;iOS 的深度协同；</li>
+<li>谷歌 TPU 与 TensorFlow&#x2F;XLA 编译器栈的联合优化；</li>
+<li>量化交易系统为极致低延迟而省去内核态&#x2F;用户态切换的 kernel bypass 方案（如 DPDK、RDMA）。</li>
+</ul>
+<h2 id="4-结语"><a href="#4-结语" class="headerlink" title="4. 结语"></a>4. 结语</h2><p>操作系统的演进史，是一部在<strong>硬件能力</strong>、<strong>应用需求</strong>和<strong>工程复杂性</strong>之间反复寻找平衡的历史。从批处理自动化到多道程序，从汇编单机到高级语言可移植，从通用主义到精简微内核，每一次转型背后都有明确的技术驱动力和工程权衡逻辑。</p>
+<p>未来，随着异构计算、物联网协同、机密计算和自然人机交互的深入，操作系统的边界将持续扩展，从管理单一设备的软件层，逐渐演化为协调数字-物理融合世界的智能基础设施。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><strong>[Exokernel 架构]</strong>：MIT 提出的”将资源分配权下放给应用”的极简内核设计，以及它对 OS 抽象哲学的根本性挑战。</li>
+<li><strong>[Unikernel]</strong>：将应用与 OS 内核编译为单一镜像的 Library OS 思路，在云原生场景下的安全性与性能优势。</li>
+<li>下一篇预告：SEDA 阶段式事件驱动架构——互联网服务如何在极端负载波动下优雅降级。</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://kevin589981.github.io/2025/09/02/os-evolution-and-future/" data-id="cuid5GetBizcIo8tTwOcmwdYw" data-title="操作系统的演进：从批处理到万物互联的架构变革" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BA%91%E8%AE%A1%E7%AE%97/" rel="tag">云计算</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%BC%82%E6%9E%84%E8%AE%A1%E7%AE%97/" rel="tag">异构计算</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%BE%AE%E5%86%85%E6%A0%B8/" rel="tag">微内核</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" rel="tag">操作系统</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/" rel="tag">系统架构</a></li></ul>
 
     </footer>
   </div>
@@ -408,11 +358,69 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2025/03/02/transformer-deep-dive/" data-id="cuidonWIgrGrnWJD5GlDW06DP" data-title="Transformer 架构精读：从 Self-Attention 到 Multi-Head Attention" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2025/03/02/transformer-deep-dive/" data-id="cuidwqcoJKYejKHZED9e3F_m9" data-title="Transformer 架构精读：从 Self-Attention 到 Multi-Head Attention" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/NLP/" rel="tag">NLP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Transformer/" rel="tag">Transformer</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag">深度学习</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BA%E6%96%87%E7%A0%94%E8%AF%BB/" rel="tag">论文研读</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-hello-world" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2023/12/02/hello-world/" class="article-date">
+  <time class="dt-published" datetime="2023-12-01T16:00:00.000Z" itemprop="datePublished">2023-12-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CS-Fundamentals/">CS-Fundamentals</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2023/12/02/hello-world/">博客上线啦！</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>欢迎来到 <strong>Kevin’s Tech Blog</strong>！</p>
+<p>这是用 <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 搭建并托管于 GitHub Pages 的技术博客。</p>
+<h2 id="博客定位"><a href="#博客定位" class="headerlink" title="博客定位"></a>博客定位</h2><ul>
+<li><strong>底层架构与高性能计算</strong>：C&#x2F;C++、并发编程、OS 内核、性能优化</li>
+<li><strong>机器学习与科研探索</strong>：论文研读、框架源码分析、AI 数学基础</li>
+<li><strong>实战项目复盘</strong>：大作业重构、科研项目记录、竞赛经验</li>
+<li><strong>计算机科学沉淀</strong>：工具流技巧、英文论文技巧、技术随笔</li>
+</ul>
+<h2 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本地预览</span></span><br><span class="line">pnpm server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成静态文件</span></span><br><span class="line">pnpm build</span><br><span class="line"></span><br><span class="line"><span class="comment"># 部署到 GitHub Pages</span></span><br><span class="line">pnpm deploy</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>纸上得来终觉浅，绝知此事要躬行。——陆游</p>
+</blockquote>
+<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://kevin589981.github.io/2023/12/02/hello-world/" data-id="cuidEct39haHmVXp8ipiPTjUh" data-title="博客上线啦！" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9A%8F%E7%AC%94/" rel="tag">随笔</a></li></ul>
 
     </footer>
   </div>
@@ -496,69 +504,11 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2023/12/02/git-advanced-workflow/" data-id="cuidu5vLOv1nBD27SaGZy5uy0" data-title="Git 工作流进阶：从 rebase 到 worktree 的高效实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2023/12/02/git-advanced-workflow/" data-id="cuidlLzZBReXNtDjCjhV3zog-" data-title="Git 工作流进阶：从 rebase 到 worktree 的高效实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Git/" rel="tag">Git</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7%E6%B5%81/" rel="tag">工具流</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%BC%80%E5%8F%91%E6%95%88%E7%8E%87/" rel="tag">开发效率</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-hello-world" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2023/12/02/hello-world/" class="article-date">
-  <time class="dt-published" datetime="2023-12-01T16:00:00.000Z" itemprop="datePublished">2023-12-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CS-Fundamentals/">CS-Fundamentals</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/02/hello-world/">博客上线啦！</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <p>欢迎来到 <strong>Kevin’s Tech Blog</strong>！</p>
-<p>这是用 <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 搭建并托管于 GitHub Pages 的技术博客。</p>
-<h2 id="博客定位"><a href="#博客定位" class="headerlink" title="博客定位"></a>博客定位</h2><ul>
-<li><strong>底层架构与高性能计算</strong>：C&#x2F;C++、并发编程、OS 内核、性能优化</li>
-<li><strong>机器学习与科研探索</strong>：论文研读、框架源码分析、AI 数学基础</li>
-<li><strong>实战项目复盘</strong>：大作业重构、科研项目记录、竞赛经验</li>
-<li><strong>计算机科学沉淀</strong>：工具流技巧、英文论文技巧、技术随笔</li>
-</ul>
-<h2 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本地预览</span></span><br><span class="line">pnpm server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成静态文件</span></span><br><span class="line">pnpm build</span><br><span class="line"></span><br><span class="line"><span class="comment"># 部署到 GitHub Pages</span></span><br><span class="line">pnpm deploy</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>纸上得来终觉浅，绝知此事要躬行。——陆游</p>
-</blockquote>
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2023/12/02/hello-world/" data-id="cuidxiotuoHLJKUbOgd2rw6ed" data-title="博客上线啦！" class="article-share-link"><span class="fa fa-share">分享</span></a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9A%8F%E7%AC%94/" rel="tag">随笔</a></li></ul>
 
     </footer>
   </div>
@@ -612,7 +562,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">归档</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/09/">九月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/03/">三月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">一月 2026</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/12/">十二月 2025</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/11/">十一月 2025</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/10/">十月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/09/">九月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/03/">三月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">十二月 2023</a><span class="archive-list-count">2</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/03/">三月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">一月 2026</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/12/">十二月 2025</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/11/">十一月 2025</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/10/">十月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/09/">九月 2025</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/03/">三月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">十二月 2023</a><span class="archive-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -623,10 +573,6 @@
     <h3 class="widget-title">最新文章</h3>
     <div class="widget">
       <ul>
-        
-          <li>
-            <a href="/2026/09/02/os-evolution-and-future/">操作系统的演进：从批处理到万物互联的架构变革</a>
-          </li>
         
           <li>
             <a href="/2026/03/02/build-os-kernel-01/">从零实现一个简易操作系统内核（一）：启动与保护模式</a>
@@ -642,6 +588,10 @@
         
           <li>
             <a href="/2026/01/02/cs-theory-automata-complexity-notes/">计算理论全景：从渐近记号到 NP 完全性</a>
+          </li>
+        
+          <li>
+            <a href="/2025/12/28/memory-model-lockfree/">内存模型与无锁编程：从 CPU 缓存到 C++ 原子操作</a>
           </li>
         
       </ul>
