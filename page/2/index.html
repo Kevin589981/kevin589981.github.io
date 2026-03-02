@@ -88,14 +88,14 @@
       <div class="outer">
         <section id="main">
   
-    <article id="post-concurrent-programming-traps-memory-model" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+    <article id="post-rudp-reliable-transport-over-udp" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2025/11/25/concurrent-programming-traps-memory-model/" class="article-date">
-  <time class="dt-published" datetime="2025-11-24T16:00:00.000Z" itemprop="datePublished">2025-11-25</time>
+    <a href="/2025/11/14/rudp-reliable-transport-over-udp/" class="article-date">
+  <time class="dt-published" datetime="2025-11-13T16:00:00.000Z" itemprop="datePublished">2025-11-14</time>
 </a>
     
   <div class="article-category">
-    <a class="article-category-link" href="/categories/Systems-HPC/">Systems-HPC</a>
+    <a class="article-category-link" href="/categories/Projects/">Projects</a>
   </div>
 
   </div>
@@ -106,7 +106,7 @@
         
   
     <h1 itemprop="name">
-      <a class="p-name article-title" href="/2025/11/25/concurrent-programming-traps-memory-model/">系统程序员视角：并发陷阱与内存模型精析</a>
+      <a class="p-name article-title" href="/2025/11/14/rudp-reliable-transport-over-udp/">基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践</a>
     </h1>
   
 
@@ -115,168 +115,123 @@
     <div class="e-content article-entry" itemprop="articleBody">
       
         <blockquote>
-<p>现代多核处理器为了追求极致性能，在编译器、CPU 微架构和缓存层次三个维度上对指令执行顺序进行了激进的重排优化。这些优化在单线程程序中不可见，却在并发场景下引发了难以复现的正确性问题。本文从系统程序员视角出发，系统梳理这些陷阱的根源，以及 C++11 内存模型如何在不牺牲性能的前提下给出精确的解决方案。</p>
+<p>TCP 的可靠性来自精心设计的重传机制，但其内部细节对上层应用透明。如果要在 UDP 这张”白纸”上手工绘制可靠传输，需要多少工程量？本文复盘了一次 RUDP（Reliable UDP）的完整实现，包括 Go-Back-N 与选择重传（SACK），以及针对各类异常场景的健壮性测试。</p>
 </blockquote>
-<h2 id="1-并发正确性的三大破坏者"><a href="#1-并发正确性的三大破坏者" class="headerlink" title="1. 并发正确性的三大破坏者"></a>1. 并发正确性的三大破坏者</h2><p>并发程序的正确性依赖于一个朴素假设：代码按书写顺序执行，写入立即对所有核心可见。然而现代计算机体系结构在三个层面上系统性地打破了这一假设。</p>
-<h3 id="1-1-编译器指令重排"><a href="#1-1-编译器指令重排" class="headerlink" title="1.1 编译器指令重排"></a>1.1 编译器指令重排</h3><p>编译器为避免 CPU 流水线停顿、提升缓存局部性，会在不改变<strong>单线程语义</strong>的前提下对指令进行重排。然而”不改变单线程语义”并不等同于”不改变多线程语义”：</p>
+<h2 id="一、问题背景与协议设计"><a href="#一、问题背景与协议设计" class="headerlink" title="一、问题背景与协议设计"></a>一、问题背景与协议设计</h2><p>UDP 是面向无连接的无状态协议：快，但不可靠。数据包可能丢失、乱序、重复或损坏。在 UDP 之上实现可靠传输（RUDP），本质上是在应用层重新实现 TCP 的核心语义，但可以选择性地裁剪开销。</p>
+<h3 id="1-1-消息类型定义"><a href="#1-1-消息类型定义" class="headerlink" title="1.1 消息类型定义"></a>1.1 消息类型定义</h3><p>RUDP 协议定义四种消息类型：<code>start</code>、<code>data</code>、<code>end</code>、<code>ack</code>（及 <code>sack</code>）。每个数据包格式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;type&gt;|&lt;sequence number&gt;|&lt;data&gt;|&lt;checksum&gt;</span><br></pre></td></tr></table></figure>
+
+<p><code>checksum</code> 用于检测传输过程中的数据损坏，接收方在序列号确认前首先验证校验和。</p>
+<h3 id="1-2-核心发送策略"><a href="#1-2-核心发送策略" class="headerlink" title="1.2 核心发送策略"></a>1.2 核心发送策略</h3><p>发送端需要满足以下约束：</p>
 <ul>
-<li>编译器可能将一个对共享变量的写操作<strong>提前</strong>，使其被另一个线程过早观察到；</li>
-<li>编译器可能通过分支预测<strong>提前执行</strong>某段计算，打乱代码的字面顺序；</li>
-<li>在 <code>memory_order_relaxed</code> 下，编译器可将循环内的原子加载<strong>提升至循环外</strong>，导致轮询逻辑永远读取缓存值。</li>
+<li>数据包按序、可靠送达，支持丢包、乱序、重复等异常场景；</li>
+<li>支持 <strong>Go-Back-N</strong>（GBN）与<strong>选择重传</strong>（Selective ACK, SACK）两种模式；</li>
+<li>发送窗口大小为 5，超时时间 500ms。</li>
 </ul>
-<h3 id="1-2-Store-Buffer-与-Invalidation-Queue"><a href="#1-2-Store-Buffer-与-Invalidation-Queue" class="headerlink" title="1.2 Store Buffer 与 Invalidation Queue"></a>1.2 Store Buffer 与 Invalidation Queue</h3><p>在多核处理器中，每个核心拥有私有的 L1&#x2F;L2 缓存，以及写操作的缓冲区：</p>
+<hr>
+<h2 id="二、发送端实现（Sender-py）"><a href="#二、发送端实现（Sender-py）" class="headerlink" title="二、发送端实现（Sender.py）"></a>二、发送端实现（Sender.py）</h2><h3 id="2-1-数据分片与窗口管理"><a href="#2-1-数据分片与窗口管理" class="headerlink" title="2.1 数据分片与窗口管理"></a>2.1 数据分片与窗口管理</h3><p>文件内容按最大 1472 字节分片，加上 <code>start</code> 和 <code>end</code> 包，构成完整报文序列。核心状态变量包括：</p>
 <ul>
-<li><strong>Store Buffer</strong>：写操作首先进入写缓冲区，异步刷新到缓存和内存，导致<strong>写入对其他核心不立即可见</strong>；</li>
-<li><strong>Invalidation Queue</strong>：缓存一致性协议（如 MESI）发出的缓存失效请求先入队，尚未实际失效，导致<strong>其他核心可能读到过期的缓存行</strong>。</li>
+<li><code>base</code>：窗口左边界，指向最早未确认的包；</li>
+<li><code>next_seq_num</code>：下一个待发送包的序号；</li>
+<li><code>timer</code>：用于超时重传的时间戳。</li>
 </ul>
-<p>这两个结构共同引入了<strong>可见性延迟</strong>：即使写操作已在逻辑上完成，其效果在另一个核心上观测到的时间点是不确定的。</p>
-<h3 id="1-3-NUMA-架构下的不均匀延迟"><a href="#1-3-NUMA-架构下的不均匀延迟" class="headerlink" title="1.3 NUMA 架构下的不均匀延迟"></a>1.3 NUMA 架构下的不均匀延迟</h3><p>在 NUMA（Non-Uniform Memory Access）架构中，内存被划分为多个节点，每个节点物理上靠近某一组 CPU 核心。当核心访问远端节点的内存时，延迟显著高于本地节点，导致不同核心对同一内存地址的<strong>可见性延迟极度不均匀且不可预测</strong>。</p>
-<h3 id="1-4-“现在”的幻象"><a href="#1-4-“现在”的幻象" class="headerlink" title="1.4 “现在”的幻象"></a>1.4 “现在”的幻象</h3><p>上述三重机制共同导致：在多处理器系统中，<strong>不存在全局一致的”现在”（Now）</strong>。即便两个核心同时读取同一内存地址，所得的值也可能来自不同时刻的版本。用 Preshing 的话说：”Creating some sense of order between threads is a team effort of the hardware, the compiler, the programming language, and your application.”——在硬件、编译器、语言标准和应用代码四个层次的共同协作下，才能人为构建出线程间的时序关系。</p>
-<h2 id="2-数据完整性：撕裂读写问题"><a href="#2-数据完整性：撕裂读写问题" class="headerlink" title="2. 数据完整性：撕裂读写问题"></a>2. 数据完整性：撕裂读写问题</h2><p>除了顺序问题，当操作数据宽度<strong>超过处理器字长</strong>或<strong>内存未对齐</strong>时，单次读写操作可能被 CPU 分解为多次总线事务，产生<strong>撕裂读写（Torn Read&#x2F;Write）</strong>：</p>
-<ul>
-<li>32 位机器上读写一个 64 位值：高 32 位和低 32 位可能来自不同时刻；</li>
-<li>跨缓存行的非对齐访问：两次内存操作可能被中断打断，导致读到”半新半旧”的数据。</li>
-</ul>
-<p>原子性在这里不再是逻辑问题，而是必须由<strong>物理硬件</strong>保证的特性。</p>
-<h2 id="3-语言层：C-11-内存模型的精准控制"><a href="#3-语言层：C-11-内存模型的精准控制" class="headerlink" title="3. 语言层：C++11 内存模型的精准控制"></a>3. 语言层：C++11 内存模型的精准控制</h2><p>C++11 之前，C&#x2F;C++ 没有标准化的多线程内存模型，程序员要么依赖重量级的全局互斥锁，要么在对具体平台的汇编语义的理解下直接操作内存（不可移植且易出错）。C++11 引入了 <code>&lt;atomic&gt;</code> 和一套枚举类型，赋予程序员对内存序的<strong>细粒度控制</strong>能力。</p>
-<h3 id="3-1-memory-order-枚举"><a href="#3-1-memory-order-枚举" class="headerlink" title="3.1 memory_order 枚举"></a>3.1 memory_order 枚举</h3><table>
-<thead>
-<tr>
-<th>内存序</th>
-<th>含义</th>
-<th>ARM 指令开销</th>
-<th>典型场景</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>relaxed</code></td>
-<td>仅保证原子性，无顺序约束</td>
-<td>无屏障</td>
-<td>不依赖顺序的统计计数器</td>
-</tr>
-<tr>
-<td><code>consume</code></td>
-<td>数据依赖顺序（理论），编译器保守实现为 <code>acquire</code></td>
-<td>单向屏障</td>
-<td>指针读取后立即解引用</td>
-</tr>
-<tr>
-<td><code>acquire</code></td>
-<td>此操作后的读写不重排到此操作前</td>
-<td>单向屏障</td>
-<td>读取侧获取锁&#x2F;标志</td>
-</tr>
-<tr>
-<td><code>release</code></td>
-<td>此操作前的读写不重排到此操作后</td>
-<td>单向屏障</td>
-<td>写入侧释放锁&#x2F;标志</td>
-</tr>
-<tr>
-<td><code>acq_rel</code></td>
-<td>同时具备 acquire 和 release 语义</td>
-<td>双向屏障</td>
-<td>RMW 操作（如 CAS）</td>
-</tr>
-<tr>
-<td><code>seq_cst</code></td>
-<td>全局顺序一致性</td>
-<td>全屏障</td>
-<td>需要全局一致观测顺序的场景</td>
-</tr>
-</tbody></table>
-<h3 id="3-2-计数器的正确实现"><a href="#3-2-计数器的正确实现" class="headerlink" title="3.2 计数器的正确实现"></a>3.2 计数器的正确实现</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;atomic&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 错误：普通 int，fetch 和 add 可能被中断</span></span><br><span class="line"><span class="type">int</span> unsafe_counter = <span class="number">0</span>;</span><br><span class="line"><span class="comment">// void inc() &#123; unsafe_counter++; &#125;  // 读-改-写三步，非原子</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 正确：仅需原子性，无顺序要求</span></span><br><span class="line">std::atomic&lt;<span class="type">int</span>&gt; counter&#123;<span class="number">0</span>&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">inc</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// relaxed：不需要与其他变量建立顺序关系</span></span><br><span class="line">    counter.<span class="built_in">fetch_add</span>(<span class="number">1</span>, std::memory_order_relaxed);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 分片与打包</span></span><br><span class="line">chunks = [content[i:i+MAX_DATA_SIZE] <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="built_in">len</span>(content), MAX_DATA_SIZE)]</span><br><span class="line"><span class="variable language_">self</span>.packets.append(<span class="variable language_">self</span>.make_packet(<span class="string">&#x27;start&#x27;</span>, <span class="variable language_">self</span>.isn, <span class="string">&quot;&quot;</span>))</span><br><span class="line"><span class="keyword">for</span> i, chunk <span class="keyword">in</span> <span class="built_in">enumerate</span>(chunks[:-<span class="number">1</span>]):</span><br><span class="line">    seq = <span class="variable language_">self</span>.isn + <span class="number">1</span> + i</span><br><span class="line">    <span class="variable language_">self</span>.packets.append(<span class="variable language_">self</span>.make_packet(<span class="string">&#x27;data&#x27;</span>, seq, chunk))</span><br><span class="line"><span class="variable language_">self</span>.packets.append(<span class="variable language_">self</span>.make_packet(<span class="string">&#x27;end&#x27;</span>, <span class="variable language_">self</span>.isn + <span class="built_in">len</span>(<span class="variable language_">self</span>.packets), chunks[-<span class="number">1</span>]))</span><br></pre></td></tr></table></figure>
 
-<h3 id="3-3-acquire-release-协议：轻量级同步"><a href="#3-3-acquire-release-协议：轻量级同步" class="headerlink" title="3.3 acquire-release 协议：轻量级同步"></a>3.3 acquire-release 协议：轻量级同步</h3><p>在”生产者-消费者”场景中，无需 <code>seq_cst</code> 的全局顺序，只需保证：<strong>生产者对数据的写入在发布标志之前完成，消费者在读取标志之后才读取数据</strong>。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">std::atomic&lt;<span class="type">bool</span>&gt; ready&#123;<span class="literal">false</span>&#125;;</span><br><span class="line"><span class="type">int</span> data = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 生产者（线程 A）</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">producer</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    data = <span class="number">42</span>;                                       <span class="comment">// 普通写</span></span><br><span class="line">    ready.<span class="built_in">store</span>(<span class="literal">true</span>, std::memory_order_release);    <span class="comment">// 释放屏障：data 的写入不会重排到此之后</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 消费者（线程 B）</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">consumer</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> (!ready.<span class="built_in">load</span>(std::memory_order_acquire));  <span class="comment">// 获取屏障：读取 data 不会重排到此之前</span></span><br><span class="line">    <span class="built_in">assert</span>(data == <span class="number">42</span>);                              <span class="comment">// 有保证</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2-2-主循环：滑动窗口-超时重传"><a href="#2-2-主循环：滑动窗口-超时重传" class="headerlink" title="2.2 主循环：滑动窗口 + 超时重传"></a>2.2 主循环：滑动窗口 + 超时重传</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> <span class="variable language_">self</span>.base &lt; <span class="built_in">len</span>(<span class="variable language_">self</span>.packets):</span><br><span class="line">    <span class="comment"># 填满发送窗口</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="variable language_">self</span>.next_seq_num &lt; <span class="variable language_">self</span>.base + <span class="variable language_">self</span>.window_size</span><br><span class="line">           <span class="keyword">and</span> <span class="variable language_">self</span>.next_seq_num &lt; <span class="built_in">len</span>(<span class="variable language_">self</span>.packets)):</span><br><span class="line">        <span class="variable language_">self</span>.send(<span class="variable language_">self</span>.packets[<span class="variable language_">self</span>.next_seq_num])</span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.base == <span class="variable language_">self</span>.next_seq_num:</span><br><span class="line">            <span class="variable language_">self</span>.timer = time.time()    <span class="comment"># 仅当新窗口打开时启动计时器</span></span><br><span class="line">        <span class="variable language_">self</span>.next_seq_num += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 超时检测：重传窗口内所有未确认包</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="variable language_">self</span>.base &lt; <span class="variable language_">self</span>.next_seq_num</span><br><span class="line">            <span class="keyword">and</span> time.time() - <span class="variable language_">self</span>.timer &gt; <span class="variable language_">self</span>.timeout):</span><br><span class="line">        <span class="variable language_">self</span>.handle_timeout()</span><br></pre></td></tr></table></figure>
 
-<p>在弱序的 ARM 架构上，<code>acquire</code>&#x2F;<code>release</code> 只需单向内存屏障（<code>dmb ishld</code>&#x2F;<code>dmb ish</code>），<strong>相比 <code>seq_cst</code> 节省约一半的屏障开销</strong>。</p>
-<h3 id="3-4-CAS-中的差异化内存序"><a href="#3-4-CAS-中的差异化内存序" class="headerlink" title="3.4 CAS 中的差异化内存序"></a>3.4 CAS 中的差异化内存序</h3><p><code>compare_exchange_weak</code> 允许根据操作结果指定不同的内存序，实现性能优化：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">std::atomic&lt;<span class="type">int</span>&gt; foo&#123;<span class="number">0</span>&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">try_update</span><span class="params">(<span class="type">int</span> expected, <span class="type">int</span> desired)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> foo.<span class="built_in">compare_exchange_weak</span>(</span><br><span class="line">        expected,</span><br><span class="line">        desired,</span><br><span class="line">        std::memory_order_seq_cst,    <span class="comment">// 成功：发布新状态，需全局一致性</span></span><br><span class="line">        std::memory_order_relaxed     <span class="comment">// 失败：仅 expected 被更新，无需同步</span></span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>窗口语义的关键设计点：计时器仅在窗口从空变非空时启动，窗口滑动时重置，窗口归零时停止。这一逻辑若出现偏差，轻则包未及时重传，重则触发死锁。</p>
+<h3 id="2-3-ACK-SACK-处理：快速重传"><a href="#2-3-ACK-SACK-处理：快速重传" class="headerlink" title="2.3 ACK&#x2F;SACK 处理：快速重传"></a>2.3 ACK&#x2F;SACK 处理：快速重传</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">handle_new_ack</span>(<span class="params">self, ack</span>):</span><br><span class="line">    <span class="variable language_">self</span>.dup_ack_count = <span class="number">0</span></span><br><span class="line">    cum_idx, sack_indices = <span class="variable language_">self</span>._parse_ack_string(ack)</span><br><span class="line">    <span class="keyword">if</span> cum_idx &gt; <span class="variable language_">self</span>.base:</span><br><span class="line">        <span class="variable language_">self</span>.base = cum_idx    <span class="comment"># 滑动窗口左边界</span></span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.base &lt; <span class="variable language_">self</span>.next_seq_num:</span><br><span class="line">        <span class="variable language_">self</span>.timer = time.time()    <span class="comment"># 仍有未确认包，重启计时器</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="variable language_">self</span>.timer = <span class="literal">None</span>           <span class="comment"># 所有包已确认，停止计时器</span></span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.sackMode:</span><br><span class="line">        <span class="variable language_">self</span>._update_sack_bitmap(sack_indices)    <span class="comment"># 标记已选择确认的包</span></span><br></pre></td></tr></table></figure>
 
-<p>成功时使用 <code>seq_cst</code> 确保其他线程能以全局一致顺序观测到此次修改；失败时仅更新局部变量 <code>expected</code>，不涉及共享状态，使用 <code>relaxed</code> 零屏障开销即可。</p>
-<h2 id="4-硬件层：ARM-的-dmb-指令"><a href="#4-硬件层：ARM-的-dmb-指令" class="headerlink" title="4. 硬件层：ARM 的 dmb 指令"></a>4. 硬件层：ARM 的 dmb 指令</h2><p>ARM 是典型的<strong>弱内存序</strong>架构，允许处理器对 load&#x2F;store 指令大幅重排。为实现原子操作，ARM 提供了 <code>dmb</code>（Data Memory Barrier）指令：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">; setFoo：原子写，语义等价于 release store</span><br><span class="line">    dmb ish          ; 确保 str 之前的所有内存操作完成并对其他核心可见</span><br><span class="line">    str r0, [r1]     ; 原子写 foo</span><br><span class="line">    dmb ish          ; 确保 foo 的写入对其他核心可见后，才执行后续内存操作</span><br><span class="line"></span><br><span class="line">; getFoo：原子读，语义等价于 acquire load</span><br><span class="line">    dmb ish          ; 确保 ldr 之前的所有内存操作完成</span><br><span class="line">    ldr r0, [r1]     ; 原子读 foo</span><br><span class="line">    dmb ish          ; 确保读取完成后才执行后续内存操作（获取屏障）</span><br></pre></td></tr></table></figure>
-
-<p>两个 <code>dmb</code> 构成了<strong>完全内存屏障</strong>，在弱序 ARM 上强行建立了符合直觉的顺序一致性。</p>
-<h2 id="5-LL-SC：ARM-上实现-RMW-操作"><a href="#5-LL-SC：ARM-上实现-RMW-操作" class="headerlink" title="5. LL&#x2F;SC：ARM 上实现 RMW 操作"></a>5. LL&#x2F;SC：ARM 上实现 RMW 操作</h2><p>ARM 没有专门的 Read-Modify-Write（RMW）指令（如 x86 的 <code>lock xadd</code>），而是通过两条配对指令实现：</p>
-<ul>
-<li><strong>LDREX（Load-Linked）</strong>：加载地址值，并在硬件层设置”独占监视器”；</li>
-<li><strong>STREX（Store-Conditional）</strong>：仅当监视器仍有效（即目标地址未被其他核心修改）时，才写入新值，否则失败并返回错误码。</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">retry:</span><br><span class="line">    ldrex r2, [r1]       ; 加载 foo，设置独占监视器</span><br><span class="line">    add   r2, r2, #1     ; 计算新值</span><br><span class="line">    strex r3, r2, [r1]   ; 条件存储，r3=0 表示成功</span><br><span class="line">    cmp   r3, #0</span><br><span class="line">    bne   retry          ; 失败则重试</span><br></pre></td></tr></table></figure>
-
-<p><strong>假阳性（Spurious Failure）问题</strong>：硬件独占监视器的粒度通常为<strong>缓存行</strong>而非单个字节。若监视器监视的缓存行中的<strong>相邻变量</strong>被其他核心修改，即使目标变量本身未变，STREX 也会失败，导致额外重试，影响高竞争场景下的性能。</p>
-<h2 id="6-无锁编程的真实代价"><a href="#6-无锁编程的真实代价" class="headerlink" title="6. 无锁编程的真实代价"></a>6. 无锁编程的真实代价</h2><p>无锁编程常被误认为等同于高性能，实则需要审慎分析场景。</p>
-<p><strong>无锁的真正优势不在于速度，而在于以下属性</strong>：</p>
-<ul>
-<li><strong>进度保证</strong>：在 OS 调度不公平（如优先级反转）或中断服务程序（ISR）等上下文中，有锁算法可能永久阻塞，无锁是此时的<strong>唯一可行选择</strong>；</li>
-<li><strong>避免死锁</strong>：完全消除了死锁的可能性。</li>
-</ul>
-<p><strong>无锁的潜在劣势</strong>：</p>
-<ul>
-<li>在高竞争环境中，基于 CAS 的重试循环可能导致 CPU 持续空转（livelock）；</li>
-<li>在低竞争环境中，有锁方案通过让待等待线程睡眠来<strong>减少 CPU 空转</strong>，总体 CPU 利用率反而更高。</li>
-</ul>
-<p>选择有锁 vs 无锁，核心依据是<strong>竞争强度和是否可以阻塞</strong>，而非单一的”哪个更快”。</p>
-<h2 id="7-缓存伪共享：高并发读的隐藏杀手"><a href="#7-缓存伪共享：高并发读的隐藏杀手" class="headerlink" title="7. 缓存伪共享：高并发读的隐藏杀手"></a>7. 缓存伪共享：高并发读的隐藏杀手</h2><p>下面的读写锁实现看似允许多个读者并行，实则存在严重的**缓存伪共享（False Sharing）**问题：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">RWLock</span> &#123;</span><br><span class="line">    std::atomic&lt;<span class="type">int</span>&gt; readers&#123;<span class="number">0</span>&#125;;  <span class="comment">// 所有读者共同竞争同一缓存行</span></span><br><span class="line">    std::atomic&lt;<span class="type">bool</span>&gt; writer&#123;<span class="literal">false</span>&#125;;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">read_lock</span><span class="params">(RWLock&amp; lk)</span> </span>&#123;</span><br><span class="line">    lk.readers.<span class="built_in">fetch_add</span>(<span class="number">1</span>, std::memory_order_acquire); <span class="comment">// 写操作！导致缓存行失效</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>每次读者调用 <code>fetch_add</code> 都是一次<strong>写操作</strong>，会导致包含 <code>readers</code> 的缓存行在所有参与读取的核心之间<strong>反复失效与传输</strong>。高并发读取下，这种缓存行的 ping-pong 效应可能使性能<strong>差于简单的互斥锁</strong>。</p>
-<p>解决方案：为每个核心提供独立的读者计数（per-CPU 计数器），避免多核共写同一缓存行。</p>
-<h2 id="8-volatile：在并发中的一个致命误解"><a href="#8-volatile：在并发中的一个致命误解" class="headerlink" title="8. volatile：在并发中的一个致命误解"></a>8. volatile：在并发中的一个致命误解</h2><p><code>volatile</code> 阻止编译器优化（如省略重复读写、常量折叠），常用于**内存映射 I&#x2F;O（MMIO）**寄存器访问，防止编译器将硬件寄存器操作优化掉。</p>
-<p>然而，<code>volatile</code> <strong>不能用于线程同步</strong>，原因有二：</p>
-<ol>
-<li><strong>不保证原子性</strong>：<code>volatile int</code> 的 <code>++</code> 操作仍会分解为三步（读-改-写），可能被中断；</li>
-<li><strong>不产生内存屏障</strong>：<code>volatile</code> 仅阻止编译器重排，无法阻止 CPU 的乱序执行，也不刷新 Store Buffer。</li>
-</ol>
-<blockquote>
-<p><strong>注意</strong>：Java 中的 <code>volatile</code> 具有内存屏障语义（等价于 C++ 的 <code>acquire</code>&#x2F;<code>release</code>），两者容易混淆，切勿将 Java 的理解代入 C&#x2F;C++。</p>
-</blockquote>
-<h2 id="9-原子融合陷阱：atomic-并非万能屏障"><a href="#9-原子融合陷阱：atomic-并非万能屏障" class="headerlink" title="9. 原子融合陷阱：atomic 并非万能屏障"></a>9. 原子融合陷阱：atomic 并非万能屏障</h2><p><code>std::atomic</code> 并不会完全禁止编译器优化。在 <code>memory_order_relaxed</code> 下，编译器自由度极高，可能发生<strong>原子融合（Atomic Fusion）</strong>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">std::atomic&lt;<span class="type">int</span>&gt; flag&#123;<span class="number">0</span>&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 编译器可能将循环内的 load 提升至循环外</span></span><br><span class="line"><span class="keyword">while</span> (flag.<span class="built_in">load</span>(std::memory_order_relaxed) == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// 等待...</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 等价被优化为 if (flag == 0) while(true); ← 无限循环！</span></span><br></pre></td></tr></table></figure>
-
-<p>在需要轮询外部修改的场景下，应使用 <code>memory_order_acquire</code> 或借助 Linux 内核的 <code>READ_ONCE()</code>&#x2F;<code>WRITE_ONCE()</code> 宏，后者通过 <code>volatile</code> 转换防止编译器将多次访问合并。</p>
-<h2 id="10-总结"><a href="#10-总结" class="headerlink" title="10. 总结"></a>10. 总结</h2><p>在现代多核系统中，”程序按照书写顺序执行”的假设已经失效。系统程序员必须在三个维度上主动建立顺序约束：</p>
+<p><strong>三次重复 ACK</strong> 触发快速重传（不等待超时），这是对 TCP Fast Retransmit 的直接移植，可在高丢包场景下显著缩短恢复延迟。</p>
+<p><strong>SACK 位图</strong>的核心价值在于：GBN 模式下一旦发生丢包，窗口内所有后续包必须全部重传；而 SACK 允许接收方精确告知哪些包已到达，发送端只需重传真正缺失的包，大幅降低重传放大倍数。</p>
+<hr>
+<h2 id="三、测试设计：覆盖各类异常场景"><a href="#三、测试设计：覆盖各类异常场景" class="headerlink" title="三、测试设计：覆盖各类异常场景"></a>三、测试设计：覆盖各类异常场景</h2><p>除了基础功能测试，以下健壮性测试用例专门针对不同类型的网络异常：</p>
 <table>
 <thead>
 <tr>
-<th>层次</th>
-<th>问题来源</th>
-<th>解决手段</th>
+<th>测试用例</th>
+<th>模拟场景</th>
+<th>验证目标</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>编译器</td>
-<td>指令重排、原子融合</td>
-<td><code>std::atomic</code>、编译器屏障</td>
+<td><code>AckCorruptionTest</code></td>
+<td>ACK&#x2F;SACK 包内容损坏</td>
+<td>发送端对无效确认的处理</td>
 </tr>
 <tr>
-<td>硬件微架构</td>
-<td>Store Buffer、Invalidation Queue</td>
-<td>内存屏障指令（<code>dmb</code>、<code>mfence</code>）</td>
+<td><code>AckDuplicationTest</code></td>
+<td>ACK&#x2F;SACK 包重复</td>
+<td>防止重复确认触发不必要的重传</td>
 </tr>
 <tr>
-<td>语言抽象</td>
-<td>内存模型不可移植</td>
-<td>C++11 <code>memory_order</code> 枚举</td>
+<td><code>AckLossTest</code></td>
+<td>ACK&#x2F;SACK 包丢失</td>
+<td>超时重传与窗口滑动正确性</td>
+</tr>
+<tr>
+<td><code>AckReorderTest</code></td>
+<td>ACK&#x2F;SACK 包乱序</td>
+<td>对乱序确认的兼容性</td>
+</tr>
+<tr>
+<td><code>DataCorruptionTest</code></td>
+<td>数据包内容损坏</td>
+<td>接收端丢弃损坏包并正确反馈</td>
+</tr>
+<tr>
+<td><code>DataDuplicationTest</code></td>
+<td>数据包重复</td>
+<td>接收端去重能力</td>
+</tr>
+<tr>
+<td><code>DataReorderTest</code></td>
+<td>数据包乱序</td>
+<td>接收端乱序缓存与窗口滑动</td>
+</tr>
+<tr>
+<td><code>GBNTests / SackTests</code></td>
+<td>上述场景分别用于两种模式</td>
+<td>双模式的全覆盖验证</td>
+</tr>
+<tr>
+<td><code>RandomDropTest</code></td>
+<td>随机丢包</td>
+<td>高丢包环境下的整体可靠性</td>
 </tr>
 </tbody></table>
-<p>在保证程序正确性的前提下，通过对不同场景选择最轻量的内存序，可以在弱序架构（ARM）上显著降低屏障开销，这正是系统程序员掌握内存模型的核心价值所在。</p>
+<h3 id="3-1-测试结果分析"><a href="#3-1-测试结果分析" class="headerlink" title="3.1 测试结果分析"></a>3.1 测试结果分析</h3><ul>
+<li><strong>GBN 模式</strong>：所有测试（含高丢包、乱序、重复）均通过，数据可靠送达，未出现死锁或永久丢包。</li>
+<li><strong>SACK 模式</strong>：选择重传有效减少重传量，在高丢包环境下吞吐量明显优于 GBN。</li>
+<li><strong>大文件 &#x2F; 二进制文件传输</strong>：均通过，无数据错误，证明校验与分片逻辑正确。</li>
+</ul>
+<hr>
+<h2 id="四、遇到的问题与解决策略"><a href="#四、遇到的问题与解决策略" class="headerlink" title="四、遇到的问题与解决策略"></a>四、遇到的问题与解决策略</h2><h3 id="4-1-窗口滑动与定时器同步"><a href="#4-1-窗口滑动与定时器同步" class="headerlink" title="4.1 窗口滑动与定时器同步"></a>4.1 窗口滑动与定时器同步</h3><p>初始实现中，定时器更新时机与窗口滑动逻辑耦合不紧，导致部分已发包在某些状态下既不在定时器覆盖范围内、也未收到确认，形成”灰色包”，最终被遗忘。</p>
+<p><strong>解决方案</strong>：明确定义”计时器生命周期”为”窗口非空→停机”，窗口任何变动（发包、收 ACK）都触发相应的计时器操作，消除中间状态。</p>
+<h3 id="4-2-SACK-位图的双计数问题"><a href="#4-2-SACK-位图的双计数问题" class="headerlink" title="4.2 SACK 位图的双计数问题"></a>4.2 SACK 位图的双计数问题</h3><p>SACK 模式下，如果位图更新逻辑与累计 ACK 解析之间存在重叠，可能对同一帧计数两次，导致提前重传或错误统计。通过将 <code>cum_idx</code> 推进逻辑与 <code>sack_indices</code> 位图更新逻辑严格串行化来消除此问题。</p>
+<h3 id="4-3-测试框架适配"><a href="#4-3-测试框架适配" class="headerlink" title="4.3 测试框架适配"></a>4.3 测试框架适配</h3><p>实验框架对命令行参数格式和包格式有严格要求，手动测试时通过的逻辑在自动化测试中可能因格式错误失败。应在开发阶段就对齐框架期望的格式，避免后期大量调试。</p>
+<hr>
+<h2 id="五、设计权衡总结"><a href="#五、设计权衡总结" class="headerlink" title="五、设计权衡总结"></a>五、设计权衡总结</h2><p>RUDP 的实现让两个关键权衡变得清晰：</p>
+<ol>
+<li><strong>窗口大小 vs 延迟</strong>：窗口越大，吞吐量越高，但重传代价（GBN 模式）也越大。SACK 通过精确重传打破了这一耦合。</li>
+<li><strong>超时值 vs 响应速度</strong>：超时过短导致误重传（假阳性），过长则恢复延迟高。三次重复 ACK 触发的快速重传是应对突发丢包的低延迟补偿机制，无需等待超时周期。</li>
+</ol>
+<p>从系统设计角度看，Go-Back-N 与 SACK 的选择实质上是”实现复杂度”与”网络效率”之间的权衡——在今天高丢包的无线网络环境中，SACK 早已是默认选择。</p>
+<hr>
 <h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
-<li><strong>[MESI 协议]</strong>：多核缓存一致性的硬件实现细节，以及 Store Buffer 与 Invalidation Queue 的具体行为分析。</li>
-<li><strong>[C++ 内存模型规范]</strong>：cppreference 上 <code>std::memory_order</code> 的完整语义，以及 N4860（C++20 标准草案）中对 happens-before 关系的形式化定义。</li>
-<li>下一篇预告：操作系统内核的演进——从 Multics 的通用主义到 Unix 微内核，以及面向异构计算的未来架构设想。</li>
+<li><strong>[RFC 2018 TCP SACK 选项规范]</strong>：选择重传的标准定义，值得对照实现细节阅读。</li>
+<li><strong>[QUIC 协议设计]</strong>：Google 在 UDP 之上重新设计的可靠传输协议，融合了多路复用、0-RTT 握手等现代设计，是 RUDP 思想的工业级延伸。</li>
+<li>下一篇预告：从传输层向上走——应用层的长程记忆问题：MemOS 记忆操作系统的工程实践。</li>
 </ul>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2025/11/25/concurrent-programming-traps-memory-model/" data-id="cuidnavdxGtIAHMRN2rEP1EAO" data-title="系统程序员视角：并发陷阱与内存模型精析" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2025/11/14/rudp-reliable-transport-over-udp/" data-id="cuidlQwKs-JDfdMQFk5HRPUGw" data-title="基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ARM/" rel="tag">ARM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/C/" rel="tag">C++</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" rel="tag">内存模型</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" rel="tag">并发编程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%97%A0%E9%94%81%E7%BC%96%E7%A8%8B/" rel="tag">无锁编程</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag">缓存一致性</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Go-Back-N/" rel="tag">Go-Back-N</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Python/" rel="tag">Python</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SACK/" rel="tag">SACK</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/UDP/" rel="tag">UDP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%AF%E9%9D%A0%E4%BC%A0%E8%BE%93/" rel="tag">可靠传输</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" rel="tag">网络编程</a></li></ul>
 
     </footer>
   </div>
@@ -398,7 +353,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2025/10/11/locality-principle-in-os-and-computer-systems/" data-id="cuidPwBHJWpVX5r-Rbyp26QNb" data-title="局部性原理：计算机系统资源管理的底层逻辑" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2025/10/11/locality-principle-in-os-and-computer-systems/" data-id="cuidJUo_3TJ-qJmlcVJpDxEfj" data-title="局部性原理：计算机系统资源管理的底层逻辑" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
@@ -523,11 +478,69 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2025/09/23/log-structured-filesystem-design/" data-id="cuidcSS-SZPsi8_MdpYqBAbmi" data-title="日志结构文件系统：磁盘带宽利用的极致追求" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2025/09/23/log-structured-filesystem-design/" data-id="cuidwbBmhXKkjMtP9i2OcOAdY" data-title="日志结构文件系统：磁盘带宽利用的极致追求" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/LFS/" rel="tag">LFS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AD%98%E5%82%A8%E7%B3%BB%E7%BB%9F/" rel="tag">存储系统</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="tag">性能优化</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" rel="tag">操作系统</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag">文件系统</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-hello-world" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2023/12/02/hello-world/" class="article-date">
+  <time class="dt-published" datetime="2023-12-01T16:00:00.000Z" itemprop="datePublished">2023-12-02</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/CS-Fundamentals/">CS-Fundamentals</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2023/12/02/hello-world/">博客上线啦！</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>欢迎来到 <strong>Kevin’s Tech Blog</strong>！</p>
+<p>这是用 <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 搭建并托管于 GitHub Pages 的技术博客。</p>
+<h2 id="博客定位"><a href="#博客定位" class="headerlink" title="博客定位"></a>博客定位</h2><ul>
+<li><strong>底层架构与高性能计算</strong>：C&#x2F;C++、并发编程、OS 内核、性能优化</li>
+<li><strong>机器学习与科研探索</strong>：论文研读、框架源码分析、AI 数学基础</li>
+<li><strong>实战项目复盘</strong>：大作业重构、科研项目记录、竞赛经验</li>
+<li><strong>计算机科学沉淀</strong>：工具流技巧、英文论文技巧、技术随笔</li>
+</ul>
+<h2 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本地预览</span></span><br><span class="line">pnpm server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成静态文件</span></span><br><span class="line">pnpm build</span><br><span class="line"></span><br><span class="line"><span class="comment"># 部署到 GitHub Pages</span></span><br><span class="line">pnpm deploy</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>纸上得来终觉浅，绝知此事要躬行。——陆游</p>
+</blockquote>
+<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://kevin589981.github.io/2023/12/02/hello-world/" data-id="cuid2IYIJ9zNpZKIKTbL-97Rw" data-title="博客上线啦！" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9A%8F%E7%AC%94/" rel="tag">随笔</a></li></ul>
 
     </footer>
   </div>
@@ -611,69 +624,11 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2023/12/02/git-advanced-workflow/" data-id="cuidm1c4KOpQKsiYPPnRobatC" data-title="Git 工作流进阶：从 rebase 到 worktree 的高效实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://kevin589981.github.io/2023/12/02/git-advanced-workflow/" data-id="cuidZypjFKB48fLlU6QvI-1HE" data-title="Git 工作流进阶：从 rebase 到 worktree 的高效实践" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Git/" rel="tag">Git</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7%E6%B5%81/" rel="tag">工具流</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%BC%80%E5%8F%91%E6%95%88%E7%8E%87/" rel="tag">开发效率</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-hello-world" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2023/12/02/hello-world/" class="article-date">
-  <time class="dt-published" datetime="2023-12-01T16:00:00.000Z" itemprop="datePublished">2023-12-02</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/CS-Fundamentals/">CS-Fundamentals</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/02/hello-world/">博客上线啦！</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <p>欢迎来到 <strong>Kevin’s Tech Blog</strong>！</p>
-<p>这是用 <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 搭建并托管于 GitHub Pages 的技术博客。</p>
-<h2 id="博客定位"><a href="#博客定位" class="headerlink" title="博客定位"></a>博客定位</h2><ul>
-<li><strong>底层架构与高性能计算</strong>：C&#x2F;C++、并发编程、OS 内核、性能优化</li>
-<li><strong>机器学习与科研探索</strong>：论文研读、框架源码分析、AI 数学基础</li>
-<li><strong>实战项目复盘</strong>：大作业重构、科研项目记录、竞赛经验</li>
-<li><strong>计算机科学沉淀</strong>：工具流技巧、英文论文技巧、技术随笔</li>
-</ul>
-<h2 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本地预览</span></span><br><span class="line">pnpm server</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成静态文件</span></span><br><span class="line">pnpm build</span><br><span class="line"></span><br><span class="line"><span class="comment"># 部署到 GitHub Pages</span></span><br><span class="line">pnpm deploy</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>纸上得来终觉浅，绝知此事要躬行。——陆游</p>
-</blockquote>
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://kevin589981.github.io/2023/12/02/hello-world/" data-id="cuidiQ3eD1OJxJVf-i5JC6Ptk" data-title="博客上线啦！" class="article-share-link"><span class="fa fa-share">分享</span></a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9A%8F%E7%AC%94/" rel="tag">随笔</a></li></ul>
 
     </footer>
   </div>
@@ -727,7 +682,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">归档</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/11/">十一月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/09/">九月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/03/">三月 2026</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">一月 2026</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/12/">十二月 2025</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/11/">十一月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/10/">十月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/09/">九月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">十二月 2023</a><span class="archive-list-count">2</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/09/">九月 2026</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/03/">三月 2026</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">一月 2026</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/12/">十二月 2025</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/11/">十一月 2025</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/10/">十月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/09/">九月 2025</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">十二月 2023</a><span class="archive-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -738,10 +693,6 @@
     <h3 class="widget-title">最新文章</h3>
     <div class="widget">
       <ul>
-        
-          <li>
-            <a href="/2026/11/14/rudp-reliable-transport-over-udp/">基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践</a>
-          </li>
         
           <li>
             <a href="/2026/09/02/os-evolution-and-future/">操作系统的演进：从批处理到万物互联的架构变革</a>
@@ -757,6 +708,10 @@
         
           <li>
             <a href="/2026/01/26/rust-shyper-embedded-hypervisor-analysis/">Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践</a>
+          </li>
+        
+          <li>
+            <a href="/2026/01/10/imitation-learning-robotic-manipulation-generalization/">Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer</a>
           </li>
         
       </ul>
