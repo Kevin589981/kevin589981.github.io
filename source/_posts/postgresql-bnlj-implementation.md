@@ -12,6 +12,9 @@ tags:
   - 性能优化
 ---
 
+代码链接：
+https://github.com/Kevin589981/BNLJ
+
 > 嵌套循环连接（Nested Loop Join）是关系型数据库最基础的连接算法，但其糟糕的缓存利用率一直是性能瓶颈所在。本文记录了在 PostgreSQL 源码层面实现块嵌套循环连接（Block Nested Loop Join，BNLJ）的完整过程：从 GUC 参数注册、执行节点状态扩展，到流水线状态机的设计，以及用 `palloc` 替代 `malloc` 踩坑的教训。最终实验表明，将块大小调至 128 可获得约 48.5% 的性能提升。
 
 ## 1. 背景：嵌套循环连接的缓存困境

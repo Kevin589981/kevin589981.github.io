@@ -144,10 +144,11 @@ github_banner:
 math:
   every_page: true
   mathjax:
-    enable: false
-  katex:
     enable: true
-    copy_tex: true
+    tags: none
+  katex:
+    enable: false
+    copy_tex: false
 
 # ---------------------------------------------------------------
 # 搜索（hexo-generator-searchdb 已安装）

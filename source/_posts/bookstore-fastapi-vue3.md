@@ -12,6 +12,9 @@ tags:
   - 全栈开发
 ---
 
+代码地址：
+https://github.com/Kevin589981/BookDataBase
+
 > 一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI、从 pytest 转向 Postman 调试的全过程思考，以及那个调了三天的"200 OK 但前端不显示"的神奇 bug。
 
 ## 1. 项目概述与技术选型
