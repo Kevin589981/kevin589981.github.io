@@ -1,6 +1,423 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>全栈图书管理系统：FastAPI + Vue3 工程实践</title>
+    <url>/2025/04/07/bookstore-fastapi-vue3/</url>
+    <content><![CDATA[
+一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI、从 pytest 转向 Postman 调试的全过程思考，以及那个调了三天的”200 OK 但前端不显示”的神奇 bug。
+
+1. 项目概述与技术选型业务边界系统覆盖一个书城的核心管理流程：
+
+用户管理：超级管理员 &#x2F; 普通管理员双角色，基于 Token 的会话管理，单设备登录限制；
+库存管理：书籍 CRUD，支持 ISBN 精确&#x2F;模糊查询；
+进货流程：创建进货单 → 付款 → 到货确认，全流程状态机，操作员留痕；
+零售流程：多品类购物车 → 创建销售单 → 自动扣减库存；
+财务管理：进货&#x2F;零售双向账单，支持日期&#x2F;金额范围查询及趋势图。
+
+技术栈选型过程最初计划使用 Django，研究 6 小时后因上手成本过高放弃。最终选型方案：
+
+
+
+层次
+选择
+理由
+
+
+
+后端框架
+FastAPI
+自动生成 OpenAPI 文档，类型注解友好，异步支持
+
+
+ORM
+SQLAlchemy
+数据库无关，防 SQL 注入，Python 生态成熟
+
+
+数据库
+SQLite
+部署简单，满足课程项目规模
+
+
+前端框架
+Vue3 + Vite
+中文文档丰富，响应式系统直观
+
+
+接口调试
+Postman
+可持久化保存 Token，比 FastAPI 内置 Swagger 更灵活
+
+
+架构图如下：
+
+
+
+2. 数据库设计2.1 用户体系：双表分离的登录态管理用户信息存储在两张表中——这是整个系统最重要的设计决策之一。
+User 表（持久化用户信息）：
+
+
+
+字段
+类型
+说明
+
+
+
+username
+String(50) PK
+用户名作为主键
+
+
+employee_id
+String(20) UNIQUE
+工号
+
+
+true_name
+String(50)
+真实姓名
+
+
+gender
+Enum(‘male’,’female’)
+性别枚举
+
+
+isSuperAdmin
+Boolean
+超级管理员标识
+
+
+password_hash
+String(128)
+MD5 加密密码
+
+
+
+LoginedUser 表（活跃会话表）：
+
+
+
+字段
+类型
+说明
+
+
+
+username
+String(50) PK
+登录用户名
+
+
+employee_id
+String(20) UNIQUE
+工号（冗余字段）
+
+
+isSuperAdmin
+Boolean
+权限标识（冗余字段）
+
+
+token
+String(256)
+HS256 加密的 JWT Token
+
+
+expiration_time
+DateTime
+Token 过期时间戳
+
+
+
+为什么要将 employee_id 和 isSuperAdmin 冗余到 LoginedUser 表？
+这是一个典型的以空间换时间的设计：认证中间件在每次请求时都需要验证权限，如果每次都要联表查询 User，N 个并发请求就是 N 次额外的 JOIN。将这两个高频读字段冗余到会话表后，权限验证退化为单表查询。
+单设备登录限制的实现：每次新登录前，先删除该用户的已有会话记录，再插入新记录。这样旧设备的 Token 在下次请求时会因找不到对应会话而失效，被响应拦截器自动踢出并跳转登录页。
+2.2 进货流程：状态机约束在数据库层的落地进货订单有四个状态：未付款 → 已付款 → 已到货，或 未付款 → 已退货。系统用三个操作员字段 operator_id / operator_id2 / operator_id3 记录每个环节的责任人，并通过 CheckConstraint 在数据库层强制执行状态-字段联动规则：
+-- 规则：未付款状态时 operator_id2 必须为空，其他状态时必须存在
+(operator_id2 IS NULL AND payment_status == &#39;未付款&#39;) OR 
+(operator_id2 IS NOT NULL AND payment_status != &#39;未付款&#39;)
+
+-- 规则：operator_id3 仅在&quot;已到货&quot;状态时存在
+(operator_id3 IS NULL AND payment_status != &#39;已到货&#39;) OR 
+(operator_id3 IS NOT NULL AND payment_status == &#39;已到货&#39;)
+
+将业务规则下推到数据库约束层，而不是只在应用层检查，是一种防御性设计——即使绕过 API 直接写数据库也无法破坏数据完整性。
+状态流转图：
+[*] ──&gt; 未付款 ──&gt; 已付款 ──&gt; 已到货
+              └──&gt; 已退货
+
+2.3 销售体系：一对多订单明细一笔销售单可能包含多种书籍，采用经典的订单头（SaleOrder）+ 明细行（SaleItem）拆分：
+
+SaleOrder.transaction_no：后端自动生成，格式为 SO + 年月日时分秒 + 随机数；
+SaleItem.sold_price：独立于 Book.retail_price，支持折扣后价格；
+级联删除：SaleItem 设置 ondelete=&quot;CASCADE&quot;，删除订单时自动清理明细。
+
+2.4 财务账单：动态外键关联Bill 表通过 bill_type（进货&#x2F;零售）+ related_order 组合实现”动态外键”：当 bill_type = &quot;进货&quot; 时，related_order 指向 purchase_orders.id；当 bill_type = &quot;零售&quot; 时，指向 sale_orders.id。SQLAlchemy 并不直接支持动态外键约束，这里在应用层保证一致性，数据库层用 CHECK 确保两字段同时存在或同时为空。
+2.5 关于 ISBN 的存储类型选择ISBN 选择 String(13) 而非 Integer：
+
+整数存储可能丢失前导零，造成格式错误；
+字符串支持 LIKE 模糊搜索（contains 函数），整数无法模糊查询；
+通过 CheckConstraint 验证 LENGTH(isbn) = 13 AND isbn GLOB &#39;[0-9]*&#39; 保证格式正确性。
+
+2.6 关于 Numeric(10, 2) 存储金额金额字段全部使用 Numeric(10, 2) 而非 Float。原因：Float 是近似浮点数，在涉及财务精度的场景下 0.1 + 0.2 ≠ 0.3 的问题不可接受；Numeric 是精确小数类型，确保分位精确到两位。
+
+3. 认证与权限系统3.1 Token 生命周期登录成功后，后端：
+
+生成 expiration_time = 当前时间戳 + 8小时；
+用 HS256 算法将 {username, expiration_time} 签名为 JWT Token；
+将 Token 及 expiration_time 写入 LoginedUser 表（同时踢出旧会话）；
+将 expiration_time 也单独存一列——验证时直接比较时间戳，无需解码 Token，减少计算量。
+
+前端将 Token 存入 localStorage，实现”8 小时免登录”。
+3.2 FastAPI 依赖注入实现权限分层# 普通认证：验证 Token 有效性
+router = APIRouter(dependencies=[Depends(auth.Auth.get_current_user)])
+
+# 超管认证：额外检查 isSuperAdmin
+router_admin = APIRouter(dependencies=[Depends(auth.Auth.admin_required)])
+
+admin_required 在查询 LoginedUser 表时检查 isSuperAdmin 字段，若为 False 则返回 403。
+3.3 前端的双拦截器设计// 请求拦截器：自动注入 Authorization 头
+axios.interceptors.request.use(config =&gt; {
+    const token = localStorage.getItem(&#39;token&#39;)
+    if (token) config.headers[&#39;Authorization&#39;] = `Bearer ${token}`
+    return config
+})
+
+// 响应拦截器：拦截 401，清除登录状态并跳转
+axios.interceptors.response.use(null, error =&gt; {
+    if (error.response?.status === 401) {
+        localStorage.clear()
+        router.push(&#39;/login&#39;)
+    }
+    return Promise.reject(error)
+})
+
+即使恶意用户修改前端页面绕过权限校验，后端 403&#x2F;401 响应也会触发响应拦截器强制登出，防止进一步的非授权操作。
+
+4. 前端界面展示登录页与主仪表盘：
+
+
+
+进货管理与账单流水趋势图：
+
+
+
+5. 踩坑记录坑 1：200 OK 但前端页面不显示——调了三天的重定向 bug这是本项目最匪夷所思的 bug。GET /book（注意：没有尾部斜杠）接口返回 200 但前端完全不更新。
+根因链：
+
+前端代码写的是 /book，FastAPI 路由注册的是 /book/；
+FastAPI&#x2F;Starlette 对不匹配的路径执行 301 重定向：/book → /book/；
+浏览器遵守安全规范：重定向时会剥离 Authorization 请求头；
+后端收到的第二次请求（/book/）没有 Token，但因为代码中漏掉了认证依赖，直接查询并返回了结果；
+FastAPI 响应里没有 CORS Access-Control-Allow-Credentials 等字段，浏览器自动丢弃了这个响应。
+
+
+修复方式：统一在路由中加尾部斜杠，并修复漏掉认证依赖的接口。
+教训：状态码 200 ≠ 前端收到了正确响应，浏览器安全机制会在多个环节静默丢弃跨源或认证异常的响应。
+坑 2：全局变量无法支撑多用户并发登录最初用一个全局 dict 存储登录状态，后来发现：
+
+服务器重启后登录状态丢失；
+多用户同时登录时，全局变量存在读写竞争。
+
+改为数据库表 LoginedUser 存储，所有问题一并解决——数据库本身提供了持久化和事务隔离。
+坑 3：pytest 无法保存动态 TokenAPI 测试最初尝试用 pytest 编写，但 JWT Token 每次登录都会重新生成，无法在测试用例间共享。解决方案：改用 Postman，可在 Collection Variables 中持久化保存 Token，并通过 Pre-request Script 自动刷新。
+坑 4：GET 请求 URL 中的可选参数为空当前端查询参数某个字段为空字符串时，URL 变为 /books/?title=&amp;author=，后端 SQLAlchemy 会将 title = &quot;&quot; 理解为”查 title 等于空字符串的记录”而非”不过滤”。
+修复：
+
+前端：传参前检查，空值则不加入 URL；
+后端：查询构建时 if param and param.strip() 双重判断。
+
+坑 5：外键关联禁止删除书籍书籍被进货单或销售单引用后，直接删除会触发外键约束错误（SQLite 默认启用外键约束需要 PRAGMA foreign_keys = ON）。在书籍删除接口中，检测 PurchaseOrder 和 SaleItem 两张表是否存在关联记录，若存在则返回 409 并提示原因。
+
+6. 功能完成情况所有要求的功能均已实现并测试通过：
+
+用户管理（登录&#x2F;注销&#x2F;权限&#x2F;CRUD）
+书籍管理（精确&#x2F;模糊查询，外键安全删除）
+进货管理（完整状态机流转，操作员留痕）
+零售管理（实时 ISBN&#x2F;书名模糊搜索，消抖处理）
+账单管理（多条件过滤，流水趋势图）
+
+
+项目最终代码量超过 10000 行（前后端合计）。
+
+7. 设计反思什么没做但后来觉得应该做的：BCNF 范式分解。当前设计中有意保留了一定冗余（如 LoginedUser 中的 employee_id），这是在查询效率和规范化之间的主动权衡，并非疏忽。
+什么设计了但没用上的：销售单价打折字段（discount_price）。涉及 Bill 外键关联和前后端所有接口变更，改动链过长，最终舍弃。这提醒我在项目初期应当更审慎地确认需求边界。
+关于 ORM 的选择：SQLAlchemy 不仅提供了数据库无关的抽象层，其 Core 层的参数化查询机制从底层防止了 SQL 注入——这在直接拼接 SQL 字符串的方案中是需要额外处理的。
+延伸阅读
+[BCNF 范式]：数据库规范化的理论边界——何时应当分解，何时冗余是合理的工程权衡
+[JWT 的安全边界]：HS256 签名而非加密意味着 payload 可以被解码——哪些数据应该放进 Token
+下一篇预告：SQLAlchemy ORM 性能陷阱——N+1 查询问题与 selectinload &#x2F; joinedload 的正确用法
+
+]]></content>
+      <categories>
+        <category>Projects</category>
+      </categories>
+      <tags>
+        <tag>FastAPI</tag>
+        <tag>Vue3</tag>
+        <tag>SQLAlchemy</tag>
+        <tag>Python</tag>
+        <tag>项目实战</tag>
+        <tag>全栈开发</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>计算理论全景：从渐近记号到 NP 完全性</title>
+    <url>/2026/01/02/cs-theory-automata-complexity-notes/</url>
+    <content><![CDATA[
+计算理论研究的是”什么是可计算的”以及”计算的代价是多少”。这两个问题看似简单，却奠定了现代密码学、算法设计和人工智能可信性的数学基础。本文整理了从渐近记号出发，贯穿形式语言、图灵机模型、不可判定性，直到 P vs NP 的完整知识框架。
+
+一、渐近记号：精确刻画增长率在分析算法时，我们关心的不是具体运行时间，而是输入规模 $n$ 趋于无穷时函数的增长行为。渐近记号体系为此提供了精确的语言。
+1.1 核心定义大 O 记号（上界）： $f &#x3D; O(g)$ 当且仅当
+$$(\exists c &gt; 0)(\exists N)(\forall x \ge N);|f(x)| \le c \cdot |g(x)|$$
+即对充分大的 $x$，$f$ 至多以 $g$ 的常数倍增长。
+小 o 记号（严格上界）： $f(x) &#x3D; o(g(x))$ 当且仅当
+$$\lim_{n \to \infty} \frac{f(n)}{g(n)} &#x3D; 0$$
+例如 $2n &#x3D; o(n^2)$，但 $2n \ne o(n)$。
+$\Omega$ 记号（下界）： $f &#x3D; \Omega(g)$ 当且仅当 $g &#x3D; O(f)$，即 $f$ 至少以 $g$ 的常数倍增长。
+$\Theta$ 记号（精确界）： $f &#x3D; \Theta(g)$ 当且仅当 $f &#x3D; O(g)$ 且 $f &#x3D; \Omega(g)$，记作 $f \sim g$。
+$\tilde{O}$ 记号（忽略对数因子）： $f(x) &#x3D; \tilde{O}(g(x))$ 当且仅当存在常数 $c$ 使得 $|f(x)| \le (\log n)^c |g(x)|$。”拟线性时间”即 $\tilde{O}(n)$，例如 $O(n \log n)$。
+1.2 复杂度类速查
+
+
+记号
+含义
+
+
+
+$O(1)$
+常数时间
+
+
+$O(\log n)$
+对数时间
+
+
+$O(n)$
+线性时间
+
+
+$O(n \log n)$
+拟线性（即 $\tilde{O}(n)$）
+
+
+$O(n^2)$
+二次时间
+
+
+$O(n^c)$
+多项式时间，记作 $\text{poly}(n)$
+
+
+$2^{O(\log n)}$
+拟多项式时间
+
+
+$O(c^n)$
+指数时间
+
+
+1.3 重要示例调和级数满足 $1 + \frac{1}{2} + \dots + \frac{1}{n} &#x3D; \ln n + O(1)$，可通过比较积分 $\int_1^n \frac{1}{x} dx$ 几何理解。
+乘法的封闭性：若 $f_1 &#x3D; O(g_1)$ 且 $f_2 &#x3D; O(g_2)$，则 $f_1 f_2 &#x3D; O(g_1 g_2)$。加法封闭：$f_1 + f_2 &#x3D; O(\max(g_1, g_2))$。
+
+二、形式语言与自动机理论2.1 基础概念字母表 $\Sigma$ 是符号的有限集合，其上的字符串是有限符号序列，空字符串记 $\epsilon$。
+$$\Sigma^* &#x3D; {\epsilon} \cup \Sigma \cup \Sigma^2 \cup \dots$$
+语言 $L \subseteq \Sigma^$ 是字符串的集合。语言支持布尔运算（并、交、补）、连接运算 $L_1 L_2 &#x3D; {xy \mid x \in L_1, y \in L_2}$ 以及*克林闭包 $L^* &#x3D; {w_1 \dots w_k \mid k \ge 0, w_i \in L}$。
+2.2 确定性有限自动机（DFA）DFA 是五元组 $(Q, \Sigma, \delta, q_0, F)$，其中 $Q$ 是有限状态集，$\delta: Q \times \Sigma \to Q$ 是确定性转移函数，$q_0$ 是起始状态，$F \subseteq Q$ 是接受状态集。
+机器接受字符串 $w &#x3D; w_1 \dots w_n$ 当且仅当存在状态序列 $r_0, r_1, \dots, r_n$ 满足：$r_0 &#x3D; q_0$，$\delta(r_i, w_{i+1}) &#x3D; r_{i+1}$，且 $r_n \in F$。
+经典例子：识别二进制表示中被 3 整除的整数。三个状态 $q_0, q_1, q_2$ 分别表示当前数模 3 余 0、1、2，转移规则为读入比特 $a$ 后余数变为 $2r + a \pmod{3}$。
+正则语言：某个 DFA 识别的语言。正则语言族在补运算、并运算、交运算下均封闭（后者通过乘积构造证明）。
+2.3 非确定性有限自动机（NFA）与子集构造NFA 的转移函数为 $\delta: Q \times \Sigma_\epsilon \to P(Q)$，允许 $\epsilon$-转移（无需消耗输入）。机器接受字符串当且仅当计算树中存在至少一条路径到达接受状态。
+定理（等价性）：每个 NFA 都有等价的 DFA。构造方法——幂集构造法：令 DFA 的状态为 NFA 状态集的子集，$Q’ &#x3D; P(Q)$，转移时取 $\epsilon$-闭包。由此推论：语言是正则的当且仅当某个 NFA 识别它。
+正则语言对连接运算与克林闭包同样封闭，可通过 NFA 构造（$\epsilon$-转移串联）证明。
+2.4 正则表达式正则表达式由原子（$a \in \Sigma$、$\epsilon$、$\emptyset$）及并、连接、$*$ 三种运算归纳定义。
+定理：语言是正则语言当且仅当某个正则表达式描述它。从正则表达式到 NFA 的转换是构造性的；反向（DFA 转正则表达式）通过广义非确定性有限自动机（GNFA）逐步消去中间节点，每次消去状态 $q_{rip}$ 时更新转移标记：
+$$R_{\text{new}} &#x3D; R_{i,j} \cup (R_{i,\text{rip}}) (R_{\text{rip},\text{rip}})^* (R_{\text{rip},j})$$
+2.5 非正则语言与泵引理正则语言的存在基于有限状态机，这天生限制了它能处理的语言范畴。
+泵引理：若 $L$ 是正则语言，则存在泵长度 $p$ 使得任意 $|s| \ge p$ 的 $s \in L$ 均可分解为 $xyz$，满足：(1) 对所有 $i \ge 0$，$xy^iz \in L$；(2) $|y| &gt; 0$；(3) $|xy| \le p$。
+经典反例：${0^n 1^n \mid n \ge 0}$ 不是正则语言。取 $s &#x3D; 0^p 1^p$，$xy$ 部分必全为 0，泵送 $y$ 后 0 的数量多于 1，矛盾。
+
+三、图灵机：计算能力的极限模型3.1 形式定义图灵机是七元组 $(Q, \Sigma, \Gamma, \delta, q_0, q_{\text{accept}}, q_{\text{reject}})$，其转移函数 $\delta: Q \times \Gamma \to Q \times \Gamma \times {L, R}$ 描述”读-写-移”三件事。若机器对所有输入停机并正确分类，则称它判定该语言；若它接受所有属于该语言的字符串（但不保证对不属于该语言的输入停机），则称它识别该语言。
+图灵可识别的语言包含所有可判定语言，但反之不成立（停机问题 $L_{\text{HALT}}$ 是可识别而不可判定的典型例子）。
+3.2 等价变体图灵机的多种变体在计算能力上等价，但时间开销存在差异：
+
+多带图灵机：$k$ 带机可被单带机以 $O(T(n)^2)$ 代价模拟（分隔符 # 串联带子内容）。
+RAM 图灵机：支持随机访问存储，可模拟 x86-64 汇编的 MOV&#x2F;ADD&#x2F;JMP 等指令，能被多带机以 $O(T(n)^3)$ 代价模拟，构成”强丘奇-图灵论题”的形式支撑。
+
+丘奇-图灵论题（弱形式）：任何物理上可计算的函数均可被图灵机计算。强形式进一步声明代价至多相差多项式——量子计算被认为是最重要的潜在例外（Shor 算法）。
+3.3 通用图灵机（UTM）存在一台三带 UTM $U$，使得 $U(\alpha, x) &#x3D; M_\alpha(x)$，其中 $\alpha$ 是图灵机 $M$ 的编码。若 $M_\alpha$ 在 $T$ 步内停机，则 $U$ 在 $O(T \log T)$ 步内停机（Hennie-Stearns 模拟，利用分区&#x2F;倍增技巧降低带子移动代价）。UTM 的存在说明程序本质上也是数据，这是现代可编程计算机架构的理论基础。
+
+四、不可判定性：计算的边界4.1 停机问题$$L_{\text{HALT}} &#x3D; {(\alpha, x) : M_\alpha \text{ 在输入 } x \text{ 上停机}}$$
+$L_{\text{HALT}}$ 不可判定——证明采用对角化（自引用矛盾）：假设存在判定器 $M_{\text{HALT}}$，构造机器 $M_{\text{flip}}$，在输入 $\alpha$ 上若 $M_{\text{HALT}}(\alpha, \alpha)$ 回答”停机”则死循环，否则停机。考虑 $M_{\text{flip}}$ 以自身编码 $\beta$ 为输入，两种情况均产生矛盾。
+这一证明结构揭示：语言的数量（${0,1}^*$ 的幂集）是不可数的，而图灵机的数量是可数的，因此几乎所有语言都不可判定。
+4.2 莱斯定理（Rice’s Theorem）图灵机识别语言的任何非平凡性质都是不可判定的。
+形式化：设 $P$ 是图灵可识别语言的一个非平凡性质（$P \ne \emptyset$ 且 $P \ne \Sigma^*$），则 ${\alpha : L(M_\alpha) \in P}$ 不可判定。
+证明通过将 $L_{\text{accept}}$ 归约到判定 $P$ 来完成：给定 $(\alpha, x)$，构造机器 $M_\gamma$（先模拟 $M_\alpha$ 接受 $x$，再模拟具有性质 $P$ 的参考机器 $M_\beta$）。若 $M_\alpha$ 接受 $x$ 则 $L(M_\gamma) &#x3D; L(M_\beta) \in P$，否则 $L(M_\gamma) &#x3D; \emptyset \notin P$。莱斯定理说明我们永远无法写出一个通用的程序分析工具来判定代码的任意非平凡语义性质，这是静态分析领域的根本局限。
+4.3 波斯特对应问题（PCP）PCP 问题：给定多米诺骨牌集合 ${[t_i &#x2F; b_i]}$，是否存在序列 $i_1, \dots, i_m$ 使得 $t_{i_1} \dots t_{i_m} &#x3D; b_{i_1} \dots b_{i_m}$？
+PCP 不可判定（Post 1946）——构造从 $L_{\text{accept}}$ 到 PCP 的归约，用骨牌编码图灵机的运行历史（初始格局、转移规则、接受格局），使得存在匹配当且仅当机器接受输入。
+4.4 哥德尔不完备性定理任何包含皮亚诺算术的一致形式系统都存在不可判定命题。证明的核心是将 PCP 的不可判定性（更深层是 $L_{\text{accept}}$）算术化：利用哥德尔 $\beta$-函数（基于中国剩余定理）将有限序列编码为自然数，在算术语言中表达”存在匹配序列”。若系统完备，则可判定 PCP，矛盾。
+
+五、计算复杂性：时间与空间的代价5.1 P 类$$P &#x3D; \bigcup_{k \ge 1} \text{DTIME}(n^k)$$
+P 类是”高效可解”问题的数学抽象。多项式在加法、乘法、复合下封闭，因此 P 类对算法组合是稳健的。代表性高效算法：BFS&#x2F;DFS（$O(|V|+|E|)$）、Dijkstra（$\tilde{O}(n)$）、最大流的近线性算法（Chen et al. 2022：$O(E^{1+o(1)})$）。
+线性规划（LP）的历史清晰反映了复杂度的进展：单纯形法最坏情况指数、椭球法 $O(m^4 L)$（首个多项式时间）、内点法 $O(m^{3.5} L)$，直至随机化内点法 $\tilde{O}(m^\omega)$（$\omega &lt; 2.37$）。
+5.2 NP 类与两种等价视角$$NP &#x3D; \bigcup_{c \ge 1} \text{NTIME}(n^c)$$
+视角一（求解）：NP 是非确定性图灵机（NTM）在多项式时间内可求解的问题集合。NTM 的每步可有多个分支选择，只要存在一条接受路径即接受。
+视角二（验证）：NP 等价于”有多项式长度证书可在多项式时间内验证”的问题集合。
+形式化（定理 5.16）：$L \in NP$ 当且仅当存在多项式时间验证器 $M$ 满足：
+
+完备性：若 $x \in L$，则存在证书 $w$ 使 $M(x, w) &#x3D; 1$；
+可靠性：若 $x \notin L$，则对所有 $w$ 均有 $M(x, w) &#x3D; 0$。
+
+5.3 NP 完全性与 Cook-Levin 定理NP-Hard：问题 $L$ 是 NP-Hard 当且仅当每个 NP 问题都可多项式时间归约到 $L$。
+NP-Complete (NPC)：$L \in NP$ 且 $L$ 是 NP-Hard。
+定理（Cook-Levin）：SAT 是 NP-Complete。
+SAT 是 NP 的经典”完全证明方法使用计算快照（Tableau）”：将 NTM 的 $T(n) \times T(n)$ 计算历史用布尔变量编码，添加唯一性约束、初始化约束、转移规则约束和接受约束，总公式大小 $O(T(n)^2)$（多项式）。
+从 SAT 出发，通过归约树可证明大量问题的 NP 完全性：
+SAT → 3SAT → INDSET → CLIQUE
+                    → VERTEX-COVER
+          → HAM-PATH → TSP
+          → SUBSET SUM → PARTITION
+          → INTEGER PROGRAMMING
+
+3SAT $\le_p$ INDSET 的 Gadget 构造：对每个子句创建一个三角形（内部节点两两相连），子句间互斥的文字对连冲突边。大小为 $m$（子句数量）的独立集存在当且仅当 3CNF 可满足。
+INDSET $\le_p$ CLIQUE：利用补图，独立集与补图中的团一一对应。
+dHAMPATH $\le_p$ HAMPATH：节点分裂技巧将有向约束嵌入无向图。
+对于整数分解（给定 $N$，是否存在因子 $d \in [L, R]$），目前认为属于 $NP \cap coNP$ 但不是 NPC，量子计算机上可用 Shor 算法多项式时间求解——这是 RSA 加密体系的安全性假设。
+5.4 时间层级定理与 Ladner 定理时间层级定理：若 $f(n) \log f(n) &#x3D; o(g(n))$，则 $\text{DTIME}(f(n)) \subsetneq \text{DTIME}(g(n))$——更多时间确实能解更多问题。直接推论：$P \subsetneq EXP$。
+Ladner 定理：若 $P \ne NP$，则存在 NP 中既不属于 P 也不属于 NPC 的语言（NP-Intermediate）。图同构和整数分解是主流候选者。
+5.5 空间复杂性$$L &#x3D; \text{SPACE}(\log n), \quad NL &#x3D; \text{NSPACE}(\log n), \quad PSPACE &#x3D; \bigcup_k \text{SPACE}(n^k)$$
+Savitch 定理：$\text{NSPACE}(S(n)) \subseteq \text{SPACE}(S(n)^2)$，即 $PSPACE &#x3D; NPSPACE$。证明通过递归地解决”是否存在路径从格局 $C$ 到 $C’$ 长度 $\le 2^i$”，每层仅存储中间节点，总空间 $O(S(n)) \times O(S(n)) &#x3D; O(S(n)^2)$。
+TQBF（真量化布尔公式）是 PSPACE-Complete，可视为两方博弈：存在玩家选择 $\exists$ 变量，全称玩家选择 $\forall$ 变量，代表广义棋盘游戏的难度下界。
+5.6 层级关系全景$$L \subseteq NL \subseteq P \subseteq NP \subseteq PSPACE \subseteq EXP \subseteq EXPSPACE$$
+其中 $P \ne EXP$ 已证（时间层级定理），$P \ne PSPACE$ 已证（空间层级定理间接）。最核心的开放问题：
+
+$P \stackrel{?}{&#x3D;} NP$（千禧年问题之一）
+$P \stackrel{?}{&#x3D;} BPP$（确定性 vs 随机化多项式时间）
+$NL \stackrel{?}{&#x3D;} P$（对数空间非确定性 vs 多项式时间确定性）
+
+若 $P &#x3D; NP$，则密码学中的单向函数不存在，现代公钥体系（RSA、椭圆曲线）将全面崩溃。
+
+延伸阅读
+[Sipser《计算理论导引》]：计算理论的经典教材，定义严格，例子丰富，对正则语言、上下文无关语言到图灵机有完整的处理。
+[Arora &amp; Barak《计算复杂性》]：进阶复杂性理论的标准参考，覆盖交互式证明、随机性、电路复杂性等。
+下一篇预告：深入探讨随机算法与概率复杂性类 BPP——当允许算法”掷硬币”时，计算边界是否会改变？
+
+]]></content>
+      <categories>
+        <category>CS-Fundamentals</category>
+      </categories>
+      <tags>
+        <tag>计算理论</tag>
+        <tag>渐近记号</tag>
+        <tag>自动机</tag>
+        <tag>图灵机</tag>
+        <tag>NP完全性</tag>
+        <tag>复杂度理论</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Git 工作流进阶：从 rebase 到 worktree 的高效实践</title>
     <url>/2023/12/02/git-advanced-workflow/</url>
     <content><![CDATA[
@@ -75,83 +492,10 @@ Vim 配置：打造适合系统开发的终端 IDE
       </tags>
   </entry>
   <entry>
-    <title>从零实现一个简易操作系统内核（一）：启动与保护模式</title>
-    <url>/2026/03/02/build-os-kernel-01/</url>
-    <content><![CDATA[
-本系列记录从零搭建一个 x86 教学 OS 的完整过程，涵盖 Bootloader、保护模式切换、中断处理、内存分页和进程调度。
-
-项目目标实现一个能够：
-
-从 BIOS 引导启动
-切换到 32 位保护模式
-处理键盘中断
-支持基本的进程调度
-提供简单的系统调用接口
-
-的教学操作系统内核。
-第一阶段：BootloaderBIOS 将 MBR（主引导记录，512 字节）加载到 0x7C00 并跳转执行。
-; boot.asm - 16位实模式 Bootloader
-[BITS 16]
-[ORG 0x7C00]
-
-start:
-    ; 清屏
-    mov ax, 0x03
-    int 0x10
-
-    ; 打印启动信息
-    mov si, msg_boot
-    call print_string
-
-    ; 加载内核到内存 0x10000
-    mov ah, 0x02        ; BIOS 读取扇区
-    mov al, 10          ; 读 10 个扇区
-    mov ch, 0           ; 柱面 0
-    mov cl, 2           ; 从第 2 扇区开始
-    mov dh, 0           ; 磁头 0
-    mov bx, 0x1000
-    mov es, bx
-    mov bx, 0           ; 目标地址 ES:BX = 0x10000
-    int 0x13
-    jc disk_error
-
-    jmp enter_protected_mode
-
-msg_boot db &#39;Loading Kevin OS...&#39;, 0x0D, 0x0A, 0
-
-times 510 - ($ - $$) db 0
-dw 0xAA55               ; 引导扇区魔数
-
-切换保护模式enter_protected_mode:
-    cli                     ; 关中断
-    lgdt [gdt_descriptor]   ; 加载 GDT
-
-    mov eax, cr0
-    or eax, 1
-    mov cr0, eax            ; 置 PE 位
-
-    jmp 0x08:protected_mode_start  ; 远跳刷新流水线
-
-下一篇预告
-GDT 与段描述符详解
-IDT 配置与 IRQ 中断处理
-进入 C 语言内核环境
-
-]]></content>
-      <categories>
-        <category>Projects</category>
-      </categories>
-      <tags>
-        <tag>操作系统</tag>
-        <tag>x86</tag>
-        <tag>汇编</tag>
-        <tag>项目实战</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>系统程序员视角：并发陷阱与内存模型精析</title>
     <url>/2025/11/25/concurrent-programming-traps-memory-model/</url>
-    <content><![CDATA[
+    <content><![CDATA[原始论文：https://github.com/mrkline/concurrency-primer
+
 现代多核处理器为了追求极致性能，在编译器、CPU 微架构和缓存层次三个维度上对指令执行顺序进行了激进的重排优化。这些优化在单线程程序中不可见，却在并发场景下引发了难以复现的正确性问题。本文从系统程序员视角出发，系统梳理这些陷阱的根源，以及 C++11 内存模型如何在不牺牲性能的前提下给出精确的解决方案。
 
 1. 并发正确性的三大破坏者并发程序的正确性依赖于一个朴素假设：代码按书写顺序执行，写入立即对所有核心可见。然而现代计算机体系结构在三个层面上系统性地打破了这一假设。
@@ -368,6 +712,7 @@ C++11 memory_order 枚举
 ]]></content>
       <categories>
         <category>Systems-HPC</category>
+        <category>Paper-Reading</category>
       </categories>
       <tags>
         <tag>并发编程</tag>
@@ -376,589 +721,6 @@ C++11 memory_order 枚举
         <tag>无锁编程</tag>
         <tag>ARM</tag>
         <tag>缓存一致性</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>计算理论全景：从渐近记号到 NP 完全性</title>
-    <url>/2026/01/02/cs-theory-automata-complexity-notes/</url>
-    <content><![CDATA[
-计算理论研究的是”什么是可计算的”以及”计算的代价是多少”。这两个问题看似简单，却奠定了现代密码学、算法设计和人工智能可信性的数学基础。本文整理了从渐近记号出发，贯穿形式语言、图灵机模型、不可判定性，直到 P vs NP 的完整知识框架。
-
-一、渐近记号：精确刻画增长率在分析算法时，我们关心的不是具体运行时间，而是输入规模 $n$ 趋于无穷时函数的增长行为。渐近记号体系为此提供了精确的语言。
-1.1 核心定义大 O 记号（上界）： $f &#x3D; O(g)$ 当且仅当
-$$(\exists c &gt; 0)(\exists N)(\forall x \ge N);|f(x)| \le c \cdot |g(x)|$$
-即对充分大的 $x$，$f$ 至多以 $g$ 的常数倍增长。
-小 o 记号（严格上界）： $f(x) &#x3D; o(g(x))$ 当且仅当
-$$\lim_{n \to \infty} \frac{f(n)}{g(n)} &#x3D; 0$$
-例如 $2n &#x3D; o(n^2)$，但 $2n \ne o(n)$。
-$\Omega$ 记号（下界）： $f &#x3D; \Omega(g)$ 当且仅当 $g &#x3D; O(f)$，即 $f$ 至少以 $g$ 的常数倍增长。
-$\Theta$ 记号（精确界）： $f &#x3D; \Theta(g)$ 当且仅当 $f &#x3D; O(g)$ 且 $f &#x3D; \Omega(g)$，记作 $f \sim g$。
-$\tilde{O}$ 记号（忽略对数因子）： $f(x) &#x3D; \tilde{O}(g(x))$ 当且仅当存在常数 $c$ 使得 $|f(x)| \le (\log n)^c |g(x)|$。”拟线性时间”即 $\tilde{O}(n)$，例如 $O(n \log n)$。
-1.2 复杂度类速查
-
-
-记号
-含义
-
-
-
-$O(1)$
-常数时间
-
-
-$O(\log n)$
-对数时间
-
-
-$O(n)$
-线性时间
-
-
-$O(n \log n)$
-拟线性（即 $\tilde{O}(n)$）
-
-
-$O(n^2)$
-二次时间
-
-
-$O(n^c)$
-多项式时间，记作 $\text{poly}(n)$
-
-
-$2^{O(\log n)}$
-拟多项式时间
-
-
-$O(c^n)$
-指数时间
-
-
-1.3 重要示例调和级数满足 $1 + \frac{1}{2} + \dots + \frac{1}{n} &#x3D; \ln n + O(1)$，可通过比较积分 $\int_1^n \frac{1}{x} dx$ 几何理解。
-乘法的封闭性：若 $f_1 &#x3D; O(g_1)$ 且 $f_2 &#x3D; O(g_2)$，则 $f_1 f_2 &#x3D; O(g_1 g_2)$。加法封闭：$f_1 + f_2 &#x3D; O(\max(g_1, g_2))$。
-
-二、形式语言与自动机理论2.1 基础概念字母表 $\Sigma$ 是符号的有限集合，其上的字符串是有限符号序列，空字符串记 $\epsilon$。
-$$\Sigma^* &#x3D; {\epsilon} \cup \Sigma \cup \Sigma^2 \cup \dots$$
-语言 $L \subseteq \Sigma^$ 是字符串的集合。语言支持布尔运算（并、交、补）、连接运算 $L_1 L_2 &#x3D; {xy \mid x \in L_1, y \in L_2}$ 以及*克林闭包 $L^* &#x3D; {w_1 \dots w_k \mid k \ge 0, w_i \in L}$。
-2.2 确定性有限自动机（DFA）DFA 是五元组 $(Q, \Sigma, \delta, q_0, F)$，其中 $Q$ 是有限状态集，$\delta: Q \times \Sigma \to Q$ 是确定性转移函数，$q_0$ 是起始状态，$F \subseteq Q$ 是接受状态集。
-机器接受字符串 $w &#x3D; w_1 \dots w_n$ 当且仅当存在状态序列 $r_0, r_1, \dots, r_n$ 满足：$r_0 &#x3D; q_0$，$\delta(r_i, w_{i+1}) &#x3D; r_{i+1}$，且 $r_n \in F$。
-经典例子：识别二进制表示中被 3 整除的整数。三个状态 $q_0, q_1, q_2$ 分别表示当前数模 3 余 0、1、2，转移规则为读入比特 $a$ 后余数变为 $2r + a \pmod{3}$。
-正则语言：某个 DFA 识别的语言。正则语言族在补运算、并运算、交运算下均封闭（后者通过乘积构造证明）。
-2.3 非确定性有限自动机（NFA）与子集构造NFA 的转移函数为 $\delta: Q \times \Sigma_\epsilon \to P(Q)$，允许 $\epsilon$-转移（无需消耗输入）。机器接受字符串当且仅当计算树中存在至少一条路径到达接受状态。
-定理（等价性）：每个 NFA 都有等价的 DFA。构造方法——幂集构造法：令 DFA 的状态为 NFA 状态集的子集，$Q’ &#x3D; P(Q)$，转移时取 $\epsilon$-闭包。由此推论：语言是正则的当且仅当某个 NFA 识别它。
-正则语言对连接运算与克林闭包同样封闭，可通过 NFA 构造（$\epsilon$-转移串联）证明。
-2.4 正则表达式正则表达式由原子（$a \in \Sigma$、$\epsilon$、$\emptyset$）及并、连接、$*$ 三种运算归纳定义。
-定理：语言是正则语言当且仅当某个正则表达式描述它。从正则表达式到 NFA 的转换是构造性的；反向（DFA 转正则表达式）通过广义非确定性有限自动机（GNFA）逐步消去中间节点，每次消去状态 $q_{rip}$ 时更新转移标记：
-$$R_{\text{new}} &#x3D; R_{i,j} \cup (R_{i,\text{rip}}) (R_{\text{rip},\text{rip}})^* (R_{\text{rip},j})$$
-2.5 非正则语言与泵引理正则语言的存在基于有限状态机，这天生限制了它能处理的语言范畴。
-泵引理：若 $L$ 是正则语言，则存在泵长度 $p$ 使得任意 $|s| \ge p$ 的 $s \in L$ 均可分解为 $xyz$，满足：(1) 对所有 $i \ge 0$，$xy^iz \in L$；(2) $|y| &gt; 0$；(3) $|xy| \le p$。
-经典反例：${0^n 1^n \mid n \ge 0}$ 不是正则语言。取 $s &#x3D; 0^p 1^p$，$xy$ 部分必全为 0，泵送 $y$ 后 0 的数量多于 1，矛盾。
-
-三、图灵机：计算能力的极限模型3.1 形式定义图灵机是七元组 $(Q, \Sigma, \Gamma, \delta, q_0, q_{\text{accept}}, q_{\text{reject}})$，其转移函数 $\delta: Q \times \Gamma \to Q \times \Gamma \times {L, R}$ 描述”读-写-移”三件事。若机器对所有输入停机并正确分类，则称它判定该语言；若它接受所有属于该语言的字符串（但不保证对不属于该语言的输入停机），则称它识别该语言。
-图灵可识别的语言包含所有可判定语言，但反之不成立（停机问题 $L_{\text{HALT}}$ 是可识别而不可判定的典型例子）。
-3.2 等价变体图灵机的多种变体在计算能力上等价，但时间开销存在差异：
-
-多带图灵机：$k$ 带机可被单带机以 $O(T(n)^2)$ 代价模拟（分隔符 # 串联带子内容）。
-RAM 图灵机：支持随机访问存储，可模拟 x86-64 汇编的 MOV&#x2F;ADD&#x2F;JMP 等指令，能被多带机以 $O(T(n)^3)$ 代价模拟，构成”强丘奇-图灵论题”的形式支撑。
-
-丘奇-图灵论题（弱形式）：任何物理上可计算的函数均可被图灵机计算。强形式进一步声明代价至多相差多项式——量子计算被认为是最重要的潜在例外（Shor 算法）。
-3.3 通用图灵机（UTM）存在一台三带 UTM $U$，使得 $U(\alpha, x) &#x3D; M_\alpha(x)$，其中 $\alpha$ 是图灵机 $M$ 的编码。若 $M_\alpha$ 在 $T$ 步内停机，则 $U$ 在 $O(T \log T)$ 步内停机（Hennie-Stearns 模拟，利用分区&#x2F;倍增技巧降低带子移动代价）。UTM 的存在说明程序本质上也是数据，这是现代可编程计算机架构的理论基础。
-
-四、不可判定性：计算的边界4.1 停机问题$$L_{\text{HALT}} &#x3D; {(\alpha, x) : M_\alpha \text{ 在输入 } x \text{ 上停机}}$$
-$L_{\text{HALT}}$ 不可判定——证明采用对角化（自引用矛盾）：假设存在判定器 $M_{\text{HALT}}$，构造机器 $M_{\text{flip}}$，在输入 $\alpha$ 上若 $M_{\text{HALT}}(\alpha, \alpha)$ 回答”停机”则死循环，否则停机。考虑 $M_{\text{flip}}$ 以自身编码 $\beta$ 为输入，两种情况均产生矛盾。
-这一证明结构揭示：语言的数量（${0,1}^*$ 的幂集）是不可数的，而图灵机的数量是可数的，因此几乎所有语言都不可判定。
-4.2 莱斯定理（Rice’s Theorem）图灵机识别语言的任何非平凡性质都是不可判定的。
-形式化：设 $P$ 是图灵可识别语言的一个非平凡性质（$P \ne \emptyset$ 且 $P \ne \Sigma^*$），则 ${\alpha : L(M_\alpha) \in P}$ 不可判定。
-证明通过将 $L_{\text{accept}}$ 归约到判定 $P$ 来完成：给定 $(\alpha, x)$，构造机器 $M_\gamma$（先模拟 $M_\alpha$ 接受 $x$，再模拟具有性质 $P$ 的参考机器 $M_\beta$）。若 $M_\alpha$ 接受 $x$ 则 $L(M_\gamma) &#x3D; L(M_\beta) \in P$，否则 $L(M_\gamma) &#x3D; \emptyset \notin P$。莱斯定理说明我们永远无法写出一个通用的程序分析工具来判定代码的任意非平凡语义性质，这是静态分析领域的根本局限。
-4.3 波斯特对应问题（PCP）PCP 问题：给定多米诺骨牌集合 ${[t_i &#x2F; b_i]}$，是否存在序列 $i_1, \dots, i_m$ 使得 $t_{i_1} \dots t_{i_m} &#x3D; b_{i_1} \dots b_{i_m}$？
-PCP 不可判定（Post 1946）——构造从 $L_{\text{accept}}$ 到 PCP 的归约，用骨牌编码图灵机的运行历史（初始格局、转移规则、接受格局），使得存在匹配当且仅当机器接受输入。
-4.4 哥德尔不完备性定理任何包含皮亚诺算术的一致形式系统都存在不可判定命题。证明的核心是将 PCP 的不可判定性（更深层是 $L_{\text{accept}}$）算术化：利用哥德尔 $\beta$-函数（基于中国剩余定理）将有限序列编码为自然数，在算术语言中表达”存在匹配序列”。若系统完备，则可判定 PCP，矛盾。
-
-五、计算复杂性：时间与空间的代价5.1 P 类$$P &#x3D; \bigcup_{k \ge 1} \text{DTIME}(n^k)$$
-P 类是”高效可解”问题的数学抽象。多项式在加法、乘法、复合下封闭，因此 P 类对算法组合是稳健的。代表性高效算法：BFS&#x2F;DFS（$O(|V|+|E|)$）、Dijkstra（$\tilde{O}(n)$）、最大流的近线性算法（Chen et al. 2022：$O(E^{1+o(1)})$）。
-线性规划（LP）的历史清晰反映了复杂度的进展：单纯形法最坏情况指数、椭球法 $O(m^4 L)$（首个多项式时间）、内点法 $O(m^{3.5} L)$，直至随机化内点法 $\tilde{O}(m^\omega)$（$\omega &lt; 2.37$）。
-5.2 NP 类与两种等价视角$$NP &#x3D; \bigcup_{c \ge 1} \text{NTIME}(n^c)$$
-视角一（求解）：NP 是非确定性图灵机（NTM）在多项式时间内可求解的问题集合。NTM 的每步可有多个分支选择，只要存在一条接受路径即接受。
-视角二（验证）：NP 等价于”有多项式长度证书可在多项式时间内验证”的问题集合。
-形式化（定理 5.16）：$L \in NP$ 当且仅当存在多项式时间验证器 $M$ 满足：
-
-完备性：若 $x \in L$，则存在证书 $w$ 使 $M(x, w) &#x3D; 1$；
-可靠性：若 $x \notin L$，则对所有 $w$ 均有 $M(x, w) &#x3D; 0$。
-
-5.3 NP 完全性与 Cook-Levin 定理NP-Hard：问题 $L$ 是 NP-Hard 当且仅当每个 NP 问题都可多项式时间归约到 $L$。
-NP-Complete (NPC)：$L \in NP$ 且 $L$ 是 NP-Hard。
-定理（Cook-Levin）：SAT 是 NP-Complete。
-SAT 是 NP 的经典”完全证明方法使用计算快照（Tableau）”：将 NTM 的 $T(n) \times T(n)$ 计算历史用布尔变量编码，添加唯一性约束、初始化约束、转移规则约束和接受约束，总公式大小 $O(T(n)^2)$（多项式）。
-从 SAT 出发，通过归约树可证明大量问题的 NP 完全性：
-SAT → 3SAT → INDSET → CLIQUE
-                    → VERTEX-COVER
-          → HAM-PATH → TSP
-          → SUBSET SUM → PARTITION
-          → INTEGER PROGRAMMING
-
-3SAT $\le_p$ INDSET 的 Gadget 构造：对每个子句创建一个三角形（内部节点两两相连），子句间互斥的文字对连冲突边。大小为 $m$（子句数量）的独立集存在当且仅当 3CNF 可满足。
-INDSET $\le_p$ CLIQUE：利用补图，独立集与补图中的团一一对应。
-dHAMPATH $\le_p$ HAMPATH：节点分裂技巧将有向约束嵌入无向图。
-对于整数分解（给定 $N$，是否存在因子 $d \in [L, R]$），目前认为属于 $NP \cap coNP$ 但不是 NPC，量子计算机上可用 Shor 算法多项式时间求解——这是 RSA 加密体系的安全性假设。
-5.4 时间层级定理与 Ladner 定理时间层级定理：若 $f(n) \log f(n) &#x3D; o(g(n))$，则 $\text{DTIME}(f(n)) \subsetneq \text{DTIME}(g(n))$——更多时间确实能解更多问题。直接推论：$P \subsetneq EXP$。
-Ladner 定理：若 $P \ne NP$，则存在 NP 中既不属于 P 也不属于 NPC 的语言（NP-Intermediate）。图同构和整数分解是主流候选者。
-5.5 空间复杂性$$L &#x3D; \text{SPACE}(\log n), \quad NL &#x3D; \text{NSPACE}(\log n), \quad PSPACE &#x3D; \bigcup_k \text{SPACE}(n^k)$$
-Savitch 定理：$\text{NSPACE}(S(n)) \subseteq \text{SPACE}(S(n)^2)$，即 $PSPACE &#x3D; NPSPACE$。证明通过递归地解决”是否存在路径从格局 $C$ 到 $C’$ 长度 $\le 2^i$”，每层仅存储中间节点，总空间 $O(S(n)) \times O(S(n)) &#x3D; O(S(n)^2)$。
-TQBF（真量化布尔公式）是 PSPACE-Complete，可视为两方博弈：存在玩家选择 $\exists$ 变量，全称玩家选择 $\forall$ 变量，代表广义棋盘游戏的难度下界。
-5.6 层级关系全景$$L \subseteq NL \subseteq P \subseteq NP \subseteq PSPACE \subseteq EXP \subseteq EXPSPACE$$
-其中 $P \ne EXP$ 已证（时间层级定理），$P \ne PSPACE$ 已证（空间层级定理间接）。最核心的开放问题：
-
-$P \stackrel{?}{&#x3D;} NP$（千禧年问题之一）
-$P \stackrel{?}{&#x3D;} BPP$（确定性 vs 随机化多项式时间）
-$NL \stackrel{?}{&#x3D;} P$（对数空间非确定性 vs 多项式时间确定性）
-
-若 $P &#x3D; NP$，则密码学中的单向函数不存在，现代公钥体系（RSA、椭圆曲线）将全面崩溃。
-
-延伸阅读
-[Sipser《计算理论导引》]：计算理论的经典教材，定义严格，例子丰富，对正则语言、上下文无关语言到图灵机有完整的处理。
-[Arora &amp; Barak《计算复杂性》]：进阶复杂性理论的标准参考，覆盖交互式证明、随机性、电路复杂性等。
-下一篇预告：深入探讨随机算法与概率复杂性类 BPP——当允许算法”掷硬币”时，计算边界是否会改变？
-
-]]></content>
-      <categories>
-        <category>CS-Fundamentals</category>
-      </categories>
-      <tags>
-        <tag>计算理论</tag>
-        <tag>渐近记号</tag>
-        <tag>自动机</tag>
-        <tag>图灵机</tag>
-        <tag>NP完全性</tag>
-        <tag>复杂度理论</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>内存模型与无锁编程：从 CPU 缓存到 C++ 原子操作</title>
-    <url>/2025/12/28/memory-model-lockfree/</url>
-    <content><![CDATA[
-本文是「底层架构与高性能计算」系列的第一篇，聚焦 C++ 内存模型与无锁数据结构的核心思想。
-
-为什么要理解内存模型？现代多核 CPU 的硬件优化（乱序执行、写缓冲区、缓存一致性协议）会让”看似正确”的并发代码产生灾难性的错误。理解内存模型是写出正确无锁程序的前提。
-CPU 缓存层次与一致性L1 Cache (每核独享, ~4 cycles)
-L2 Cache (每核独享或共享, ~12 cycles)
-L3 Cache (所有核共享, ~40 cycles)
-主内存 (~200 cycles)
-
-MESI 协议保证缓存一致性，但并不保证可见性顺序。
-C++ 内存序简介#include &lt;atomic&gt;
-
-std::atomic&lt;int&gt; flag{0};
-std::atomic&lt;int&gt; data{0};
-
-// 生产者
-void producer() {
-    data.store(42, std::memory_order_relaxed);
-    flag.store(1, std::memory_order_release); // Release 屏障
-}
-
-// 消费者
-void consumer() {
-    while (flag.load(std::memory_order_acquire) == 0) {} // Acquire 屏障
-    // 保证能看到 data = 42
-    assert(data.load(std::memory_order_relaxed) == 42);
-}
-
-
-
-
-内存序
-含义
-
-
-
-relaxed
-仅保证原子性，不约束顺序
-
-
-acquire
-本线程后续读写不能重排到此操作之前
-
-
-release
-本线程之前的读写不能重排到此操作之后
-
-
-seq_cst
-全局顺序一致（性能最低）
-
-
-下一篇预告
-Lock-Free Queue 的完整实现（基于 compare_exchange_weak）
-ABA 问题及解决方案（Tagged Pointer &#x2F; Hazard Pointer）
-
-]]></content>
-      <categories>
-        <category>Systems-HPC</category>
-      </categories>
-      <tags>
-        <tag>并发编程</tag>
-        <tag>内存模型</tag>
-        <tag>C++</tag>
-        <tag>无锁编程</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>日志结构文件系统：磁盘带宽利用的极致追求</title>
-    <url>/2025/09/23/log-structured-filesystem-design/</url>
-    <content><![CDATA[
-传统文件系统将磁盘视为可随机寻址的块设备，大量小文件操作导致磁盘带宽利用率不足 5%。Rosenblum 与 Ousterhout 在 1992 年发表的论文《The Design and Implementation of a Log-Structured File System》，从硬件发展趋势的不平衡性出发，提出了一种颠覆性方案：将整个磁盘视为一个顺序追加的日志，在极大提升写性能的同时，兼顾了崩溃恢复的高效性。
-
-1. 问题的根源：硬件发展的不平衡文件系统性能由三个核心硬件组件共同决定，而它们的发展速度存在根本性的不对称：
-
-处理器：性能呈指数级增长，形成巨大的 I&#x2F;O 压力；
-主内存：容量持续扩大，能够缓存大量读请求，使磁盘的读负载大幅降低，工作负载逐渐以写操作为主；
-机械磁盘：传输带宽提升有限，而寻道时间几乎没有改善。
-
-这一趋势意味着：磁盘的主要瓶颈不在于数据传输速率，而在于随机寻道的机械延迟。
-传统文件系统（如 Unix FFS）对写操作的实现与此趋势严重背离。以创建一个小文件为例，该操作会被分解为多次独立的磁盘写入（目录数据、目录 inode、文件数据、文件 inode、位图等），每次写入均可能触发一次独立寻道，导致磁盘大部分时间耗费在机械臂移动上，实际带宽利用率甚至低于 5%。
-2. LFS 的核心思想：顺序写日志LFS（Log-Structured File System）的设计哲学是：将文件系统的接口实现与底层磁盘布局彻底解耦。
-2.1 写入策略无论上层发起多少次零散的写操作，LFS 在内存中维护一个写缓冲区，将所有脏数据（包括文件数据、inode、目录块等）集中缓存，待积累到足够大（通常为若干 MB）时，以一次大的顺序磁盘写入将所有变更追加到磁盘日志的末尾，丢弃原始位置的旧数据块，不执行原地更新（in-place update）。
-传统 FFS 写 N 个小文件：N 次随机写 → 带宽 &lt; 5%
-LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
-
-这一设计将大量随机写操作转化为单次大型顺序写，从根本上规避了寻道延迟。
-2.2 崩溃恢复的简化由于最新的所有修改都集中在日志末尾，崩溃恢复无需像 fsck 那样扫描整个磁盘寻找不一致。LFS 只需检查日志的最新部分，将恢复时间从数十分钟缩短到数十秒。
-3. 高效读取：inode Map 机制3.1 传统文件系统的定位优势在 FFS 中，inode 的磁盘位置由文件编号直接计算得出，定位开销为零。LFS 每次修改文件都会将 inode 写入新位置，inode 的磁盘地址不再固定，若不加处理，读取性能将急剧退化。
-3.2 inode Map：解耦接口与实现LFS 引入了 inode Map（inode 映射表）来解决这一问题：
-文件编号 → inode Map → inode 在日志中的当前物理地址 → 文件数据
-
-inode Map 的元数据本身也以顺序方式写入日志，其当前位置由磁盘固定区域（检查点区域，Checkpoint Region）记录。
-由于 inode Map 所占空间相对于总磁盘空间极小，其活跃部分可完整缓存在主内存中。因此，绝大多数文件定位操作不需要额外的磁盘访问，读取性能可与 Unix FFS 相媲美。
-这正是”接口与实现解耦“思想的体现：上层看到的仍是”通过文件编号访问文件”的稳定抽象，底层实现则通过 inode Map 透明地处理了日志化带来的地址不固定问题。
-4. 空间回收：段清理的成本-收益策略4.1 碎片化问题的必然性由于 LFS 不执行原地更新，旧数据块持续积累，必须有机制回收这些已失效的磁盘空间。LFS 将磁盘组织为固定大小的段（Segment），段是日志追加和垃圾回收的基本单位。
-4.2 贪心策略的失败直觉上，应优先清理有效数据比例最低的段（即”最空段优先”策略）。然而仿真实验证明，贪心策略在稳态下会导致：
-
-所有段的有效数据比例趋向同一阈值，磁盘利用率被人为压低；
-包含”冷数据”（访问频率极低）的段，因数据失效缓慢，会在略高于清理阈值的位置长期占用磁盘空间，难以被回收。
-
-4.3 成本-收益分析的引入LFS 论文设计了基于清理收益与清理成本比值的评分函数来选择待清理段：
-$$\text{score}(s) &#x3D; \frac{\text{收益}}{\text{成本}} &#x3D; \frac{(1 - u) \cdot \text{age}}{1 + u}$$
-其中 $u$ 为段的有效数据比例，$\text{age}$ 为段中最年轻数据的”年龄”（衡量数据保持稳定的时间）。
-
-热段（有效数据快速失效）：代入公式，只有当 $u$ 极低时得分才足够高，约在 15% 有效数据比例时被清理；
-冷段（有效数据长期稳定）：age 值高，即便 $u$ 较大（约 75%）也能获得高分，会被提前主动清理。
-
-这一策略自然促成了理想的 双峰段分布（Bimodal Segment Distribution）：磁盘上的段要么几乎全满（冷数据稳定占用），要么几乎全空（可快速分配）。超过一半被清理的段完全为空，此时总体写入放大系数仅为 1.2–1.6，意味着 LFS 能将超过 70% 的磁盘原始带宽用于写入新数据。
-5. 崩溃恢复：检查点与前滚LFS 的崩溃恢复机制极其简洁：
-
-检查点（Checkpoint）：系统周期性地将当前一致状态的所有元数据（包括 inode Map 的完整快照）写入磁盘固定区域，固化一个”已知良好”的文件系统状态；
-前滚（Roll-Forward）：崩溃后，系统从最新检查点恢复，再向前扫描日志尾部，重放检查点之后的操作，尽可能恢复更多数据。
-
-所有待恢复信息集中于日志末尾，完全无需对整个磁盘进行 fsck 式的全量扫描。
-6. 与相关工作的对比LFS 的设计广泛借鉴并改造了已有系统思想：
-
-
-
-参考来源
-借鉴点
-LFS 的改进&#x2F;区别
-
-
-
-一次性写入介质文件系统
-追加写模式
-LFS 额外实现了日志空间回收
-
-
-分代垃圾回收器
-成本-收益选择回收对象
-LFS 必须顺序访问，利用”块最多属于一个文件”简化垃圾识别
-
-
-数据库日志
-日志作为持久化手段
-LFS 需写完整数据块（非字节级差分），并设计了段清理来压缩日志
-
-
-数据库组提交（Group Commit）
-批量合并写入
-LFS 将这一思想应用于文件系统层
-
-
-7. 总结LFS 的核心贡献在于：从硬件趋势的不平衡性出发，以”顺序追加写”重构了文件系统的底层存储模型，并通过 inode Map 保证读取性能不退化，通过成本-收益段清理解决了空间回收的复杂性，最终在一个真实系统（Sprite LFS）上验证了设计的可行性与优越性。
-LFS 的思想对后续存储系统产生了深远影响：现代 SSD 的 FTL（Flash Translation Layer）、数据库的 LSM-Tree（LevelDB、RocksDB）均采用了类似的”追加写+后台整理”策略，可以说 LFS 是这一设计范式的奠基性工作。
-延伸阅读
-[LSM-Tree]：LevelDB&#x2F;RocksDB 中的 Log-Structured Merge-Tree 与 LFS 的段清理机制有何异同，以及写放大的量化分析。
-[F2FS]：专为闪存设计的 F2FS（Flash-Friendly File System），如何将 LFS 的思想适配到 SSD 的页擦除粒度限制。
-下一篇预告：系统程序员视角下的并发陷阱——内存模型、内存屏障与无锁编程的权衡取舍。
-
-]]></content>
-      <categories>
-        <category>Systems-HPC</category>
-      </categories>
-      <tags>
-        <tag>操作系统</tag>
-        <tag>文件系统</tag>
-        <tag>LFS</tag>
-        <tag>存储系统</tag>
-        <tag>性能优化</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践</title>
-    <url>/2025/11/14/rudp-reliable-transport-over-udp/</url>
-    <content><![CDATA[
-TCP 的可靠性来自精心设计的重传机制，但其内部细节对上层应用透明。如果要在 UDP 这张”白纸”上手工绘制可靠传输，需要多少工程量？本文复盘了一次 RUDP（Reliable UDP）的完整实现，包括 Go-Back-N 与选择重传（SACK），以及针对各类异常场景的健壮性测试。
-
-一、问题背景与协议设计UDP 是面向无连接的无状态协议：快，但不可靠。数据包可能丢失、乱序、重复或损坏。在 UDP 之上实现可靠传输（RUDP），本质上是在应用层重新实现 TCP 的核心语义，但可以选择性地裁剪开销。
-1.1 消息类型定义RUDP 协议定义四种消息类型：start、data、end、ack（及 sack）。每个数据包格式如下：
-&lt;type&gt;|&lt;sequence number&gt;|&lt;data&gt;|&lt;checksum&gt;
-
-checksum 用于检测传输过程中的数据损坏，接收方在序列号确认前首先验证校验和。
-1.2 核心发送策略发送端需要满足以下约束：
-
-数据包按序、可靠送达，支持丢包、乱序、重复等异常场景；
-支持 Go-Back-N（GBN）与选择重传（Selective ACK, SACK）两种模式；
-发送窗口大小为 5，超时时间 500ms。
-
-
-二、发送端实现（Sender.py）2.1 数据分片与窗口管理文件内容按最大 1472 字节分片，加上 start 和 end 包，构成完整报文序列。核心状态变量包括：
-
-base：窗口左边界，指向最早未确认的包；
-next_seq_num：下一个待发送包的序号；
-timer：用于超时重传的时间戳。
-
-# 分片与打包
-chunks = [content[i:i+MAX_DATA_SIZE] for i in range(0, len(content), MAX_DATA_SIZE)]
-self.packets.append(self.make_packet(&#39;start&#39;, self.isn, &quot;&quot;))
-for i, chunk in enumerate(chunks[:-1]):
-    seq = self.isn + 1 + i
-    self.packets.append(self.make_packet(&#39;data&#39;, seq, chunk))
-self.packets.append(self.make_packet(&#39;end&#39;, self.isn + len(self.packets), chunks[-1]))
-
-2.2 主循环：滑动窗口 + 超时重传while self.base &lt; len(self.packets):
-    # 填满发送窗口
-    while (self.next_seq_num &lt; self.base + self.window_size
-           and self.next_seq_num &lt; len(self.packets)):
-        self.send(self.packets[self.next_seq_num])
-        if self.base == self.next_seq_num:
-            self.timer = time.time()    # 仅当新窗口打开时启动计时器
-        self.next_seq_num += 1
-
-    # 超时检测：重传窗口内所有未确认包
-    if (self.base &lt; self.next_seq_num
-            and time.time() - self.timer &gt; self.timeout):
-        self.handle_timeout()
-
-窗口语义的关键设计点：计时器仅在窗口从空变非空时启动，窗口滑动时重置，窗口归零时停止。这一逻辑若出现偏差，轻则包未及时重传，重则触发死锁。
-2.3 ACK&#x2F;SACK 处理：快速重传def handle_new_ack(self, ack):
-    self.dup_ack_count = 0
-    cum_idx, sack_indices = self._parse_ack_string(ack)
-    if cum_idx &gt; self.base:
-        self.base = cum_idx    # 滑动窗口左边界
-    if self.base &lt; self.next_seq_num:
-        self.timer = time.time()    # 仍有未确认包，重启计时器
-    else:
-        self.timer = None           # 所有包已确认，停止计时器
-    if self.sackMode:
-        self._update_sack_bitmap(sack_indices)    # 标记已选择确认的包
-
-三次重复 ACK 触发快速重传（不等待超时），这是对 TCP Fast Retransmit 的直接移植，可在高丢包场景下显著缩短恢复延迟。
-SACK 位图的核心价值在于：GBN 模式下一旦发生丢包，窗口内所有后续包必须全部重传；而 SACK 允许接收方精确告知哪些包已到达，发送端只需重传真正缺失的包，大幅降低重传放大倍数。
-
-三、测试设计：覆盖各类异常场景除了基础功能测试，以下健壮性测试用例专门针对不同类型的网络异常：
-
-
-
-测试用例
-模拟场景
-验证目标
-
-
-
-AckCorruptionTest
-ACK&#x2F;SACK 包内容损坏
-发送端对无效确认的处理
-
-
-AckDuplicationTest
-ACK&#x2F;SACK 包重复
-防止重复确认触发不必要的重传
-
-
-AckLossTest
-ACK&#x2F;SACK 包丢失
-超时重传与窗口滑动正确性
-
-
-AckReorderTest
-ACK&#x2F;SACK 包乱序
-对乱序确认的兼容性
-
-
-DataCorruptionTest
-数据包内容损坏
-接收端丢弃损坏包并正确反馈
-
-
-DataDuplicationTest
-数据包重复
-接收端去重能力
-
-
-DataReorderTest
-数据包乱序
-接收端乱序缓存与窗口滑动
-
-
-GBNTests / SackTests
-上述场景分别用于两种模式
-双模式的全覆盖验证
-
-
-RandomDropTest
-随机丢包
-高丢包环境下的整体可靠性
-
-
-3.1 测试结果分析
-GBN 模式：所有测试（含高丢包、乱序、重复）均通过，数据可靠送达，未出现死锁或永久丢包。
-SACK 模式：选择重传有效减少重传量，在高丢包环境下吞吐量明显优于 GBN。
-大文件 &#x2F; 二进制文件传输：均通过，无数据错误，证明校验与分片逻辑正确。
-
-
-四、遇到的问题与解决策略4.1 窗口滑动与定时器同步初始实现中，定时器更新时机与窗口滑动逻辑耦合不紧，导致部分已发包在某些状态下既不在定时器覆盖范围内、也未收到确认，形成”灰色包”，最终被遗忘。
-解决方案：明确定义”计时器生命周期”为”窗口非空→停机”，窗口任何变动（发包、收 ACK）都触发相应的计时器操作，消除中间状态。
-4.2 SACK 位图的双计数问题SACK 模式下，如果位图更新逻辑与累计 ACK 解析之间存在重叠，可能对同一帧计数两次，导致提前重传或错误统计。通过将 cum_idx 推进逻辑与 sack_indices 位图更新逻辑严格串行化来消除此问题。
-4.3 测试框架适配实验框架对命令行参数格式和包格式有严格要求，手动测试时通过的逻辑在自动化测试中可能因格式错误失败。应在开发阶段就对齐框架期望的格式，避免后期大量调试。
-
-五、设计权衡总结RUDP 的实现让两个关键权衡变得清晰：
-
-窗口大小 vs 延迟：窗口越大，吞吐量越高，但重传代价（GBN 模式）也越大。SACK 通过精确重传打破了这一耦合。
-超时值 vs 响应速度：超时过短导致误重传（假阳性），过长则恢复延迟高。三次重复 ACK 触发的快速重传是应对突发丢包的低延迟补偿机制，无需等待超时周期。
-
-从系统设计角度看，Go-Back-N 与 SACK 的选择实质上是”实现复杂度”与”网络效率”之间的权衡——在今天高丢包的无线网络环境中，SACK 早已是默认选择。
-
-延伸阅读
-[RFC 2018 TCP SACK 选项规范]：选择重传的标准定义，值得对照实现细节阅读。
-[QUIC 协议设计]：Google 在 UDP 之上重新设计的可靠传输协议，融合了多路复用、0-RTT 握手等现代设计，是 RUDP 思想的工业级延伸。
-下一篇预告：从传输层向上走——应用层的长程记忆问题：MemOS 记忆操作系统的工程实践。
-
-]]></content>
-      <categories>
-        <category>Projects</category>
-      </categories>
-      <tags>
-        <tag>网络编程</tag>
-        <tag>UDP</tag>
-        <tag>可靠传输</tag>
-        <tag>Go-Back-N</tag>
-        <tag>SACK</tag>
-        <tag>Python</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>操作系统的演进：从批处理到万物互联的架构变革</title>
-    <url>/2025/09/02/os-evolution-and-future/</url>
-    <content><![CDATA[
-操作系统（OS）是计算机系统中最具历史厚度的软件层。它的每一次范式转移，都深刻地折射出硬件能力的跃升与应用需求的演变。本文尝试梳理操作系统半个世纪以来的发展脉络，并对其未来走向作出前瞻性思考。
-
-1. 两大阶段：从”操作自动化”到”资源管理者”操作系统的历史可以划分为两个性质截然不同的大阶段。
-第一阶段（1950s）：批处理操作系统。彼时的操作系统是对”操作员”角色的自动化替代，其核心功能是将人工的磁带换装、卡片递交等流程自动化，以批处理方式串行执行用户作业。系统对资源没有动态调度，程序员需手动规划所有资源使用。
-第二阶段（1965 年后）：多道程序与资源管理框架。随着计算机开始服务于多个用户和多个并发任务，一个根本性的矛盾浮现：程序员对资源的手动控制既不充分（无法感知冲突），也不全面（无法充分利用空闲资源）。操作系统因此从”自动化批处理程序”升级为一个具备控制权和调度权的资源管理框架，以供其他程序在其上受控地运行。
-这一阶段的标志性成果是”计算机系统工程师”总结出的八条操作系统基本原则：交互式计算、分层文件系统、容错结构、中断系统、虚拟内存、多道程序设计、模块化设计。此后几乎所有主流操作系统都是在这八条原则的基础上构建的。
-2. 三次关键转型2.1 从汇编语言到高级语言早期操作系统以汇编语言编写，与特定硬件强绑定，不同架构的机器需要独立开发操作系统。Multics 的出现打破了这一局面：它证明了用高级语言（PL&#x2F;I）编写的操作系统不仅可行，而且在可维护性和可移植性上具有显著优势。此后，以 C 语言编写 Unix 成为里程碑式的实践，将”操作系统用高级语言实现”确立为行业共识。
-2.2 从通用主义到精简内核Multics 的设计哲学是最大通用性——尽可能解决一切问题，导致系统庞大、运行成本高昂。这一经验教训推动了反向思考：操作系统应当尽可能精简（Minimal），只提供最核心的机制，其余由用户空间程序实现。
-这一思想的产物正是 Unix，以及后来的 Linux。微内核（Microkernel）架构将内核功能精简至线程调度、基本 IPC 和最小内存管理，其他服务以独立进程形式运行于用户空间，实现了出色的模块化与可移植性。
-2.3 不同设计目标催生多元内核形态微内核并非唯一正确答案。Windows 将图形子系统（GUI）集成进内核，以牺牲部分安全隔离性为代价，换取了极低的用户态-内核态切换开销，满足了消费级用户对交互响应速度的需求。实时操作系统（RTOS） 则为了保证极低且可预测的调度延迟，甚至省去了内核态&#x2F;用户态的权限分离。
-这说明操作系统的架构选择本质上是设计目标之间的权衡，不存在普适的最优方案，只有在特定约束下的最优解。
-3. 未来操作系统的演进方向3.1 从”人机交互接口”到”世界连接层”当下的操作系统概念正在经历一次深刻的语义扩展。传统意义上的操作系统是”设备硬件资源的管理者”，但当数十亿设备接入物联网（IoT），当数字与物理世界的边界消融，操作系统开始被抽象为连接数字世界与物理世界的数字纽带。
-在这一框架下，一套分布于医疗设备、工厂机器人和家庭电器的协同调度层，在逻辑上构成了一个超宏观的”操作系统”，尽管不再与任何单一设备绑定。
-3.2 自然人机交互的新形态当前人与操作系统的交互仍以”硬交互”为主——键盘、触摸屏。然而新兴的交互技术正在重塑这一范式：Apple Vision Pro 通过眼动追踪实现光标定位，脑机接口尝试建立意图与指令之间的直接通道。这些方向预示着操作系统的输入层将向感知融合（Perceptual Integration）演进，要求 OS 能够处理高维、低延迟的感知数据流。
-3.3 元 OS Kit：面向多样设备的组件化架构面对从微控制器到超级计算机的巨大设备异质性，未来可能出现一种元 OS（Meta-OS）思路：操作系统不再是针对特定设备类型的固定实现，而是一套可按需组装的组件库（Kit）——不同场景选取不同组件子集，通过标准化接口实现跨设备互操作，让物理设备在操作系统层面实现原生协同，而非依赖复杂的软件适配层。
-3.4 异构计算与 CPU&#x2F;XPU 融合高性能计算（HPC）与人工智能对计算精度和并行度的要求迥异，二者长期处于不同的硬件生态。随着 AI 工作负载向 HPC 基础设施融合，操作系统需要统一调度 CPU（通用标量计算）与各类 XPU（GPU、TPU、NPU 等专用加速器），实现异构计算资源的透明化调度，降低数据在不同计算单元间迁移带来的能效损耗。
-3.5 机密计算：不可信基础设施下的安全保障传统操作系统的安全模型建立在”信任硬件”的前提下：只要物理设备不被篡改，数据即可视为安全。然而在云计算模式下，基础设施提供商对底层硬件具有完全控制权，应用数据面临来自”受信任但不透明”的基础设施的威胁。
-**机密计算（Confidential Computing）**架构（如 Intel SGX、AMD SEV、ARM TrustZone）通过硬件隔离的可信执行环境（TEE），使应用数据即便在不可信的基础设施上运行，也能维持端到端的隐私保护，实现”信任自己的应用，而无需信任基础设施提供商”的新安全模式。
-3.6 垂直整合：消除抽象层的冗余开销传统的”硬件 → 操作系统 → 运行时 → 应用”分层抽象带来了大量通用化开销。**垂直整合（Vertical Integration）**通过针对特定业务场景对各层进行协同设计，消除不必要的通用抽象，实现”短链条”协同：
-
-苹果 M 系列芯片与 macOS&#x2F;iOS 的深度协同；
-谷歌 TPU 与 TensorFlow&#x2F;XLA 编译器栈的联合优化；
-量化交易系统为极致低延迟而省去内核态&#x2F;用户态切换的 kernel bypass 方案（如 DPDK、RDMA）。
-
-4. 结语操作系统的演进史，是一部在硬件能力、应用需求和工程复杂性之间反复寻找平衡的历史。从批处理自动化到多道程序，从汇编单机到高级语言可移植，从通用主义到精简微内核，每一次转型背后都有明确的技术驱动力和工程权衡逻辑。
-未来，随着异构计算、物联网协同、机密计算和自然人机交互的深入，操作系统的边界将持续扩展，从管理单一设备的软件层，逐渐演化为协调数字-物理融合世界的智能基础设施。
-延伸阅读
-[Exokernel 架构]：MIT 提出的”将资源分配权下放给应用”的极简内核设计，以及它对 OS 抽象哲学的根本性挑战。
-[Unikernel]：将应用与 OS 内核编译为单一镜像的 Library OS 思路，在云原生场景下的安全性与性能优势。
-下一篇预告：SEDA 阶段式事件驱动架构——互联网服务如何在极端负载波动下优雅降级。
-
-]]></content>
-      <categories>
-        <category>CS-Fundamentals</category>
-      </categories>
-      <tags>
-        <tag>操作系统</tag>
-        <tag>系统架构</tag>
-        <tag>微内核</tag>
-        <tag>异构计算</tag>
-        <tag>云计算</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Transformer 架构精读：从 Self-Attention 到 Multi-Head Attention</title>
-    <url>/2025/03/02/transformer-deep-dive/</url>
-    <content><![CDATA[
-「Attention is All You Need」(Vaswani et al., 2017) 是现代 LLM 的基石，本文深入解析其核心机制。
-
-Self-Attention 的本质Self-Attention 让序列中每个位置都能”看到”所有其他位置，从而捕获长距离依赖。
-计算公式$$\text{Attention}(Q, K, V) &#x3D; \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
-其中：
-
-$Q$（Query）、$K$（Key）、$V$（Value）均由输入线性变换得到
-$\sqrt{d_k}$ 是缩放因子，防止内积过大导致 softmax 梯度消失
-
-PyTorch 实现片段import torch
-import torch.nn.functional as F
-
-def scaled_dot_product_attention(Q, K, V, mask=None):
-    d_k = Q.size(-1)
-    scores = torch.matmul(Q, K.transpose(-2, -1)) / (d_k ** 0.5)
-    if mask is not None:
-        scores = scores.masked_fill(mask == 0, float(&#39;-inf&#39;))
-    attn_weights = F.softmax(scores, dim=-1)
-    return torch.matmul(attn_weights, V), attn_weights
-
-Multi-Head Attention将 Q&#x2F;K&#x2F;V 投影到 $h$ 个子空间分别计算 Attention，再拼接：
-$$\text{MultiHead}(Q,K,V) &#x3D; \text{Concat}(\text{head}_1, \ldots, \text{head}_h)W^O$$
-好处：不同 head 可以关注不同语义维度（句法、语义、指代等）。
-与 RNN&#x2F;LSTM 的对比
-
-
-维度
-RNN&#x2F;LSTM
-Transformer
-
-
-
-并行度
-串行（时间步依赖）
-完全并行
-
-
-长依赖
-梯度消失
-O(1) 路径长度
-
-
-复杂度
-O(n)
-O(n²) 注意力
-
-
-]]></content>
-      <categories>
-        <category>AI-Research</category>
-      </categories>
-      <tags>
-        <tag>Transformer</tag>
-        <tag>深度学习</tag>
-        <tag>论文研读</tag>
-        <tag>NLP</tag>
       </tags>
   </entry>
   <entry>
@@ -994,563 +756,405 @@ More info: Deployment
       </tags>
   </entry>
   <entry>
-    <title>局部性原理：计算机系统资源管理的底层逻辑</title>
-    <url>/2025/10/11/locality-principle-in-os-and-computer-systems/</url>
-    <content><![CDATA[
-局部性原理（Locality Principle）是计算机系统设计中最具普适性的基础理论之一。它揭示了计算过程中资源引用的聚集性规律，为虚拟内存、CPU 缓存、数据库索引乃至推荐系统提供了统一的理论基础。本文以 Denning（2008）的综述论文为线索，系统梳理局部性原理的数学建模、历史渊源与跨领域应用。
-
-1. 局部性的核心定义在几乎所有计算过程中，程序在长时间尺度内只会反复使用资源全集的某个子集，这一普遍规律被称为局部性。
-局部性表现为两种基本形式：
-
-时间局部性（Temporal Locality）：近期被访问的对象在不久的将来大概率再次被访问。典型场景是循环体内的变量反复读写。
-空间局部性（Spatial Locality）：被访问对象的邻近对象也将很快被访问。典型场景是数组的顺序遍历。
-
-这一规律的工程价值在于：无需将完整地址空间驻留内存，只保留当前活跃的局部子集（称为局部集），即可在不显著损失性能的前提下大幅降低内存占用，同时支持对近未来访问的精准预测。
-2. 局部性的数学建模2.1 静态模型的局限早期研究将局部性表述为引用概率的非均匀分布：假设对象 $k$ 的访问概率 $p_k \propto 1&#x2F;k$（即齐普夫定律，Zipf’s Law），在整个运行时间内保持不变。
-然而，静态模型存在根本缺陷：它忽略了程序执行的阶段性，将不同阶段的访问模式混为一谈，会系统性地高估平均局部性 2 到 3 倍。
-2.2 动态局部性模型动态模型的核心改进在于引入了**阶段（Phase）**的概念。程序执行可拆分为若干阶段，每个阶段具有独立的访问概率分布；阶段间存在短暂的过渡区间，此期间对任意对象均可能发生访问。
-形式化地，动态局部性由两个层次描述：
-
-宏观模型：定义阶段的生成方式、阶段持续时间分布 $\tau$ 以及阶段间过渡概率；
-微观模型：在每个阶段内，以固定的静态概率分布生成对局部集成员的引用序列。
-
-阶段平均持续时间远长于过渡区间，这保证了在活跃阶段内缓存或模型可以有效发挥作用。
-2.3 工作集模型工作集模型（Working Set Model）是动态局部性的最重要工程化实现，由 Denning 于 1968 年提出。
-定义：$W(t, T)$ 为在时刻 $t$ 回溯时间窗口 $[t-T, t]$ 内被引用过的对象集合：
-$$W(t, T) &#x3D; { p \mid \exists t’ \in [t-T, t], \ \text{page}(t’) &#x3D; p }$$
-选取合适的窗口大小 $T$，工作集能够动态追踪程序的当前局部集，且随阶段切换自然演化。工作集模型的关键应用是防止抖动（Thrashing）：当系统为各进程分配的内存帧数之和小于所有进程工作集大小之和时，页面置换将陷入死循环，导致 CPU 有效利用率趋近于零。操作系统通过监控工作集大小并动态调整多程序度，可将系统维持在稳定工作区。
-3. 历史沿革：从 Atlas 到工作集理论局部性原理的形成经历了若干关键节点：
-Atlas 系统（1950s–60s）：最早的虚拟内存系统之一，其基于”程序具有访问循环”的假设，开发了预测未来最长时间不会使用的页面并置换之的 OPT（最优置换）算法。然而，许多程序并不具有明确循环，OPT 的预测总体表现不佳。
-IBM 沃森实验室研究：通过大量实验发现，LRU（最近最少使用，Least Recently Used）置换策略在最广泛的程序范围内表现最优，其理论根基正是引用的时间局部性聚集行为——最近被使用过的页面，在近未来被再次使用的概率最高。
-MIT MAC 项目：提出了工作集的形式化定义，并验证了其预防抖动的有效性。局部性的物理成因被归结为两点：循环执行带来的时间聚集效应，以及数据结构内部的相关数值分配带来的空间聚集效应——两者均源于人类”分而治之”的编程实践。
-4. 局部性的经典应用局部性原理被操作系统、数据库和硬件架构师广泛采纳：
+    <title>C++与数据结构</title>
+    <url>/2024/01/17/Cplusplus-and-data-structure/</url>
+    <content><![CDATA[第一章：环境与头文件 (Environment &amp; Headers)
+万能头：#include &lt;bits/stdc++.h&gt; (包含几乎所有STL)。
+I&#x2F;O流：#include &lt;iostream&gt; (cin, cout, endl)。
+C风格I&#x2F;O：#include &lt;cstdio&gt; (scanf, printf, getchar, puts)。
+字符串：#include &lt;string&gt; (string类)。
+C字符串：#include &lt;cstring&gt; (strlen, memset, strcpy, memcpy)。
+数学：#include &lt;cmath&gt; (pow, sqrt, sin, cos, abs-浮点)。
+算法：#include &lt;algorithm&gt; (sort, max, min, reverse, unique, lower_bound)。
+向量：#include &lt;vector&gt;。
+栈：#include &lt;stack&gt;。
+队列：#include &lt;queue&gt; (包含 queue 和 priority_queue)。
+双端队列：#include &lt;deque&gt;。
+集合：#include &lt;set&gt; (包含 set 和 multiset)。
+映射：#include &lt;map&gt; (包含 map 和 multimap)。
+位集合：#include &lt;bitset&gt;。
+命名空间：using namespace std; (必须写在头文件后)。
 
 
+第二章：输入输出详解 (I&#x2F;O Detail)cin&#x2F;cout 系列
 
-领域
-应用方式
-核心收益
+加速指令：ios::sync_with_stdio(0); cin.tie(0); cout.tie(0); (写在main第一行)。
+加速后果：开启加速后，严禁混用 scanf/printf。
+cin读取字符串：cin &gt;&gt; s; (遇到空格、Tab、换行符停止)。
+读一整行：getline(cin, s); (读取直到换行符，包含空格)。
+吃掉换行符：在 cin &gt;&gt; n; 后若接 getline，必须先 cin.ignore(); 或 getchar();。
+输出换行：cout &lt;&lt; &#39;\n&#39;; (比 endl 快，endl 强制刷新缓冲区)。
+多组输入(EOF)：while(cin &gt;&gt; n) { ... }。
+
+scanf&#x2F;printf 系列 (格式化)23. int：%d24. long long：%lld25. float：%f26. double：%lf (scanf必须用lf，printf可用f或lf)。27. char：%c28. char数组(字符串)：%s (遇到空格&#x2F;换行停止，不包含&amp;)。29. string类输出：printf(&quot;%s&quot;, s.c_str()); (必须转c_str)。30. 读取单个字符跳过空白：scanf(&quot; %c&quot;, &amp;c); (注意%c前面的空格，可跳过回车&#x2F;空格)。31. 固定宽度输出：%05d (宽度5，不足补0)。32. 保留小数：%.4f (保留4位小数，自动四舍五入)。33. 地址输出：%p。34. 输入日期格式：scanf(&quot;%d-%d-%d&quot;, &amp;y, &amp;m, &amp;d); (自动跳过横杠)。35. 多组输入(EOF)：while(scanf(&quot;%d&quot;, &amp;n) != EOF) { ... }。
+其他I&#x2F;O36. 快读(getchar)：c = getchar() 每次读一个字符，比scanf快。37. 输出精度控制(cout)：#include &lt;iomanip&gt;。38. cout定点：cout &lt;&lt; fixed; (后续变为定点小数模式)。39. cout精度：cout &lt;&lt; setprecision(4) &lt;&lt; val;。
+
+第三章：数据结构 API 细则 (Data Structures)1. std::vector (动态数组)
+定义：vector&lt;int&gt; v;
+定义带大小：vector&lt;int&gt; v(100); (默认全是0)。
+定义带初值：vector&lt;int&gt; v(100, -1); (100个-1)。
+尾部插入：v.push_back(val);
+尾部删除：v.pop_back(); (无返回值，空vector调用会RE)。
+大小：v.size(); (返回 size_t，比较时建议转 (int)v.size())。
+判空：v.empty(); (空返回true)。
+清空：v.clear(); (size变0，capacity不一定变)。
+首元素：v.front(); 或 v[0]。
+尾元素：v.back(); 或 v[v.size()-1]。
+调整大小：v.resize(n); (多退少补0)。
+翻转：reverse(v.begin(), v.end());。
+排序：sort(v.begin(), v.end());。
+
+2. std::stack (栈 - LIFO)
+头文件：&lt;stack&gt;
+入栈：st.push(val);
+出栈：st.pop(); (无返回值，仅删除)。
+栈顶：st.top(); (返回栈顶元素，不删除)。
+判空：st.empty();
+大小：st.size();
+RE警示：对空栈调用 pop() 或 top() 必报错。
+没有clear：清空需 while(!st.empty()) st.pop(); 或 st = stack&lt;int&gt;();。
+
+3. std::queue (队列 - FIFO)
+头文件：&lt;queue&gt;
+入队：q.push(val);
+出队：q.pop(); (删除队头，无返回值)。
+队头：q.front(); (注意不是top)。
+队尾：q.back();
+判空：q.empty();
+大小：q.size();
+
+4. std::priority_queue (优先队列&#x2F;堆)
+头文件：&lt;queue&gt;
+默认定义：priority_queue&lt;int&gt; pq; (大根堆，最大的在top)。
+小根堆定义：priority_queue&lt;int, vector&lt;int&gt;, greater&lt;int&gt;&gt; pq;。
+入堆：pq.push(val); (O(logN))。
+堆顶：pq.top(); (注意不是front)。
+出堆：pq.pop(); (删除堆顶)。
+结构体堆：需在结构体内部重载 &lt; 运算符。
+重载注意：大根堆按 &lt; 排序，如果想让小的在top，重载 &lt; 时逻辑要反过来(或者直接重载 &gt;)，或者简单点：return a.x &gt; b.x (x小的优先级高)。
+
+5. std::deque (双端队列)
+头队插：dq.push_front(val);
+尾队插：dq.push_back(val);
+头队出：dq.pop_front();
+尾队出：dq.pop_back();
+访问：dq[i] (支持随机访问)。
+
+6. std::set (集合 - 自动排序+去重)
+插入：s.insert(val);
+删除值：s.erase(val);
+删除迭代器：s.erase(iterator);
+查找：s.find(val); (返回迭代器，找不到等于 s.end())。
+计数：s.count(val); (在set里只能是0或1)。
+大小：s.size();
+清空：s.clear();
+最小值：*s.begin()。
+最大值：*s.rbegin()。
+二分查找：s.lower_bound(val); (返回首个 &gt;&#x3D; val 的迭代器)。
+二分查找：s.upper_bound(val); (返回首个 &gt; val 的迭代器)。
+遍历：for(auto x : s) { ... } (从小到大)。
+
+7. std::map (键值对映射)
+定义：map&lt;key_type, value_type&gt; mp;
+插入&#x2F;修改：mp[key] = val;
+副作用：若 mp[key] 不存在，读取它会自动创建并赋值为0&#x2F;空串，导致size+1。
+安全查找：if (mp.find(key) != mp.end()) ... 或 if (mp.count(key)) ...
+遍历：for(auto it = mp.begin(); it != mp.end(); it++)。
+键：it-&gt;first。
+值：it-&gt;second。
+按键排序：map默认按key从小到大排序。
 
 
+第四章：字符串与常用算法 (String &amp; Algo)String 常用函数
 
-虚拟内存
-工作集驱动的页面置换与多程序度调控
-防止抖动，提升 CPU 利用率
+长度：s.length() 或 s.size()。
+判空：s.empty()。
+拼接：s1 += s2; 或 s = s1 + s2;。
+比较：if (s1 == s2) (字典序比较)。
+截取：s.substr(pos, len); (重要：第二个参数是长度)。
+截取到末尾：s.substr(pos);。
+查找：s.find(&quot;abc&quot;); (返回首个位置下标)。
+查找失败：s.find(...) == string::npos。
+插入：s.insert(pos, &quot;str&quot;);。
+删除：s.erase(pos, len);。
+替换：s.replace(pos, len, &quot;str&quot;);。
+转数字：stoi(s) (转int), stoll(s) (转long long)。
+数字转字符：to_string(123)。
+
+Algorithm 常用函数114. 排序：sort(begin, end); (默认升序)。115. 降序：sort(begin, end, greater&lt;int&gt;());。116. 自定义排序：sort(..., cmp); (cmp函数返回true表示前者排在前)。117. 结构体排序：必须写cmp或重载&lt;。118. 最大值：max(a, b); 或 max({a, b, c, d}); (C++11)。119. 最小值：min(a, b);。120. 交换：swap(a, b);。121. 反转：reverse(begin, end);。122. 去重：unique(begin, end); (只对相邻重复有效，需先sort)。123. 去重长度：int len = unique(a, a+n) - a;。124. 二分查找(&gt;&#x3D;)：lower_bound(begin, end, val); (返回迭代器)。125. 二分查找(&gt;)：upper_bound(begin, end, val); (返回迭代器)。126. 获取下标：lower_bound(...) - begin;。127. 全排列：next_permutation(begin, end); (变到下一个字典序，返回bool)。128. 填充：fill(begin, end, val); (按元素填充)。129. 最大公约数：__gcd(a, b); (注意前面是两个下划线)。130. 绝对值：abs(x) (整数), fabs(x) (小数)。
+
+第五章：C语言内存操作与类型 (C-Style &amp; Types)
+memset：memset(arr, 0, sizeof(arr)); (全0)。
+memset：memset(arr, -1, sizeof(arr)); (全-1)。
+memset：memset(arr, 0x3f, sizeof(arr)); (无穷大，约10^9)。
+memset陷阱：不能用来赋值1, 2等任意数，因为它是按字节赋值。
+memcpy：memcpy(dst, src, sizeof(src)); (复制数组)。
+strlen：strlen(s) (O(N)复杂度，不要放在for循环条件里！)。
+int范围：约 $\pm 2 \times 10^9$。
+long long范围：约 $\pm 9 \times 10^{18}$。
+unsigned long long：约 $1.8 \times 10^{19}$。
+LL常量：long long x = 10000000000LL; (结尾加LL)。
+溢出防范：long long ans = 1LL * a * b;。
+无穷大(int)：INT_MAX 或 0x3f3f3f3f。
+无穷大(LL)：LLONG_MAX。
+double比较：不能直接 ==，要用 abs(a-b) &lt; 1e-9。
 
 
-CPU 缓存（L1&#x2F;L2&#x2F;L3）
-将近期引用的内存块缓存于高速存储
-弥合处理器与内存间的速度鸿沟
+第六章：结构体与重载模板 (Struct &amp; Overload)
+结构体定义：cpp struct Node {    int x, y; }; 
+构造函数：cpp struct Node {    int x, y;    Node(int _x, int _y) : x(_x), y(_y) {} // 方便使用    Node() {} // 必须手动补上默认构造 }; 
+重载小于号 (用于Sort&#x2F;Set)：cpp bool operator &lt; (const Node &amp;a) const {    if (x != a.x) return x &lt; a.x; // x升序    return y &lt; a.y; // x相同，y升序 } 
+重载小于号 (用于优先队列)：cpp bool operator &lt; (const Node &amp;a) const {    return x &lt; a.x; // 大根堆：x大的在顶（逻辑反直觉，标准库默认是大根堆）    // 如果想实现小根堆效果（小的在顶），这里写 return x &gt; a.x; } 
 
 
-数据库 B 树索引
-将同一查询可能引用的记录聚集存储，以 B 树组织索引块
-减少磁盘随机访问次数
+第七章：容易遗忘的坑点 (Common Pitfalls)
+数组大小：全局变量数组最大可开约 5e7 (int)，main内部只能开 2e5 左右。
+RE原因：除以0。
+RE原因：数组越界 (index &lt; 0 或 index &gt;&#x3D; N)。
+RE原因：爆栈 (递归太深，或局部变量数组太大)。
+TLE原因：cin 没关同步。
+TLE原因：endl 用太多。
+TLE原因：在循环里重复 strlen(s)。
+TLE原因：vector 在头部 insert 或 erase (O(N)操作)。
+WA原因：多组数据，该清空的全局变量没清空 (flag, vector, map, count数组)。
+WA原因：1 &lt;&lt; 40 溢出 (int只有32位)，应写 1LL &lt;&lt; 40。
+位运算优先级：a &amp; b == c 会先算 b==c。必须加括号：(a &amp; b) == c。
+宏定义陷阱：#define mul(a,b) a*b -&gt; mul(1+2, 3) 变成 1+2*3=7。应写 (a)*(b)。
+变量命名：不要用 time, next, y1 (cmath&#x2F;algorithm里可能有冲突)。建议用 nxt, yy1。
+交互题：每次输出后必须 cout.flush() 或 fflush(stdout)。
+Map访问：只查不改一定用 find，不要用 []，否则会增加垃圾数据导致TLE&#x2F;MLE。
+浮点数陷阱：double ans = 1/2; 结果是0。要写 1.0/2。
+Set修改：Set里的元素是const的，不能直接修改 it-&gt;x，必须先erase再insert新值。
+Mod负数：(a - b) % mod 可能是负数。正确写法：((a - b) % mod + mod) % mod。
+
+第八章：图论存储与遍历 (Graph Storage &amp; Traversal)
+邻接矩阵：int g[N][N]; 适用于点数 $N \le 2000$。
+邻接表(Vector)：vector&lt;int&gt; g[N]; 最通用，带权图用 struct Edge {int to, w;}; vector&lt;Edge&gt; g[N];。
+链式前向星：虽然快但容易写错，建议校赛优先用 Vector，除非卡常。
+建图(无向)：g[u].push_back(v); g[v].push_back(u); (记得双向push)。
+建图(有向)：g[u].push_back(v);。
+DFS栈溢出：系统栈通常只有几MB，深度超过 $10^5$ 可能爆栈，需改为手写栈或扩栈。
+BFS队列：queue&lt;int&gt; q; q.push(start); vis[start]=1;。
+BFS核心：入队时立刻标记 vis[x]=1，不要等到出队才标记（否则会导致大量重复节点入队，退化成指数级）。
+图的清空：多组数据时，for(int i=0; i&lt;=n; i++) g[i].clear();。
+最短路初始化：memset(dis, 0x3f, sizeof(dis));。
+Floyd算法：三层循环顺序必须是 k, i, j (中间点k在最外层)。
+Floyd核心：f[i][j] = min(f[i][j], f[i][k] + f[k][j]);。
+Dijkstra(朴素)：$O(N^2)$，适用于稠密图，不用堆。
+Dijkstra(堆优化)：必须用 priority_queue&lt;PII, vector&lt;PII&gt;, greater&lt;PII&gt;&gt; (小根堆)。
+Pair定义：typedef pair&lt;int, int&gt; PII; (first存距离，second存点编号)。
+Dijkstra出堆判断：if (dis[u] &lt; d) continue; (懒惰删除，处理重复入堆的旧数据)。
+SPFA&#x2F;Bellman：判断负环（入队次数 &gt; n 或 松弛次数 &gt; n）。
+拓扑排序：维护 in_degree[] 数组。
+拓扑步骤：将所有 degree==0 入队 -&gt; 循环 -&gt; 删边(degree–) -&gt; 若为0入队。
+树的直径：两次DFS（先找最远点A，再从A找最远点B）。
+并查集初始化：for(int i=1; i&lt;=n; i++) fa[i] = i;。
+并查集Find(路径压缩)：cpp int find(int x) { return x == fa[x] ? x : fa[x] = find(fa[x]); } 
+并查集Merge：fa[find(x)] = find(y);。
+最小生成树(Kruskal)：按边权排序 + 并查集。
+二分图判定：染色法 (DFS&#x2F;BFS)，相邻节点颜色不同。
+网格图方向数组：int dx[] = {0, 0, 1, -1}; int dy[] = {1, -1, 0, 0};。
+网格图边界检查：if (nx &gt;= 1 &amp;&amp; nx &lt;= n &amp;&amp; ny &gt;= 1 &amp;&amp; ny &lt;= m)。
+链式前向星头数组：head 数组初始化为 -1。
+LCA(倍增法)：f[u][i] = f[f[u][i-1]][i-1]。
+树状数组(Lowbit)：int lowbit(int x) { return x &amp; -x; }。
+树状数组(Update)：for(; i&lt;=n; i+=lowbit(i)) c[i] += k;。
+树状数组(Query)：for(; i&gt;0; i-=lowbit(i)) res += c[i];。
+线段树大小：数组要开 4N (tree[4 * N])。
+线段树下标：左儿 2*p (或 p&lt;&lt;1)，右儿 2*p+1 (或 p&lt;&lt;1|1)。
 
 
-文件系统
-将频繁共同访问的文件块分组存储
-降低磁头寻道延迟
+第九章：数学与数论 (Math &amp; Number Theory)
+快速幂：res = 1; while(b) { if(b&amp;1) res=res*a%mod; a=a*a%mod; b&gt;&gt;=1; }。
+取模防负：(a - b % mod + mod) % mod。
+最大公约数(GCD)：__gcd(a, b) (注意a,b不能同时为0，否则可能RE，但在算法题少见)。
+最小公倍数(LCM)：(a / gcd(a, b)) * b (先除后乘防溢出)。
+判断素数：for(int i=2; i*i&lt;=n; i++)。
+埃氏筛：for(i=2...n) if(!vis[i]) for(j=i*i...n, j+=i) vis[j]=1; (注意 j 从 i*i 开始)。
+逆元(费马小定理)：当 mod 是质数，inv(a) = pow(a, mod-2)。
+组合数公式：$C(n, m) &#x3D; \frac{n!}{m!(n-m)!}$。
+递推组合数：C[i][j] = (C[i-1][j] + C[i-1][j-1]) % mod;。
+杨辉三角：C[n][k] 对应杨辉三角第 n 行第 k 个 (0-indexed)。
+卡特兰数：1, 1, 2, 5, 14, 42… (括号匹配、出栈次序、二叉树计数)。
+唯一分解定理：$N &#x3D; p_1^{a_1} p_2^{a_2}…$。
+约数个数：$(a_1+1)(a_2+1)…$。
+ceil(向上取整)：(a + b - 1) / b (仅限正整数)。
+atan2：atan2(y, x) 返回弧度 $(-\pi, \pi]$，算出极角。
+PI：const double PI = acos(-1.0);。
+两点距离：hypot(x1-x2, y1-y2) (返回double)。
+叉积(Cross Product)：$x_1 y_2 - x_2 y_1$ (判断向量旋转关系，&gt;0逆时针，&lt;0顺时针)。
+点积(Dot Product)：$x_1 x_2 + y_1 y_2$。
+曼哈顿距离：abs(x1-x2) + abs(y1-y2)。
+切比雪夫距离：max(abs(x1-x2), abs(y1-y2))。
+等差数列求和：n * (a1 + an) / 2。
+平方和公式：n(n+1)(2n+1)/6。
+异或性质：a ^ a = 0, a ^ 0 = a。
+异或交换：a ^= b; b ^= a; a ^= b; (不推荐，容易出bug，直接用 swap)。
+判断奇偶：if (x &amp; 1) (真为奇)。
+除以2：x &gt;&gt; 1 (正数向下取整，负数可能有区别，建议直接 /2)。
+乘以2：x &lt;&lt; 1。
+第k位是否为1：if ((x &gt;&gt; k) &amp; 1)。
+将第k位置1：x | (1 &lt;&lt; k)。
+将第k位置0：x &amp; ~(1 &lt;&lt; k)。
+前缀和：sum[i] = sum[i-1] + a[i]; (下标从1开始)。
+区间和：sum[R] - sum[L-1]。
+差分数组：diff[i] += c; diff[j+1] -= c; (区间[i, j]加c)。
+二维前缀和：s[i][j] = s[i-1][j] + s[i][j-1] - s[i-1][j-1] + a[i][j]。
+二维子矩阵和：s[x2][y2] - s[x1-1][y2] - s[x2][y1-1] + s[x1-1][y1-1]。
+容斥原理：$|A \cup B| &#x3D; |A| + |B| - |A \cap B|$。
+抽屉原理：$n+1$ 个物品放入 $n$ 个抽屉，至少有一个抽屉有2个物品。
+快速乘(防溢出)：__int128 (非标准但GCC支持) 或龟速乘逻辑。
+同余：a == b (mod m) 意味着 (a - b) % m == 0。
+斐波那契：1, 1, 2, 3, 5, 8, 13, 21... (增长很快，第46项超过int)。
+三角形不等式：a + b &gt; c (两条短边之和大于第三边)。
+海伦公式：$S &#x3D; \sqrt{p(p-a)(p-b)(p-c)}$，其中 $p &#x3D; (a+b+c)&#x2F;2$。
+直线方程：$Ax + By + C &#x3D; 0$。
+浮点数比较：const double EPS = 1e-8;。
+浮点零：if (abs(x) &lt; EPS)。
+浮点相等：if (abs(a - b) &lt; EPS)。
+随机数种子：srand(time(0)) (老式) 或 mt19937 rng(time(0)) (C++11推荐)。
+生成范围随机数：rand() % (b - a + 1) + a (生成 [a, b])。
+整除分块：for(int l=1, r; l&lt;=n; l=r+1) { r=n/(n/l); ... }。
 
 
-编译器代码生成
-将代码与数据布局于同一缓存行，减少 cache miss
-提升指令流水线效率
+第十章：动态规划 (Dynamic Programming)
+01背包(一维)：for(i=1...n) for(j=V...w[i]) dp[j] = max(dp[j], dp[j-w[i]] + v[i]);。
+01背包关键：内层循环 从大到小 (倒序)。
+完全背包(一维)：内层循环 从小到大 (正序)。
+最长上升子序列(LIS)：dp[i] 表示以 i 结尾的 LIS 长度。O(N^2)。
+LIS (贪心+二分)：维护一个 tails 数组，lower_bound 替换，push_back 扩展，O(NlogN)。
+最长公共子序列(LCS)：if(a[i]==b[j]) dp[i][j]=dp[i-1][j-1]+1; else dp[i][j]=max(dp[i-1][j], dp[i][j-1]);。
+区间DP枚举顺序：先枚举区间长度 len，再枚举左端点 i，算出右端点 j，最后枚举断点 k。
+区间DP模板：cpp for(int len=2; len&lt;=n; len++)     for(int i=1; i+len-1&lt;=n; i++) {    int j = i+len-1;    for(int k=i; k&lt;j; k++) dp[i][j] = ...    } 
+状压DP：dp[1 &lt;&lt; N]，用位掩码表示集合。
+判断状态j包含i：if ((state &gt;&gt; i) &amp; 1)。
+树形DP：通常在 DFS 的回溯阶段进行状态转移。
+最大子段和：dp[i] = max(nums[i], dp[i-1] + nums[i]); (贪心法：sum = max(0, sum) + x)。
+数字三角形：从下往上推 dp[i][j] += max(dp[i+1][j], dp[i+1][j+1]) 不需要边界检查。
+记忆化搜索：cpp int solve(int x) {    if (memo[x] != -1) return memo[x];    // ... calculation ...    return memo[x] = ans; } 
+初始化DP数组：求最大值初始化为 0 或 -INF，求最小值初始化为 INF。
 
 
-搜索引擎
-对高频查询结果缓存，热点文档优先驻留内存
-降低平均查询延迟
+第十一章：字符串进阶与调试 (String &amp; Debug)
+stringstream：stringstream ss(str); while(ss &gt;&gt; word) { ... } (按空格分割字符串)。
+ss清空：ss.clear(); ss.str(&quot;&quot;); (重复利用时必须这样)。
+字符判断：isdigit(c), isalpha(c), islower(c), isupper(c)。
+大小写转换：tolower(c), toupper(c)。
+string::npos：通常值为 -1 (但它是 unsigned 类型)，最好直接用 string::npos 常量比较。
+字符串字典序：&quot;apple&quot; &lt; &quot;banana&quot; 为 true。
+字符串加法：s = s + &#39;a&#39;; (O(N) 较慢)。
+字符串追加：s += &#39;a&#39;; (O(1) 均摊，推荐)。
+KMP Next数组：j=next[j] 是回跳逻辑。
+Manacher算法：处理回文串，记得先要在字符间插入 # 处理奇偶长度。
+Debug输出：cerr &lt;&lt; &quot;Value: &quot; &lt;&lt; x &lt;&lt; endl; (cerr 不会被输出重定向捕获，适合本地调试，提交时最好注释掉，虽不影响AC但慢)。
+断言：assert(x &gt;= 0); (如果条件为假，程序终止报错，用于查逻辑漏洞)。
+本地文件输入：cpp #ifndef ONLINE_JUDGE freopen(&quot;in.txt&quot;, &quot;r&quot;, stdin); freopen(&quot;out.txt&quot;, &quot;w&quot;, stdout); #endif 
+观察数据范围：N &lt;= 10 -&gt; O(N!) (全排列)。
+观察数据范围：N &lt;= 20 -&gt; O(2^N) (状压&#x2F;DFS)。
+观察数据范围：N &lt;= 100 -&gt; O(N^3) (Floyd&#x2F;区间DP)。
+观察数据范围：N &lt;= 1000 -&gt; O(N^2)。
+观察数据范围：N &lt;= 10^5 -&gt; O(NlogN) (Sort&#x2F;Set&#x2F;二分)。
+观察数据范围：N &lt;= 10^7 -&gt; O(N) (线性筛&#x2F;双指针)。
+对拍脚本：写个 brute_force.cpp, solution.cpp, generator.cpp 跑循环比对。
+段错误(SIGSEGV)：数组越界、指针乱指、爆栈。
+浮点错误(SIGFPE)：除以0、模0。
+超时(SIGXCPU&#x2F;TLE)：死循环、算法复杂度过高。
+输出超限(OLE)：输出大量调试信息忘删，或死循环输出。
+编译错误(CE)：C++标准选错、头文件缺失、语法拼写错误。
 
 
-5. 现代局部性模型：上下文感知扩展经典局部性以”地址空间中的内存页”作为被管理的对象，现代模型将其进一步泛化，引入四个核心概念：
+第十二章：STL 高级技巧与补充 (STL Advanced)
+bitset 定义：bitset&lt;1000&gt; b; (1000个位，不是字节)。
+bitset 操作：b.set(i) (置1), b.reset(i) (置0), b.flip(i) (取反)。
+bitset 计数：b.count() (1的个数)。
+bitset 转换：b.to_ulong() (转unsigned long)。
+pair 排序：默认先比 first，再比 second。
+tuple：tuple&lt;int, int, double&gt; t; (三元组)。
+tuple 访问：get&lt;0&gt;(t), get&lt;1&gt;(t)。
+tie 解包：int a, b; tie(a, b) = make_pair(1, 2);。
+auto 推导：auto it = mp.begin(); (省去长类型名)。
+范围For：for(auto &amp;x : v) x++; (加 &amp; 可以修改原数组值)。
+multiset 删除：st.erase(val) 会删除所有等于 val 的元素。
+multiset 删除单个：st.erase(st.find(val)) 只删一个。
+deque：双端队列，常数比 vector 大，但支持头插 push_front。
+list：双向链表 (STL)，极少用，不支持随机访问 []。
+forward_list：单向链表。
+unordered_map：哈希表，平均 O(1)，最坏 O(N) (会被精心构造的数据卡)。
+unordered_map 坑：不能直接用 pair 或 vector 做 key (需自定义哈希)。
+map vs unordered_map：校赛求稳建议用 map (红黑树 O(logN))，除非必然超时。
+resize vs reserve：resize 改变大小并初始化；reserve 只预留内存，不改变 size (减少重分配次数，优化常数)。
+lambda 捕获：[&amp;](int a){...} 引用捕获外部变量 (所有)。
+lambda 捕获：[=](int a){...} 值捕获外部变量 (拷贝，不可改)。
+rotate 函数：rotate(beg, new_beg, end) 将 new_beg 旋转到 beg 位置。
+nth_element：nth_element(a, a+k, a+n) 将第 k 小的数放到 a[k]，且左边都比它小，右边都比它大 (O(N))。
+prev&#x2F;next：prev(it) (前一个迭代器), next(it) (后一个)。
+distance：distance(it1, it2) 计算两个迭代器距离 (O(N) 或 O(1))。
+accumulate：accumulate(v.begin(), v.end(), 0) 求和 (注意初始值类型，决定结果类型，0为int，0LL为long long)。
+iota：iota(v.begin(), v.end(), 1) 生成 1, 2, 3… 序列。
+min_element&#x2F;max_element：返回的是迭代器，需 * 解引用或减 begin() 得下标。
+is_sorted：判断是否序列已排序。
+function：function&lt;int(int, int)&gt; func; (存储函数)。
 
-观察者（Observer）：期望利用系统完成任务的代理，可以是用户或内置程序；
-邻域（Neighborhood）：观察者当前最相关的对象集合，不再局限于地址空间；
-推理（Inference）：从邻域出发预测未来最可能访问的对象集合；
-最优行动（Optimal Action）：以最小代价完成任务目标的策略。
 
-这一框架将局部性从内存管理推广至推荐系统、上下文感知应用等场景：例如，贝叶斯垃圾邮件过滤器在用户邮件的”邻域”中推断相关性并采取过滤行动；Google 则在网页的”邻域”（链接关系、内容语义）中推断相关性并排序搜索结果。
-6. 总结局部性原理的意义在于揭示了计算行为与资源调度需求之间的深层关联。通过捕捉程序执行的阶段性和引用的聚集性，操作系统得以实现按需分配而非全量驻留，从而在有限的物理资源上支撑复杂的多道程序环境。
-从虚拟内存的工作集理论，到 CPU 缓存的 LRU 置换，再到数据库索引的聚集存储，局部性原理始终是系统性能优化的核心推手。随着上下文感知计算的兴起，这一原理的适用边界仍在持续扩展。
-延伸阅读
-[缓存替换算法]：从 OPT、LRU 到 ARC（Adaptive Replacement Cache）的演进，以及在 NVM 存储层次下替换策略的新挑战。
-[NUMA 与局部性]：非均匀内存访问架构（NUMA）中，远程内存访问如何打破经典局部性假设，以及 numactl 等工具的使用实践。
-下一篇预告：日志结构文件系统（LFS）——顺序写如何将磁盘带宽利用率推向极限。
+第十三章：其他杂项与心态
+AI建议：
+
+
+万能头副作用：编译时间稍长，命名冲突风险 (如 y1)。
+命名冲突：尽量不要用全局变量 left, right, count, hash (C++11后 risk 增加)。
+递归层数：默认大概支持 4w-10w 层，超深需手工扩栈。
+扩栈指令：#pragma comment(linker, &quot;/STACK:102400000,102400000&quot;) (Visual C++, G++通常不支持)。
+位域：struct { int x:1; } (一般不用，除非压内存)。
+大端小端：网络流&#x2F;二进制文件处理涉及，普通算法题不涉及。
+快读模板：cpp inline int read() {    int x=0,f=1;char ch=getchar();    while(ch&lt;&#39;0&#39;||ch&gt;&#39;9&#39;){if(ch==&#39;-&#39;)f=-1;ch=getchar();}    while(ch&gt;=&#39;0&#39;&amp;&amp;ch&lt;=&#39;9&#39;){x=x*10+ch-&#39;0&#39;;ch=getchar();}    return x*f; } 
+快写模板：递归 %10 输出字符 putchar。
+Codeforces&#x2F;AtCoder：通常开 O2 优化，STL 极快。
+国内OJ：POJ 等老OJ 可能不支持 C++11，注意 unordered 和 auto 不能用。
+long double：精度比 double 高，但慢。
+比较函数 strict weak ordering：cmp(a,b) 必须保证 cmp(a,a) 为 false。
+结构体构造列表：Node(int x): x(x) {} 比 Node(int x) { this-&gt;x = x; } 略快。
+引用传参：void dfs(vector&lt;int&gt; &amp;v) (一定要加&amp;，否则每次递归拷贝数组，直接TLE)。
+常量引用：const vector&lt;int&gt; &amp;v (只读不改，安全且快)。
+内联函数：inline (建议编译器展开，减少函数调用开销)。
+register：register int i (C++17已弃用，现代编译器会自动优化，不用写)。
+循环展开：手动写 4 次操作代替循环，现代编译器通常能自动做。
+打表：对于很难推导的题，本地跑出前 100 个结果存数组提交。
+模拟退火：玄学算法，用于求最优解，非初赛重点。
+对顶堆：维护动态中位数 (一个大根堆，一个小根堆)。
+单调队列：滑动窗口最大值 (deque 维护下标)。
+单调栈：找左右第一个比自己大的数。
+差分约束：转化为最短路&#x2F;最长路问题。
+背包空间优化：滚动数组，从 dp[i][j] 变成 dp[j]。
+位运算优先级：== 优先级高于 &amp;。
+逻辑短路：if (x &gt;= 0 &amp;&amp; a[x] == 1) (如果 x&lt;0，后面不会执行，安全)。
+空指针：nullptr (C++11) 优于 NULL。
+复数类：complex&lt;double&gt; (自带加减乘除，计算几何可用)。
+1e9+7：质数。
+998244353：质数 (NTT常用)。
+19260817：也是个质数 (哈希常用)。
+memset 0x7f：0x7f7f7f7f (比 0x3f 大，约为 2e9，两个相加会溢出 int)。建议用 0x3f。
+ios::binary：文件读写模式。
+cin.peek()：看一眼下一个字符但不取走。
+cin.putback(c)：把字符放回流。
+exit(0)：强制结束程序 (但在递归中慎用，可能析构函数不执行)。
+return 0：main 函数必须返回 0，否则 RE。
+代码规范：缩进对齐，大括号换行风格统一，方便查错。
+心态：卡题超过 20 分钟换题。
+心态：有人 AC 了不要慌，可能是水题，跟榜做。
+心态：罚时很贵，提交前自己测一下 edge cases (0, 1, n, max_n, -1)。
+读题：注意时间限制 (1s通常算 $10^8$ 次运算)。
+读题：注意空间限制 (256MB 很大，但 32MB 就要小心开大数组)。
+读题：再次确认是“子串(substring)”还是“子序列(subsequence)”。
+读题：再次确认是有向图还是无向图。
 
 ]]></content>
       <categories>
         <category>CS-Fundamentals</category>
       </categories>
       <tags>
-        <tag>操作系统</tag>
-        <tag>局部性原理</tag>
-        <tag>虚拟内存</tag>
-        <tag>缓存</tag>
-        <tag>工作集模型</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>MemOS 记忆操作系统：LLM 长程记忆工程实践</title>
-    <url>/2025/12/20/memos-llm-memory-system-evaluation/</url>
-    <content><![CDATA[
-LLM 的”遗忘”不只是上下文窗口的技术限制，更是系统设计层面的架构问题。MemOS（Memory OS）将记忆视为可管理的系统资源，提出了一套类比操作系统的记忆治理框架。本文结合在 LoCoMo 对话数据集上的工程实践，系统梳理 MemOS 的核心设计理念，以及如何通过数据增强、提示词工程和窗口策略将评测 F1 从 0.25 推进到 0.57 以上。
-
-一、背景：为什么 LLM 需要”记忆操作系统”当前主流 LLM 交互模式本质上是无状态的（Stateless）：每次对话独立发生，模型不保留历史。这在四个维度上造成了根本性局限：
-
-长程依赖建模：超长上下文受限于窗口长度和计算开销，关键指令容易被遗忘；
-知识无法演化：静态参数无法适应动态世界，RAG 缺乏版本意识，新旧知识可能冲突；
-缺乏个性化：无跨会话的持久化”记忆痕迹”，模型无法记住用户长期偏好；
-跨平台不可迁移：记忆缺乏可移植性和互操作性。
-
-MemOS 的核心主张是：记忆不应是附属于推理的辅助缓存，而应是智能体的核心资产。推理是基于记忆的计算过程，记忆需要像操作系统管理 CPU&#x2F;内存那样被系统性治理。
-
-二、MemOS 框架设计2.1 三种记忆类型MemOS 将记忆统一为三种类型，覆盖从感知到巩固的全过程：
-
-
-
-类型
-类比
-特点
-
-
-
-纯文本记忆（Plaintext Memory）
-外部存储（HDD）
-显式可见、快速更新、适合事实密集型任务
-
-
-激活记忆（Activation Memory）
-缓存&#x2F;RAM
-核心是 KV-Cache，用于多轮对话连续性
-
-
-参数记忆（Parameter Memory）
-ROM&#x2F;固件
-编码在权重中，稳定但更新成本高
-
-
-三种记忆并非孤立，而是可以相互转化：
-
-Plaintext → Activation：高频访问的文本记忆预先转化为激活向量，降低解码延迟；
-Plaintext&#x2F;Activation → Parameter：长期稳定知识通过微调或蒸馏内化为参数（”本能”）；
-Parameter → Plaintext：通过 Backpatching 导出过时知识以便显式修正。
-
-2.2 MemCube：最小调度单元每条记忆被封装为一个 MemCube，包含：
-
-元数据头：时间戳、来源签名、语义类型（描述性）；访问权限、TTL、优先级（治理属性）；访问频率、上下文指纹（行为指标）；
-记忆载荷：文本、张量（KV Cache）、LoRA Patch（模型权重增量）。
-
-行为指标驱动冷热分层调度：高频文本自动升级为激活层；长期稳定高频记忆标记为适合内化为参数。这与操作系统的 LRU 页面替换是同构的。
-2.3 三层架构接口层（Interface Layer）
-  ├── MemReader：语义解析器，将自然语言转化为结构化 MemoryCall
-  ├── Memory API：Provenance/Update/LogQuery API
-  └── Memory Pipeline：原子化工作流，支持事务回滚
-
-操作层（Operation Layer）
-  ├── MemOperator：多视角组织（标签/知识图谱/语义分层）+ 混合检索
-  ├── MemScheduler：类型感知调度（KV-Cache/Parameter/Plaintext）
-  └── MemLifecycle：五态模型（Generated/Activated/Merged/Archived/Expired）
-
-基础设施层（Infrastructure Layer）
-  ├── MemGovernance：三元权限模型 + 隐私保护 + 审计日志
-  ├── MemVault：命名空间隔离存储，兼容多种数据库后端
-  ├── MemLoader/Dumper：跨平台记忆迁移
-  └── MemStore：开放记忆分发平台（发布/订阅机制）
-
-MemScheduler 的核心是类型感知调度：对高频连贯性任务优先使用 KV-Cache，对程序化专家任务使用 Parameter，对临时事实查询使用 Plaintext。这比”一律 RAG”的方案在 Token 消耗和延迟上均有显著优势。
-
-三、LoCoMo 数据集上的工程实践3.1 任务定义LoCoMo（Long-term Conversation Memory）是评测 LLM 处理长对话记忆能力的基准数据集，包含四类问题：
-
-cat1：单跳事实问答；
-cat2：时序推理（时间顺序、时间锚点）；
-cat4：多跳聚合（需要跨句合并多条事实）；
-开放域：无固定答案的推理类问题。
-
-整体评测指标：BLEU、F1（token 级别）、LLM 打分（语义级别）。
-3.2 接口对齐：add&#x2F;search 双接口评测框架以 add（写入记忆）和 search（检索记忆并生成答案）为核心接口。我们实现了 MemOS 版本的适配层：
-add.py 的五大核心设计：
-
-命名空间隔离：每次实验通过 MEMOS_RUN_TAG 后缀区分 speaker 的 user_id 和 conversation_id，避免历史记忆污染新评测；
-Day 边界标记：每条消息前缀化为 &quot;[Day N] Speaker: text&quot;，增强”同天事件聚合”的检索能力；
-时间戳保存：写入 chat_time 字段（如 &quot;8:56 pm on 20 July, 2023&quot;），为时序问答提供可计算锚点；
-滑动窗口批量写入：窗口大小 batch_size，步长 batch_size - overlap，让跨批次边界的事实在某个批次内共同出现；
-并行双 speaker 写入：双线程上传，降低总体写入耗时。
-
-search.py 的核心优化：
-
-时序感知召回增强：对含 when/date/time/before/after 等关键词的问题，将 memory_limit_number 提升至 top_k × 1.3，降低时序记忆漏检概率；
-时间戳规范化：将 MemOS 返回的数字时间戳格式化为可读 UTC 时间，防止模型复读纯数字时间戳作为答案；
-非时序问题不注入时间信息：从输入侧降低模型被 timestamp 诱导输出时间的概率；
-拒答归一化：将 “No memory mentions…” 等拒答句统一归一为 Unknown，避免大量零分。
-
-3.3 数据预处理：locomo_enhanced原始 LoCoMo 对话充满寒暄、省略和隐性事实，直接写入 MemOS 导致”关键句被淹没在噪声中，语义向量不够尖锐”。
-核心思路：在写入前，用大模型抽取每段对话的显式事实，附加回原消息，形成”原文 + Facts 摘要”的增强版本：
-[原消息]  Alice: I just got back from Paris last Tuesday.
-[增强后]  Alice: I just got back from Paris last Tuesday.
-          [Facts extracted: Alice visited Paris. Alice returned on Tuesday, the week before {Conversation Date}.]
-
-时间表达的处理策略：
-
-yesterday/today/tomorrow → 转为绝对日期；
-last week/last &lt;weekday&gt; → The week/weekday before &lt;Conversation Date&gt;（相对但明确）；
-two months ago 等复杂相对表达 → 保持原样（避免过度具体化导致与答案不一致）；
-数字一律使用阿拉伯数字（4 years，10 years ago），减少格式差异导致的 F1 损失。
-
-此步骤使分数从 ~0.487 提升至 ~0.53。
-3.4 优化迭代记录
-
-
-阶段
-主要改动
-F1 分数
-
-
-
-基线（流程跑通）
-零修改，验证端到端流程
-0.25
-
-
-Prompt 对齐 + Top-K 调整
-短答案导向 Prompt，提升 top_k
-0.499
-
-
-滑动窗口写入
-batch_size + overlap 策略
-0.487
-
-
-数据预处理（事实抽取）
-locomo_enhanced 数据集
-0.53+
-
-
-抑制过度推理
-微调预处理 Prompt，避免机械时间换算
-0.54
-
-
-窗口超参调优
-batch&#x3D;16, overlap&#x3D;8
-0.546
-
-
-模型横向对比
-qwen-plus-latest 推理能力更强
-0.560
-
-
-3.5 失败尝试与根因分析Reranker 高召回重排序（top_k&#x3D;50 + reranker）：分数反而降至 0.42。根因：reranker 只能重排序已召回的结果，无法弥补”多跳链路中关键节点未被召回”的根本缺陷；同时高召回+重排后拉长输入，生成长句，不利于短答案对齐。
-图片信息提取：分数从 0.53 降至 ~0.40。根因：图片描述引入大量无关细节，增加噪声 token，削弱对关键信息的聚焦；多模态推理错误率传导至后续检索与生成阶段。
-Agentic 多跳 RAG（混合 Dense + BM25 检索循环）：技术先进但边际收益有限，显著增加 Token 消耗和延迟，与短答案评测目标冲突。最终保留完整实现作为技术展示，主实验中关闭。
-
-四、MemOS 评测结果：它真的”记得”更好吗？MemOS 在官方评测中的表现印证了其设计优势：
-
-LoCoMo：Overall 75.80 分（第二名 Memobase 72.01），在单跳、多跳、时序、开放域均取得最佳或次佳，且 Token 消耗（1589）远低于次优方案 Zep（2701）；
-LongMemEval：综合准确率 77.8%，显著优于 Memobase (72.4%) 和 Mem0 (66.4%)；
-并发压力测试：唯一在所有测试下保持 100% 成功率的系统；
-KV-Based 记忆加速：在长上下文 + 短查询场景下，加速比最高达 94.2%（通过复用预计算的 KV 中间状态）。
-
-
-五、工程洞见：什么真正有效从这次从 F1&#x3D;0.25 到 F1&#x3D;0.56 的优化之旅中，最有价值的经验是：
-
-显式化胜过检索技巧：将隐性事实预先抽取为结构化摘要，比各种检索优化（reranker、高召回）更有效。”让信息直接可检索”比”让检索器更聪明”ROI 更高。
-
-时间信息是弱点：时序问题对格式极为敏感，需要从写入、检索、Prompt、评测四个层面同时处理。任一环节的时间格式失控都会造成大量零分。
-
-短答案导向的 Prompt 约束是关键杠杆：F1 指标是 token 级别匹配，模型生成哪怕一个正确答案被埋在长句中也会被稀释。输出约束（”禁止解释””5-6词””禁止纯数字时间戳”）带来的收益超过了精细化的检索优化。
-
-窗口参数不是越大越好：batch_size&#x3D;16, overlap&#x3D;8 是在”上下文完整性”与”向量噪声”之间的平衡点。过大的批次让语义向量趋于平均，导致检索钝化。
-
-
-
-延伸阅读
-[MemOS Paper]：Memory OS: Enabling AI Agents to Remember，系统介绍记忆操作系统的完整框架设计与实验验证。
-[Generative Agents]：Park et al. 2023，早期将类人记忆机制（感知-反思-行动循环）引入 Agent 的经典工作。
-[MemGPT]：引入虚拟上下文管理（类 OS 内存分层）的先驱，是 MemOS 的思想前身。
-下一篇预告：从语言模型的”记忆”转向机器人的”感知”——模仿学习在机器人操控泛化中面临的根本挑战。
-
-]]></content>
-      <categories>
-        <category>AI-Research</category>
-      </categories>
-      <tags>
-        <tag>NLP</tag>
-        <tag>LLM记忆</tag>
-        <tag>RAG</tag>
-        <tag>MemOS</tag>
-        <tag>Prompt工程</tag>
-        <tag>LoCoMo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践</title>
-    <url>/2026/01/26/rust-shyper-embedded-hypervisor-analysis/</url>
-    <content><![CDATA[
-随着嵌入式设备演化为混合关键性系统（Mixed-Criticality System），如何在同一块 SoC 上同时支撑硬实时控制任务与通用 Linux 工作负载，同时保证它们之间的强隔离，成为嵌入式虚拟化的核心挑战。服务器级 Hypervisor（KVM&#x2F;Xen）因调度抖动难以满足实时约束；静态分区方案（Jailhouse&#x2F;Bao）则牺牲了资源利用率与灵活性。本文围绕 Shyper 系列论文及其 Rust 重实现 Rust-Shyper，从架构设计、关键优化机制、可靠性工程，以及 Rust 语言安全实践四个维度展开深度分析，并结合 rust_shyper 仓库源码进行印证。
-
-1. 背景：嵌入式虚拟化的设计困境现代嵌入式设备（汽车 ECU、工业控制器、无人机飞控）正面临一个典型的二元悖论：
-
-实时性：硬实时任务要求中断延迟在微秒量级，不可被非确定性调度打断；
-通用性：同一平台还需运行具备完整驱动栈、网络协议栈的通用 OS，以支撑远程管理、OTA 升级等功能。
-
-以 KVM 为代表的服务器级 Hypervisor 基于宏内核架构，TCB（Trusted Computing Base）庞大；中断虚拟化依赖软件模拟 vGIC，每次物理中断均需经历 VM-Exit → EL2 处理 → 注入虚拟中断 → VM-Entry 的完整路径，延迟从原生的纳秒级暴涨到数百微秒。
-而以 Jailhouse 为代表的静态分区 Hypervisor 虽然 VM-Exit 极少，但 CPU 核心与内存在启动时静态划分，VM 之间无法共享资源，资源利用率极低，动态管理能力缺失。
-Shyper 的目标正是填补这一空白：在保证硬实时 VM 具备裸机级确定性的同时，通过管理虚拟机（MVM）提供动态资源管理与灵活的 VM 生命周期控制。
-
-2. 系统架构：分层资源隔离策略2.1 虚拟机分层模型Shyper 将系统中的虚拟机划分为四类，形成明确的优先级与资源分配层次：
-
-
-
-VM 类型
-全称
-调度策略
-内存映射
-典型负载
-
-
-
-MVM
-管理虚拟机
-固定核心
-直接映射
-Linux + 管理工具链
-
-
-HRTVM
-硬实时 VM
-固定核心
-直接映射或固定偏移
-RTOS，μs 级任务
-
-
-SRTVM
-软实时 VM
-固定核心
-同上
-软实时控制
-
-
-GVM
-通用 VM
-Round-Robin
-Buddy System 动态分配
-通用 Linux 工作负载
-
-
-
-Rust-Shyper 在实现层面将 HRTVM 与 SRTVM 合并为统一的 RTVM 类型，通过配置参数区分，减少了代码分支。
-
-这一分层并非简单的优先级标注，而是驱动了内存策略、中断路径和调度机制的差异化设计——这是 Shyper 区别于 KVM 和 Jailhouse 的核心创新。
-2.2 代码层面的抽象在 src/kernel/vm.rs 中，VmType 枚举（第 101–118 行）将上述分类编码为类型系统的一部分。统一的 Vm 结构体聚合了配置信息 config、vCPU 列表 vcpu_list、二级页表 pt 和模拟设备列表 emu_devs，通过差异化配置而非多态继承实现分层。
-src/config/qemu_riscv64_def.rs 中，MVM（VM0）的 allocate_bitmap 字段被静态设置为 0b0001，强制将其绑定在 Hart0 上，从代码层面落实了”固定核心减少上下文切换干扰”的设计原则。
-// src/config/qemu_riscv64_def.rs（示意）
-VmConfigEntry {
-    id: 0,
-    name: &quot;MVM&quot;,
-    vm_type: VmType::VmTMvm,
-    allocate_bitmap: 0b0001,  // 绑定 Hart0
-    master: Some(0),
-    // ...
-}
-
-GVM 的镜像则由 MVM 在运行时通过管理接口动态加载（src/vmm/init.rs 中的 vmm_init_image 分支逻辑），实现了管理平面与计算平面的解耦。
-
-3. 关键优化技术3.1 GPPT：消除中断虚拟化的 VM-Exit传统 vGIC 方案中，Guest 每次读写中断控制器寄存器均需陷入 EL2，这在高频中断场景（如工业传感器采样）下引入了不可接受的延迟抖动。
-GPPT（Guest Physical Passthrough） 的核心思想是：
-
-将 GIC 的 GICC（CPU 接口） 区域直接映射到 HRTVM 的 Stage-2 地址空间，Guest 可直接读写 GICC 寄存器，无需 VM-Exit；
-仅对 GICD（分发器） 的配置访问进行拦截，因为中断路由涉及全局状态，必须由 Hypervisor 仲裁以保证隔离性；
-当 Hypervisor 需要强制夺回控制权时，利用 ATF 提供的 SDEI（Software Delegated Exception Interface） 通过不可屏蔽的 NMI 机制触发陷入。
-
-实测数据表明，GPPT 将 ARM GIC 中断延迟从软件模拟 vGIC 的 140 μs 降低至 5 μs 量级，性能接近原生 Bare-Metal。额外的几百纳秒开销主要来自 Stage-2 硬件地址翻译，而非软件逻辑。
-在 RISC-V 架构下，Rust-Shyper 通过 src/arch/riscv64/vplic.rs 实现了类似机制：VPlic 结构体维护虚拟 PLIC 状态，当 Guest 操作被标记为 Passthrough 的中断源时（第 139–145 行），操作直接转发至物理 PLIC 寄存器，而非停留在软件模拟层，延续了”减少 Hypervisor 高频介入”的设计哲学。
-3.2 TRCA &#x2F; RATS：I&#x2F;O 虚拟化的异步化演进实时 VM 的 I&#x2F;O 路径面临另一个困境：Virtio 后端通常由 MVM（Linux）处理，而 RTVM 触发 I&#x2F;O 请求后若同步等待，将阻塞实时核心，破坏确定性。
-C-Shyper 中的 TRCA（Task Redirect to Core Assignee）：
-
-RTVM 发起 I&#x2F;O → Hypervisor 拦截并封装为任务对象 → 通过 IPI 发送给 Core 0（MVM 所在核）→ RTVM 同步等待结果。
-问题：IPI 本身存在延迟，且 RTVM 仍需经历一次阻塞等待。
-
-Rust-Shyper 中的 RATS（Rust Asynchronous Task Scheduling） 利用 async/await 将同步阻塞改造为异步调度：
-RTVM 发起 I/O
-    ↓ 陷入 EL2
-RATS 生成 AsyncIoTask，推入共享任务队列
-    ↓ 立即退出 EL2，RTVM vCPU 恢复运行
-MVM 在空闲时通过 poll 执行队列中的任务
-    ↓ 完成后注入虚拟中断通知 RTVM
-
-核心实现位于 src/kernel/async_task.rs，第 191–209 行通过 Pin&lt;Box&lt;dyn Future&lt;Output=()&gt; + ...&gt;&gt; 持有 Rust 编译器生成的状态机，将 C 语言中复杂的手工状态机转换为语言层面的异步逻辑：
-// src/kernel/async_task.rs（示意）
-pub struct AsyncTask {
-    pub task_data: AsyncTaskData,
-    future: Mutex&lt;Pin&lt;Box&lt;dyn Future&lt;Output = ()&gt; + Send + &#39;static&gt;&gt;&gt;,
-}
-
-impl AsyncTask {
-    pub fn poll(&amp;self, cx: &amp;mut Context&lt;&#39;_&gt;) -&gt; Poll&lt;()&gt; {
-        self.future.lock().as_mut().poll(cx)
-    }
-}
-
-相比 TRCA，RATS 的改进体现在两个维度：
-
-减少 IPI：无需每次通过核间中断显式通知 Core 0；
-消除同步阻塞：RTVM 的 vCPU 不再等待 I&#x2F;O 完成，VM-Exit 持续时间大幅缩短。
-
-在小块 I&#x2F;O 场景下，Rust-Shyper 的吞吐量甚至超过了 C-Shyper 和 KVM，正是源于 IPI 减少带来的 CPU 流水线冲刷和上下文切换的降低。
-
-4. 内存管理与设备隔离4.1 Stage-2 地址翻译与确定性内存访问Shyper 利用 ARMv8 &#x2F; RISC-V Hypervisor Extension 的二级地址翻译（IPA → PA）实现 VM 内存隔离。对于 MVM 和 HRTVM，采用直接映射或固定偏移映射，使得地址转换可以通过算术运算完成：
-$$\text{PA} &#x3D; \text{IPA} + \text{offset}$$
-src/kernel/vm.rs 中的 vm_ipa2pa 函数即实现了这一语义，避免了页表遍历带来的时间不确定性，满足 DMA 操作和硬实时任务对访存延迟的严格要求。GVM 则使用 Buddy System 动态分配，兼顾内存利用率。
-4.2 虚拟设备树与硬件视图隔离src/device/device_tree.rs（第 293–360 行）实现了动态设备树生成逻辑：Hypervisor 根据每个 VM 的配置，重新构建暴露给 Guest 的设备描述符，Guest OS 只能探测到显式分配的设备，无法感知物理平台上未授权的硬件。这是一种通过软件定义硬件视图来实现强隔离的设计，避免了昂贵的 IOMMU 硬件依赖。
-
-5. 可靠性工程5.1 虚拟机实时迁移嵌入式 ARMv8 平台普遍不支持 Stage-2 硬件脏页位（Dirty Bit），Shyper 因此实现了纯软件脏页追踪：
-
-迁移初始化：将所有 Stage-2 页表项修改为只读；
-脏页捕获：VM 写内存时触发 Data Abort 陷入 EL2，记录故障地址到脏页位图，恢复可写权限并单步执行；
-增量传输：MVM 通过共享内存直接读取 GVM 内存，经 Linux 成熟网络栈发送至目标节点，将”数据搬运”这一重负载从 Hypervisor TCB 中剥离；
-最终停机：脏页收敛至阈值后，暂停源 VM，传输 CPU 上下文与最终脏页集合，完成切换。
-
-实测停机时间约为 798 μs，远优于 KVM 的 2 ms，原因在于 Shyper 的 TCB 极小，VM 状态数据量远少于 KVM。
-5.2 Hypervisor 热更新Shyper 支持在不重启任何 VM 的情况下在线替换 Hypervisor 自身——这是嵌入式领域极为罕见的能力：
-旧 Hypervisor 将所有 VM 状态序列化到预留内存区域
-    ↓
-MVM 加载新 Hypervisor 镜像到隔离内存
-    ↓
-Core 0 发送 IPI 暂停所有核心
-    ↓
-位置无关汇编重置 vbar_el2，指向新镜像入口
-    ↓
-新 Hypervisor 初始化后解析旧版数据结构指针，重建运行时状态
-
-“两阶段更新法”的设计目标是兼容新旧版本数据结构的 ABI 变化。整个过程最大系统停顿仅为 36 μs，对硬实时任务的干扰具有确定性——相比 KVM 毫秒级不可预测抖动，嵌入式系统更需要的是”干扰可预测”，而非”干扰消失”。
-
-注：在 QEMU RISC-V64 分支中，src/kernel/hvc.rs 内的 HVC_SYS_UPDATE 及迁移相关处理函数（hvc_vmm_handler）的大量分支仍标记为 todo!() 或 unimplemented!，受限于 RISC-V 硬件脏页位语义与 QEMU 仿真行为的差异。但 CLI 层（cli/src/sys.rs 的 update_image）和整体架构已就位，为后续在真实 RISC-V 硬件上补全实现提供了清晰路径。
-
-
-6. Rust 的安全工程实践6.1 所有权与生命周期：消除 Use-After-FreeC 版 Shyper 中，VM 销毁时的页帧释放依赖手工管理，历史上出现过 Use-After-Free 漏洞。Rust-Shyper 中，Vm 结构体通过 Box&lt;Vm&gt; 和 Arc&lt;Vm&gt; 管理所有权：
-// VM 销毁时，Drop trait 自动回收所有关联资源
-impl Drop for Vm {
-    fn drop(&amp;mut self) {
-        // 编译器保证此处必然执行，页帧自动归还分配器
-        self.free_page_frames();
-    }
-}
-
-当 Vm 实例从全局列表中移除时，引用计数归零，Drop 自动触发，从根本上消除了内存泄漏与悬垂指针。
-6.2 类型系统驱动的并发安全所有共享可变状态均被 SpinLock&lt;T&gt; 或 Mutex&lt;T&gt; 封装。Rust 编译器在类型层面强制要求”访问 T 必须先持有锁”，数据竞争在编译期即被拒绝，无需依赖 ThreadSanitizer 等运行时检测工具。
-对于创建后不再修改的只读数据（如静态配置表），则直接暴露为 &amp;T 引用，无需加锁，兼顾了安全性与性能。
-6.3 unsafe 的精确封装Rust-Shyper 全量代码约 1.8 万行，其中 unsafe 代码块仅 141 行，集中于：
-
-底层寄存器读写（csrr&#x2F;csrw、mrs&#x2F;msr）；
-Stage-2 页表操作（裸指针写入）；
-FFI 与外部汇编接口。
-
-这一比例意味着 99%+ 的代码受到编译器的内存安全保证，极大降低了安全审计的成本与难度。对比 C-Shyper 静态分析检测出的大量中高危漏洞（空指针解引用、格式化字符串错误等），Rust 版本在编译阶段已消除了绝大多数同类问题。
-6.4 性能代价性能测试表明：
-
-计算密集型任务：Rust-Shyper 与 C 版本及 Native 的差异 &lt; 7%，证明 Rust 的零成本抽象在 Hypervisor 场景中是真实的；
-小块 I&#x2F;O 吞吐：Rust-Shyper 优于 C-Shyper，得益于 RATS 的异步模型减少了 IPI 与上下文切换；
-大块 I&#x2F;O：略逊于 KVM，因为 KVM 具备成熟的请求合并（I&#x2F;O Merging）机制，这是 Rust-Shyper 尚待补强的方向。
-
-
-7. 总结Shyper 系列工作的核心贡献可以归纳为以下三点：
-
-打破实时性与灵活性的二元对立：通过分层 VM 模型和 GPPT 技术，Shyper 在保证硬实时 VM 延迟达到 Jailhouse 量级的同时，通过 MVM 提供了 KVM 级别的动态管理能力；
-I&#x2F;O 虚拟化的异步化演进：RATS 机制将同步阻塞的 I&#x2F;O 路径改造为 Rust async/await 驱动的任务队列，是 Rust 语言特性在系统级场景中最具说服力的工程实践之一；
-Rust 可行性的工程验证：18000 行代码，141 行 unsafe，性能损失 &lt; 7%，Rust-Shyper 为业界提供了”用 Rust 实现高性能嵌入式 Hypervisor 是可行的”的有力证据。
-
-当前在 QEMU RISC-V64 平台上，迁移与热更新的内核后端尚未完整实现，这也指出了后续工作的明确方向：在真实 RISC-V 硬件（如 HiFive Unmatched）上验证软件脏页追踪的正确性，并补全 AIA（Advanced Interrupt Architecture）下的 GPPT 等价实现。
-
-延伸阅读
-[嵌入式实时操作系统]：理解 RTOS 的调度模型（Rate Monotonic、EDF）有助于深入理解 Hypervisor 的实时性设计权衡
-[RISC-V Hypervisor Extension]：RISC-V H 扩展的 HS&#x2F;VS&#x2F;VU 特权模式划分与 ARMv8 EL2 的对应关系
-下一篇预告：内存模型与无锁编程——从 MESI 协议到 C++11 memory_order 的精确语义
-
-]]></content>
-      <categories>
-        <category>Systems-HPC</category>
-      </categories>
-      <tags>
-        <tag>操作系统</tag>
-        <tag>ARM</tag>
-        <tag>性能优化</tag>
-        <tag>微内核</tag>
-        <tag>Rust</tag>
-        <tag>虚拟化</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>SEDA：面向高并发互联网服务的阶段式事件驱动架构</title>
-    <url>/2025/12/17/seda-architecture-scalable-internet-services/</url>
-    <content><![CDATA[
-互联网访问量的极端波动性，使得传统线程模型和事件驱动模型均难以在高并发场景下实现优雅降级。SEDA（Staged Event-Driven Architecture，阶段式事件驱动架构）通过将服务拆分为以事件队列隔开的阶段网络，并引入动态资源控制器，在不牺牲可编程性的前提下，实现了对负载的自适应管理。本文对该论文的核心思想、架构设计与实验评估进行系统梳理。
-
-1. 背景：传统并发模型的根本局限互联网服务的负载特征极不均匀——峰值与低谷的访问量可能相差数个数量级。理想的服务器架构应当在高负载下优雅降级而非崩溃，在低负载下节约资源而非空转。
-然而，现有的两种主流并发范式均难以达到这一目标。
-1.1 基于线程的并发每个请求独占一个线程，编程模型直观。但线程数量与并发连接数正相关，导致在高并发下：
-
-上下文切换与 TLB 未命中开销急剧上升；
-调度开销与锁竞争成为吞吐量瓶颈；
-操作系统通过”资源虚拟化”对应用层隐藏了资源紧张的事实，导致应用无法感知过载，最终引发服务崩溃。
-
-有界线程池在一定程度上缓解了上述问题，但固定的连接上限会造成不公平性，且单线程处理单请求的模型使得内部性能瓶颈难以识别和调优。
-1.2 基于事件驱动的并发Flash 等服务器引入了事件驱动模型：以少量线程驱动大量事件，将请求处理抽象为有限状态机（FSM）。其优势在于，超过饱和点后吞吐量几乎不下降，延迟仅随事件队列长度线性增长。
-然而，该模型存在以下固有缺陷：
-
-阻塞假设脆弱：要求事件处理函数不得阻塞，而中断、页故障、垃圾回收均可能导致阻塞；
-开发复杂度高：开发者需手动管理调度顺序、多流 FSM 的公平性与响应时间的权衡；
-模块化困难：必须信任每个模块的代码不会大量消耗 CPU 或阻塞。
-
-2. SEDA 的核心思想SEDA 的核心洞察在于：以显式的事件队列解耦各处理阶段，并为每个阶段配备动态资源控制器，从而同时实现模块化和自适应负载管理。
-2.1 阶段（Stage）的定义每个阶段由四部分组成：
-Stage = {
-    事件处理器（Event Handler），  // 应用逻辑
-    入站队列（Incoming Queue），   // 阶段间解耦缓冲
-    线程池（Thread Pool），        // 并发执行单元
-    控制器（Controller）           // 资源动态调节
-}
-
-阶段之间通过队列通信，自然实现了解耦。每个阶段可以被独立监控、调优和测试，这对于大型服务的性能分析至关重要。
-2.2 动态资源控制器SEDA 提供了两种控制器：
-线程池控制器：根据入站队列的深度动态调整线程数量。队列变长时增加线程，队列缩短时减少线程，从而避免传统线程模型的资源浪费，也避免线程过多导致的调度抖动。
-批处理控制器：通过观测吞吐量的变化，动态调整每次批量处理的事件数量。批量处理能够提升缓存局部性，降低每请求的处理开销。
-即便操作系统的线程调度策略不可见，SEDA 也能通过上述控制器自适应地响应环境变化。
-3. 底层实现：高效异步 I&#x2F;OSEDA 的高性能依赖于对底层 I&#x2F;O 的精细设计。
-3.1 异步套接字 I&#x2F;O网络操作被拆分为三个独立阶段：read、write、listen。通过操作系统提供的非阻塞 I&#x2F;O，单个服务进程可正常处理 8192 个并发客户端连接。相比之下，常规线程模型在超过 400 个线程时即会触及 Linux 的用户线程数量上限而崩溃。
-3.2 异步文件 I&#x2F;O文件 I&#x2F;O 本质上仍依赖阻塞调用，SEDA 通过有界线程池加以包装，并动态调整线程数以匹配负载，同时利用队列对并发文件操作施加背压（back-pressure），避免大量并发磁盘 I&#x2F;O 引发的性能崩溃。
-4. 性能评估4.1 HTTP 服务器对比论文使用基于 Java 实现的 Haboob 服务器（SEDA 架构）与 C 语言实现的 Apache 和 Flash 服务器对比。结果表明：
-
-Haboob 的吞吐量超过了 Apache 和 Flash，这一结果来自于 SEDA 的负载感知和自适应调度；
-Apache 和 Flash 在高并发下，因 TCP 重传定时器的指数退避（exponential backoff），响应时间出现严重的长尾分布；
-动态负载卸载功能在过载时自动丢弃积压过久的请求并返回错误响应，显著降低了平均和尾部延迟，而非无声地让所有请求超时。
-
-4.2 Gnutella 包路由器传统 Gnutella 路由器在慢速套接字场景下会因出站队列无限增长引发内存泄漏。SEDA 通过设置出站队列阈值，超阈值时自动关闭连接。当查询请求阻塞时（实验中注入 20ms 延迟），线程池控制器自动增加线程数以消化积压，有效消除了延迟峰值。
-5. 架构意义与局限SEDA 最深刻的贡献在于将”资源感知“（resource awareness）的理念引入了服务器架构设计。传统操作系统通过虚拟化隐藏了资源的有限性，SEDA 则反其道而行之，将资源状态显式暴露给控制器，使应用能够主动管理过载，而非被动等待系统崩溃。
-然而，SEDA 也存在若干局限：
-
-控制器参数（如线程数变化速率、批处理阈值）需要仔细调优；
-检测过载条件本身具有挑战性，过度激进的卸载可能误伤正常请求；
-每个阶段的队列引入了一定的延迟，对于极低延迟要求的场景可能不适用。
-
-作者也指出，SEDA 的思想为专用操作系统设计提供了新方向：若操作系统赋予应用更大的调度和资源控制权，将有可能超越当前通用 OS 的性能上限。
-延伸阅读
-[事件驱动 vs 多线程]：深入比较 epoll&#x2F;io_uring 与线程池模型在高并发 I&#x2F;O 下的性能特征与适用场景。
-[背压机制]：响应式系统（Reactive Systems）中的背压（back-pressure）设计模式与 SEDA 队列机制的异曲同工之处。
-下一篇预告：日志结构文件系统（LFS）——如何通过顺序写将磁盘带宽利用率推向极限。
-
-]]></content>
-      <categories>
-        <category>Systems-HPC</category>
-      </categories>
-      <tags>
-        <tag>性能优化</tag>
-        <tag>服务器架构</tag>
-        <tag>事件驱动</tag>
-        <tag>并发</tag>
-        <tag>负载控制</tag>
+        <tag>并发编程</tag>
+        <tag>C++</tag>
+        <tag>数据结构</tag>
       </tags>
   </entry>
   <entry>
@@ -1821,13 +1425,1628 @@ These small-scale experiments on seemingly simple tasks serve as a microcosm of 
         <category>AI-Research</category>
       </categories>
       <tags>
-        <tag>深度学习</tag>
         <tag>模仿学习</tag>
         <tag>机器人操控</tag>
         <tag>sim-to-real</tag>
         <tag>MimicGen</tag>
         <tag>Spatial-Softmax</tag>
         <tag>数据增强</tag>
+        <tag>深度学习</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>日志结构文件系统：磁盘带宽利用的极致追求</title>
+    <url>/2025/09/23/log-structured-filesystem-design/</url>
+    <content><![CDATA[原始论文：https://dl.acm.org/doi/10.1145/146941.146943
+
+传统文件系统将磁盘视为可随机寻址的块设备，大量小文件操作导致磁盘带宽利用率不足 5%。Rosenblum 与 Ousterhout 在 1992 年发表的论文《The Design and Implementation of a Log-Structured File System》，从硬件发展趋势的不平衡性出发，提出了一种颠覆性方案：将整个磁盘视为一个顺序追加的日志，在极大提升写性能的同时，兼顾了崩溃恢复的高效性。
+
+1. 问题的根源：硬件发展的不平衡文件系统性能由三个核心硬件组件共同决定，而它们的发展速度存在根本性的不对称：
+
+处理器：性能呈指数级增长，形成巨大的 I&#x2F;O 压力；
+主内存：容量持续扩大，能够缓存大量读请求，使磁盘的读负载大幅降低，工作负载逐渐以写操作为主；
+机械磁盘：传输带宽提升有限，而寻道时间几乎没有改善。
+
+这一趋势意味着：磁盘的主要瓶颈不在于数据传输速率，而在于随机寻道的机械延迟。
+传统文件系统（如 Unix FFS）对写操作的实现与此趋势严重背离。以创建一个小文件为例，该操作会被分解为多次独立的磁盘写入（目录数据、目录 inode、文件数据、文件 inode、位图等），每次写入均可能触发一次独立寻道，导致磁盘大部分时间耗费在机械臂移动上，实际带宽利用率甚至低于 5%。
+2. LFS 的核心思想：顺序写日志LFS（Log-Structured File System）的设计哲学是：将文件系统的接口实现与底层磁盘布局彻底解耦。
+2.1 写入策略无论上层发起多少次零散的写操作，LFS 在内存中维护一个写缓冲区，将所有脏数据（包括文件数据、inode、目录块等）集中缓存，待积累到足够大（通常为若干 MB）时，以一次大的顺序磁盘写入将所有变更追加到磁盘日志的末尾，丢弃原始位置的旧数据块，不执行原地更新（in-place update）。
+传统 FFS 写 N 个小文件：N 次随机写 → 带宽 &lt; 5%
+LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
+
+这一设计将大量随机写操作转化为单次大型顺序写，从根本上规避了寻道延迟。
+2.2 崩溃恢复的简化由于最新的所有修改都集中在日志末尾，崩溃恢复无需像 fsck 那样扫描整个磁盘寻找不一致。LFS 只需检查日志的最新部分，将恢复时间从数十分钟缩短到数十秒。
+3. 高效读取：inode Map 机制3.1 传统文件系统的定位优势在 FFS 中，inode 的磁盘位置由文件编号直接计算得出，定位开销为零。LFS 每次修改文件都会将 inode 写入新位置，inode 的磁盘地址不再固定，若不加处理，读取性能将急剧退化。
+3.2 inode Map：解耦接口与实现LFS 引入了 inode Map（inode 映射表）来解决这一问题：
+文件编号 → inode Map → inode 在日志中的当前物理地址 → 文件数据
+
+inode Map 的元数据本身也以顺序方式写入日志，其当前位置由磁盘固定区域（检查点区域，Checkpoint Region）记录。
+由于 inode Map 所占空间相对于总磁盘空间极小，其活跃部分可完整缓存在主内存中。因此，绝大多数文件定位操作不需要额外的磁盘访问，读取性能可与 Unix FFS 相媲美。
+这正是”接口与实现解耦“思想的体现：上层看到的仍是”通过文件编号访问文件”的稳定抽象，底层实现则通过 inode Map 透明地处理了日志化带来的地址不固定问题。
+4. 空间回收：段清理的成本-收益策略4.1 碎片化问题的必然性由于 LFS 不执行原地更新，旧数据块持续积累，必须有机制回收这些已失效的磁盘空间。LFS 将磁盘组织为固定大小的段（Segment），段是日志追加和垃圾回收的基本单位。
+4.2 贪心策略的失败直觉上，应优先清理有效数据比例最低的段（即”最空段优先”策略）。然而仿真实验证明，贪心策略在稳态下会导致：
+
+所有段的有效数据比例趋向同一阈值，磁盘利用率被人为压低；
+包含”冷数据”（访问频率极低）的段，因数据失效缓慢，会在略高于清理阈值的位置长期占用磁盘空间，难以被回收。
+
+4.3 成本-收益分析的引入LFS 论文设计了基于清理收益与清理成本比值的评分函数来选择待清理段：
+$$\text{score}(s) &#x3D; \frac{\text{收益}}{\text{成本}} &#x3D; \frac{(1 - u) \cdot \text{age}}{1 + u}$$
+其中 $u$ 为段的有效数据比例，$\text{age}$ 为段中最年轻数据的”年龄”（衡量数据保持稳定的时间）。
+
+热段（有效数据快速失效）：代入公式，只有当 $u$ 极低时得分才足够高，约在 15% 有效数据比例时被清理；
+冷段（有效数据长期稳定）：age 值高，即便 $u$ 较大（约 75%）也能获得高分，会被提前主动清理。
+
+这一策略自然促成了理想的 双峰段分布（Bimodal Segment Distribution）：磁盘上的段要么几乎全满（冷数据稳定占用），要么几乎全空（可快速分配）。超过一半被清理的段完全为空，此时总体写入放大系数仅为 1.2–1.6，意味着 LFS 能将超过 70% 的磁盘原始带宽用于写入新数据。
+5. 崩溃恢复：检查点与前滚LFS 的崩溃恢复机制极其简洁：
+
+检查点（Checkpoint）：系统周期性地将当前一致状态的所有元数据（包括 inode Map 的完整快照）写入磁盘固定区域，固化一个”已知良好”的文件系统状态；
+前滚（Roll-Forward）：崩溃后，系统从最新检查点恢复，再向前扫描日志尾部，重放检查点之后的操作，尽可能恢复更多数据。
+
+所有待恢复信息集中于日志末尾，完全无需对整个磁盘进行 fsck 式的全量扫描。
+6. 与相关工作的对比LFS 的设计广泛借鉴并改造了已有系统思想：
+
+
+
+参考来源
+借鉴点
+LFS 的改进&#x2F;区别
+
+
+
+一次性写入介质文件系统
+追加写模式
+LFS 额外实现了日志空间回收
+
+
+分代垃圾回收器
+成本-收益选择回收对象
+LFS 必须顺序访问，利用”块最多属于一个文件”简化垃圾识别
+
+
+数据库日志
+日志作为持久化手段
+LFS 需写完整数据块（非字节级差分），并设计了段清理来压缩日志
+
+
+数据库组提交（Group Commit）
+批量合并写入
+LFS 将这一思想应用于文件系统层
+
+
+7. 总结LFS 的核心贡献在于：从硬件趋势的不平衡性出发，以”顺序追加写”重构了文件系统的底层存储模型，并通过 inode Map 保证读取性能不退化，通过成本-收益段清理解决了空间回收的复杂性，最终在一个真实系统（Sprite LFS）上验证了设计的可行性与优越性。
+LFS 的思想对后续存储系统产生了深远影响：现代 SSD 的 FTL（Flash Translation Layer）、数据库的 LSM-Tree（LevelDB、RocksDB）均采用了类似的”追加写+后台整理”策略，可以说 LFS 是这一设计范式的奠基性工作。
+延伸阅读
+[LSM-Tree]：LevelDB&#x2F;RocksDB 中的 Log-Structured Merge-Tree 与 LFS 的段清理机制有何异同，以及写放大的量化分析。
+[F2FS]：专为闪存设计的 F2FS（Flash-Friendly File System），如何将 LFS 的思想适配到 SSD 的页擦除粒度限制。
+下一篇预告：系统程序员视角下的并发陷阱——内存模型、内存屏障与无锁编程的权衡取舍。
+
+]]></content>
+      <categories>
+        <category>Systems-HPC</category>
+        <category>Paper-Reading</category>
+      </categories>
+      <tags>
+        <tag>文件系统</tag>
+        <tag>LFS</tag>
+        <tag>存储系统</tag>
+        <tag>操作系统</tag>
+        <tag>性能优化</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>改进 MemOS 记忆操作系统：LLM 长程记忆工程实践</title>
+    <url>/2025/12/20/memos-llm-memory-system-evaluation/</url>
+    <content><![CDATA[原始代码:https://github.com/MemTensor/MemOS改进代码：https://github.com/Kevin589981/MemOS/tree/main/code
+
+LLM 的”遗忘”不只是上下文窗口的技术限制，更是系统设计层面的架构问题。MemOS（Memory OS）将记忆视为可管理的系统资源，提出了一套类比操作系统的记忆治理框架。本文结合在 LoCoMo 对话数据集上的工程实践，系统梳理 MemOS 的核心设计理念，以及如何通过数据增强、提示词工程和窗口策略将评测 F1 从 0.25 推进到 0.57 以上。
+
+一、背景：为什么 LLM 需要”记忆操作系统”当前主流 LLM 交互模式本质上是无状态的（Stateless）：每次对话独立发生，模型不保留历史。这在四个维度上造成了根本性局限：
+
+长程依赖建模：超长上下文受限于窗口长度和计算开销，关键指令容易被遗忘；
+知识无法演化：静态参数无法适应动态世界，RAG 缺乏版本意识，新旧知识可能冲突；
+缺乏个性化：无跨会话的持久化”记忆痕迹”，模型无法记住用户长期偏好；
+跨平台不可迁移：记忆缺乏可移植性和互操作性。
+
+MemOS 的核心主张是：记忆不应是附属于推理的辅助缓存，而应是智能体的核心资产。推理是基于记忆的计算过程，记忆需要像操作系统管理 CPU&#x2F;内存那样被系统性治理。
+
+二、MemOS 框架设计2.1 三种记忆类型MemOS 将记忆统一为三种类型，覆盖从感知到巩固的全过程：
+
+
+
+类型
+类比
+特点
+
+
+
+纯文本记忆（Plaintext Memory）
+外部存储（HDD）
+显式可见、快速更新、适合事实密集型任务
+
+
+激活记忆（Activation Memory）
+缓存&#x2F;RAM
+核心是 KV-Cache，用于多轮对话连续性
+
+
+参数记忆（Parameter Memory）
+ROM&#x2F;固件
+编码在权重中，稳定但更新成本高
+
+
+三种记忆并非孤立，而是可以相互转化：
+
+Plaintext → Activation：高频访问的文本记忆预先转化为激活向量，降低解码延迟；
+Plaintext&#x2F;Activation → Parameter：长期稳定知识通过微调或蒸馏内化为参数（”本能”）；
+Parameter → Plaintext：通过 Backpatching 导出过时知识以便显式修正。
+
+2.2 MemCube：最小调度单元每条记忆被封装为一个 MemCube，包含：
+
+元数据头：时间戳、来源签名、语义类型（描述性）；访问权限、TTL、优先级（治理属性）；访问频率、上下文指纹（行为指标）；
+记忆载荷：文本、张量（KV Cache）、LoRA Patch（模型权重增量）。
+
+行为指标驱动冷热分层调度：高频文本自动升级为激活层；长期稳定高频记忆标记为适合内化为参数。这与操作系统的 LRU 页面替换是同构的。
+2.3 三层架构接口层（Interface Layer）
+  ├── MemReader：语义解析器，将自然语言转化为结构化 MemoryCall
+  ├── Memory API：Provenance/Update/LogQuery API
+  └── Memory Pipeline：原子化工作流，支持事务回滚
+
+操作层（Operation Layer）
+  ├── MemOperator：多视角组织（标签/知识图谱/语义分层）+ 混合检索
+  ├── MemScheduler：类型感知调度（KV-Cache/Parameter/Plaintext）
+  └── MemLifecycle：五态模型（Generated/Activated/Merged/Archived/Expired）
+
+基础设施层（Infrastructure Layer）
+  ├── MemGovernance：三元权限模型 + 隐私保护 + 审计日志
+  ├── MemVault：命名空间隔离存储，兼容多种数据库后端
+  ├── MemLoader/Dumper：跨平台记忆迁移
+  └── MemStore：开放记忆分发平台（发布/订阅机制）
+
+MemScheduler 的核心是类型感知调度：对高频连贯性任务优先使用 KV-Cache，对程序化专家任务使用 Parameter，对临时事实查询使用 Plaintext。这比”一律 RAG”的方案在 Token 消耗和延迟上均有显著优势。
+
+三、LoCoMo 数据集上的工程实践3.1 任务定义LoCoMo（Long-term Conversation Memory）是评测 LLM 处理长对话记忆能力的基准数据集，包含四类问题：
+
+cat1：单跳事实问答；
+cat2：时序推理（时间顺序、时间锚点）；
+cat4：多跳聚合（需要跨句合并多条事实）；
+开放域：无固定答案的推理类问题。
+
+整体评测指标：BLEU、F1（token 级别）、LLM 打分（语义级别）。
+3.2 接口对齐：add&#x2F;search 双接口评测框架以 add（写入记忆）和 search（检索记忆并生成答案）为核心接口。我们实现了 MemOS 版本的适配层：
+add.py 的五大核心设计：
+
+命名空间隔离：每次实验通过 MEMOS_RUN_TAG 后缀区分 speaker 的 user_id 和 conversation_id，避免历史记忆污染新评测；
+Day 边界标记：每条消息前缀化为 &quot;[Day N] Speaker: text&quot;，增强”同天事件聚合”的检索能力；
+时间戳保存：写入 chat_time 字段（如 &quot;8:56 pm on 20 July, 2023&quot;），为时序问答提供可计算锚点；
+滑动窗口批量写入：窗口大小 batch_size，步长 batch_size - overlap，让跨批次边界的事实在某个批次内共同出现；
+并行双 speaker 写入：双线程上传，降低总体写入耗时。
+
+search.py 的核心优化：
+
+时序感知召回增强：对含 when/date/time/before/after 等关键词的问题，将 memory_limit_number 提升至 top_k × 1.3，降低时序记忆漏检概率；
+时间戳规范化：将 MemOS 返回的数字时间戳格式化为可读 UTC 时间，防止模型复读纯数字时间戳作为答案；
+非时序问题不注入时间信息：从输入侧降低模型被 timestamp 诱导输出时间的概率；
+拒答归一化：将 “No memory mentions…” 等拒答句统一归一为 Unknown，避免大量零分。
+
+3.3 数据预处理：locomo_enhanced原始 LoCoMo 对话充满寒暄、省略和隐性事实，直接写入 MemOS 导致”关键句被淹没在噪声中，语义向量不够尖锐”。
+核心思路：在写入前，用大模型抽取每段对话的显式事实，附加回原消息，形成”原文 + Facts 摘要”的增强版本：
+[原消息]  Alice: I just got back from Paris last Tuesday.
+[增强后]  Alice: I just got back from Paris last Tuesday.
+          [Facts extracted: Alice visited Paris. Alice returned on Tuesday, the week before {Conversation Date}.]
+
+时间表达的处理策略：
+
+yesterday/today/tomorrow → 转为绝对日期；
+last week/last &lt;weekday&gt; → The week/weekday before &lt;Conversation Date&gt;（相对但明确）；
+two months ago 等复杂相对表达 → 保持原样（避免过度具体化导致与答案不一致）；
+数字一律使用阿拉伯数字（4 years，10 years ago），减少格式差异导致的 F1 损失。
+
+此步骤使分数从 ~0.487 提升至 ~0.53。
+3.4 优化迭代记录
+
+
+阶段
+主要改动
+F1 分数
+
+
+
+基线（流程跑通）
+零修改，验证端到端流程
+0.25
+
+
+Prompt 对齐 + Top-K 调整
+短答案导向 Prompt，提升 top_k
+0.499
+
+
+滑动窗口写入
+batch_size + overlap 策略
+0.487
+
+
+数据预处理（事实抽取）
+locomo_enhanced 数据集
+0.53+
+
+
+抑制过度推理
+微调预处理 Prompt，避免机械时间换算
+0.54
+
+
+窗口超参调优
+batch&#x3D;16, overlap&#x3D;8
+0.546
+
+
+模型横向对比
+qwen-plus-latest 推理能力更强
+0.560
+
+
+3.5 失败尝试与根因分析Reranker 高召回重排序（top_k&#x3D;50 + reranker）：分数反而降至 0.42。根因：reranker 只能重排序已召回的结果，无法弥补”多跳链路中关键节点未被召回”的根本缺陷；同时高召回+重排后拉长输入，生成长句，不利于短答案对齐。
+图片信息提取：分数从 0.53 降至 ~0.40。根因：图片描述引入大量无关细节，增加噪声 token，削弱对关键信息的聚焦；多模态推理错误率传导至后续检索与生成阶段。
+Agentic 多跳 RAG（混合 Dense + BM25 检索循环）：技术先进但边际收益有限，显著增加 Token 消耗和延迟，与短答案评测目标冲突。最终保留完整实现作为技术展示，主实验中关闭。
+
+四、MemOS 评测结果：它真的”记得”更好吗？MemOS 在官方评测中的表现印证了其设计优势：
+
+LoCoMo：Overall 75.80 分（第二名 Memobase 72.01），在单跳、多跳、时序、开放域均取得最佳或次佳，且 Token 消耗（1589）远低于次优方案 Zep（2701）；
+LongMemEval：综合准确率 77.8%，显著优于 Memobase (72.4%) 和 Mem0 (66.4%)；
+并发压力测试：唯一在所有测试下保持 100% 成功率的系统；
+KV-Based 记忆加速：在长上下文 + 短查询场景下，加速比最高达 94.2%（通过复用预计算的 KV 中间状态）。
+
+
+五、工程洞见：什么真正有效从这次从 F1&#x3D;0.25 到 F1&#x3D;0.56 的优化之旅中，最有价值的经验是：
+
+显式化胜过检索技巧：将隐性事实预先抽取为结构化摘要，比各种检索优化（reranker、高召回）更有效。”让信息直接可检索”比”让检索器更聪明”ROI 更高。
+
+时间信息是弱点：时序问题对格式极为敏感，需要从写入、检索、Prompt、评测四个层面同时处理。任一环节的时间格式失控都会造成大量零分。
+
+短答案导向的 Prompt 约束是关键杠杆：F1 指标是 token 级别匹配，模型生成哪怕一个正确答案被埋在长句中也会被稀释。输出约束（”禁止解释””5-6词””禁止纯数字时间戳”）带来的收益超过了精细化的检索优化。
+
+窗口参数不是越大越好：batch_size&#x3D;16, overlap&#x3D;8 是在”上下文完整性”与”向量噪声”之间的平衡点。过大的批次让语义向量趋于平均，导致检索钝化。
+
+
+
+延伸阅读
+[MemOS Paper]：Memory OS: Enabling AI Agents to Remember，系统介绍记忆操作系统的完整框架设计与实验验证。
+[Generative Agents]：Park et al. 2023，早期将类人记忆机制（感知-反思-行动循环）引入 Agent 的经典工作。
+[MemGPT]：引入虚拟上下文管理（类 OS 内存分层）的先驱，是 MemOS 的思想前身。
+下一篇预告：从语言模型的”记忆”转向机器人的”感知”——模仿学习在机器人操控泛化中面临的根本挑战。
+
+]]></content>
+      <categories>
+        <category>Projects</category>
+        <category>AI-Research</category>
+      </categories>
+      <tags>
+        <tag>LLM记忆</tag>
+        <tag>RAG</tag>
+        <tag>MemOS</tag>
+        <tag>NLP</tag>
+        <tag>Prompt工程</tag>
+        <tag>LoCoMo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>内存模型与无锁编程：从 CPU 缓存到 C++ 原子操作</title>
+    <url>/2025/12/28/memory-model-lockfree/</url>
+    <content><![CDATA[
+本文是「底层架构与高性能计算」系列的第一篇，聚焦 C++ 内存模型与无锁数据结构的核心思想。
+
+为什么要理解内存模型？现代多核 CPU 的硬件优化（乱序执行、写缓冲区、缓存一致性协议）会让”看似正确”的并发代码产生灾难性的错误。理解内存模型是写出正确无锁程序的前提。
+CPU 缓存层次与一致性L1 Cache (每核独享, ~4 cycles)
+L2 Cache (每核独享或共享, ~12 cycles)
+L3 Cache (所有核共享, ~40 cycles)
+主内存 (~200 cycles)
+
+MESI 协议保证缓存一致性，但并不保证可见性顺序。
+C++ 内存序简介#include &lt;atomic&gt;
+
+std::atomic&lt;int&gt; flag{0};
+std::atomic&lt;int&gt; data{0};
+
+// 生产者
+void producer() {
+    data.store(42, std::memory_order_relaxed);
+    flag.store(1, std::memory_order_release); // Release 屏障
+}
+
+// 消费者
+void consumer() {
+    while (flag.load(std::memory_order_acquire) == 0) {} // Acquire 屏障
+    // 保证能看到 data = 42
+    assert(data.load(std::memory_order_relaxed) == 42);
+}
+
+
+
+
+内存序
+含义
+
+
+
+relaxed
+仅保证原子性，不约束顺序
+
+
+acquire
+本线程后续读写不能重排到此操作之前
+
+
+release
+本线程之前的读写不能重排到此操作之后
+
+
+seq_cst
+全局顺序一致（性能最低）
+
+
+下一篇预告
+Lock-Free Queue 的完整实现（基于 compare_exchange_weak）
+ABA 问题及解决方案（Tagged Pointer &#x2F; Hazard Pointer）
+
+]]></content>
+      <categories>
+        <category>Systems-HPC</category>
+        <category>Paper-Reading</category>
+      </categories>
+      <tags>
+        <tag>并发编程</tag>
+        <tag>内存模型</tag>
+        <tag>C++</tag>
+        <tag>无锁编程</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>树莓派智能小车：PID 电机控制与 OpenCV 颜色识别实践</title>
+    <url>/2024/06/23/raspberry-pi-smart-car-opencv/</url>
+    <content><![CDATA[
+本文记录了一个基于树莓派的智能小车项目：通过 OpenCV 识别不同颜色的魔方，根据颜色规则从左侧或右侧绕行，并在遇到双魔方时从中间穿越。系统采用多线程架构，将颜色检测、距离测量、PWM 更新三条流水线并行化；电机控制使用 PID 闭环，编码器反馈速度；整体逻辑由有限状态机驱动。文章重点分析了 PID 在电压不稳定供电下的局限性，以及 HSV 颜色空间的实战调参经验。
+
+1. 任务描述与规则场地上设有三个里程碑，每个里程碑放置 1 到 2 个魔方（颜色从红&#x2F;黄&#x2F;蓝&#x2F;绿中选取）：
+
+里程碑 1：1 个魔方
+里程碑 2：2 个同色魔方，间距 ≥ 2 个车身宽度
+里程碑 3：1 个魔方
+
+绕行规则：
+
+
+
+魔方颜色
+绕行方向
+
+
+
+红色 &#x2F; 黄色
+从左侧绕过
+
+
+蓝色 &#x2F; 绿色
+从右侧绕过
+
+
+双魔方（同色）
+从两者中间穿越
+
+
+小车需要在正式测试前不知道具体颜色和位置的情况下，靠实时视觉完成全程。
+
+2. 系统硬件架构
+
+
+硬件模块
+型号&#x2F;说明
+职责
+
+
+
+主控
+树莓派
+运行所有控制逻辑
+
+
+直流电机 + 驱动板
+L298N 类驱动
+四轮驱动，PWM 调速
+
+
+摄像头
+USB 摄像头
+捕获图像，颜色识别
+
+
+超声波传感器
+KS103（I2C）
+测量与前方障碍物距离
+
+
+编码器
+Hall 效应编码器，白入 585 脉冲&#x2F;圈
+测量轮速，PID 反馈
+
+
+引脚分配（BCM 编号）：
+EA, I2, I1 = 13, 19, 26   # 右电机：PWM + 方向
+EB, I3, I4 = 16, 20, 21   # 左电机：PWM + 方向
+LS, RS = 6, 12             # 左/右编码器输入
+
+PWM 频率设为 100 Hz，相比更低频率可以使电机转动更平滑（减少转矩脉动）。
+
+3. 电机控制：PID 闭环 + 守护线程分离3.1 PID 控制原理控制目标是让电机实际转速（由编码器采样）跟随设定转速。PID 控制器的离散化形式：
+$$u_k &#x3D; K_p \cdot e_k + K_i \sum_{i&#x3D;0}^{k} e_i + K_d \cdot (e_k - e_{k-1})$$
+其中 $e_k &#x3D; v_{\text{target}} - v_{\text{actual}}$，$u_k$ 直接映射为 PWM 占空比（限幅在 [0, 100]）。
+class PID:
+    def __init__(self, P=38.57, I=0.1, D=70, speed=0.5):
+        self.Kp, self.Ki, self.Kd = P, I, D
+        self.ideal_speed = speed
+        self.integral = 0
+        self.err_last = 0
+
+    def update(self, feedback_value):
+        err = self.ideal_speed - feedback_value
+        self.integral += err
+        u = self.Kp * err + self.Ki * self.integral + self.Kd * (err - self.err_last)
+        self.err_last = err
+        return max(0, min(100, u))   # PWM 占空比限幅
+
+最终调定的参数为左轮 $K_p&#x3D;45, K_i&#x3D;0.1, K_d&#x3D;70$，右轮 $K_p&#x3D;40, K_i&#x3D;0.1, K_d&#x3D;70$（两轮略有差异是因为电机特性不完全一致）。
+3.2 三线程解耦架构直接将 PID 计算和 GPIO 写入放在主控制循环里会导致采样不均匀、响应延迟，系统采用三线程分离：
+
+
+
+线程
+职责
+周期
+
+
+
+speed_monitor
+编码器脉冲计数 → 转速（圈&#x2F;秒）
+100 ms
+
+
+pwm_update_daemon
+读取全局转速 → PID 计算 → 写 PWM
+100 ms
+
+
+主线程
+状态机决策：设置目标速度 left_target_speed / right_target_speed
+事件驱动
+
+
+def speed_monitor(interval=0.1):
+    GPIO.add_event_detect(LS, GPIO.RISING, callback=encoder_callback)
+    GPIO.add_event_detect(RS, GPIO.RISING, callback=encoder_callback)
+    while running:
+        rspeed = rcounter / 585.0   # 脉冲数 → 圈/秒（每圈 585 脉冲）
+        lspeed = lcounter / 585.0
+        rcounter = lcounter = 0
+        time.sleep(interval)
+
+def pwm_update_daemon(interval=0.1):
+    while running:
+        if left_pid_global and right_pid_global:
+            _set_motor_pwm(left_pid_global.update(lspeed),
+                           right_pid_global.update(rspeed))
+        time.sleep(interval)
+
+主线程只需调用 set_motor_speed(left, right) 设定目标速度，PID 计算完全异步完成，主控逻辑得以保持简洁。
+
+4. 颜色识别：HSV 空间与区域采样4.1 为什么选 HSV 而非 RGBRGB 颜色通道与亮度强耦合：同一块红色魔方在强光下 RGB 值显著不同，难以用固定阈值分割。HSV（Hue-Saturation-Value）将色调（H）与亮度（V）解耦，只需为每种颜色定义 H 通道的区间，S&#x2F;V 可设较宽范围，对光照变化鲁棒得多。
+四种颜色的典型 HSV 范围（OpenCV 中 H 取值范围 [0, 179]）：
+
+
+
+颜色
+H 范围
+S 范围
+V 范围
+
+
+
+红色
+[0,10] ∪ [170,179]
+[100,255]
+[80,255]
+
+
+黄色
+[20,35]
+[100,255]
+[80,255]
+
+
+蓝色
+[100,130]
+[80,255]
+[60,255]
+
+
+绿色
+[40,80]
+[60,255]
+[60,255]
+
+
+
+注意：红色的 H 值跨越 0°（红色在色环两端），需要取两段范围做并集，再用 cv2.bitwise_or 合并掩码。
+
+4.2 行采样优化全帧处理（640×480）在树莓派上帧率很低。系统在图像高度 25% 处取 50 像素高度的横带进行处理：
+DEFAULT_ROW_PERCENT = 0.25   # 采样行位置（图像 25% 高度处）
+DEFAULT_ROW_HEIGHT  = 50     # 采样区域高度
+
+这样每帧只需处理 640×50 &#x3D; 32000 像素，计算量降低约 94%，同时该高度对应小车前方地面上的魔方区域，有效减少背景干扰。
+4.3 颜色区域定位对二值化掩码做高斯模糊去噪后，通过 cv2.findNonZero 找到非零像素，计算连续色块的横坐标范围 $[x_{\text{start}}, x_{\text{end}}]$ 和中心 $x_{\text{center}}$，返回给状态机：
+def detect_color(frame):
+    roi = frame[row_start:row_end, :]
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    results = {}
+    for color_name, (lower, upper) in COLOR_RANGES.items():
+        mask = cv2.inRange(hsv, lower, upper)
+        mask = cv2.GaussianBlur(mask, (5,5), 0)
+        # 提取横向色块段落，返回 (x_start, x_end, x_center) 列表
+        results[color_name] = extract_segments(mask)
+    return results
+
+
+5. 距离测量：KS103 超声波传感器（I2C）KS103 通过 I2C 总线通信，触发测量与读取结果的时序：
+def measure_distance():
+    bus.write_byte_data(KS103_ADDR, REG_TRIGGER, 0x01)  # 发送触发指令
+    time.sleep(0.06)                                       # 等待测量完成（约 60ms）
+    data = bus.read_i2c_block_data(KS103_ADDR, REG_RESULT, 2)
+    distance_cm = (data[0] &lt;&lt; 8 | data[1]) / 10.0        # 合并高低字节，单位 mm → cm
+    return distance_cm
+
+系统对距离数据做滑动窗口中值滤波（窗口大小 5），剔除超声波在近距离或倾斜表面的反射异常值，并在距离小于阈值时触发”即将碰撞”警告信号给状态机。
+
+6. 状态机：三阶段顺序执行主控逻辑由 StateManager 类管理，顺序执行三个阶段，每个阶段对应一个里程碑：
+class StateManager:
+    def __init__(self):
+        self.current_state = 0         # 当前所处里程碑阶段（1/2/3）
+        self.detected_color = None     # 当前识别到的魔方颜色
+        self.color_confirm_counter = {} # 颜色稳定确认计数器
+        self.last_bypass_direction = None
+
+    def determine_bypass_direction(self):
+        if self.current_state in (1, 3):
+            # 单魔方：由颜色决定方向
+            return &#39;left&#39; if self.detected_color in LEFT_TURN_COLORS else &#39;right&#39;
+        else:  # 状态 2：双魔方，从中间穿越
+            # 基于上一次绕行方向的对称策略
+            return &#39;right&#39; if self.last_bypass_direction == &#39;left&#39; else &#39;left&#39;
+
+颜色确认机制：避免单帧误识别，要求同一颜色连续出现 N 帧才确认。通过 color_confirm_counter 对每种颜色计数，达到阈值后方触发绕行动作。
+顺序执行主循环：
+def main_control_sequential():
+    init_gpio(); start_speed_monitor(); start_pwm_update_daemon()
+    init_i2c();  start_distance_measurement()
+    camera = init_camera(); start_color_detection()
+    time.sleep(2)   # 等待所有线程稳定
+
+    for state in (1, 2, 3):
+        state_manager.current_state = state
+        handle_state_sequential(state)   # 靠近→识别→绕行→恢复直行
+
+    final_sprint_sequential()           # 全速冲向终点
+
+绕行策略采用矩形绕行而非圆弧：先原地转向，直行绕过，再原地转回，优点是实现简单、调试方便、不依赖精确的弧度控制。
+
+7. 实验分析：问题与局限7.1 直行偏差严重根本原因：电池输出电压不稳定，随放电程度持续下降。PID 控制器虽然理论上能通过积分项补偿稳态误差，但电压变化导致电机特性曲线本身在漂移，PID 参数无法通用于整场测试。
+即便引入了基于颜色中心偏移量的方向修正（drive_with_color），实际效果也表现出明显的摆动——修正增益大了蛇行，小了又偏。
+def drive_with_color(color_offset, speed=0.5, offset_factor=0.2):
+    normalized = min(1.0, abs(color_offset) / 200.0)
+    if color_offset &gt; 0:
+        right_speed = speed * (1 - offset_factor * normalized)  # 向右偏：压右轮
+    else:
+        left_speed  = speed * (1 - offset_factor * normalized)  # 向左偏：压左轮
+
+更好的方案：使用自适应 PID，周期性重新标定电机特性（如每次起步前做短暂标定行驶），或改用步进电机消除速度控制对电压的依赖。
+7.2 转角不准：时间控制转向的缺陷系统用”旋转固定时间”来实现 90° 转向：
+rotate_in_place(&#39;clockwise&#39;, speed=0.5)
+time.sleep(t_90_deg)   # 经验值，与电压强相关
+stop_motor()
+
+电压不稳 → PID 漂移 → 实际转速与设计转速不符 → 旋转角度近似随机。导致绕行两阶段无法正确衔接，出现找不到下一个魔方、撞墙等问题。
+更好的方案：用编码器积分计算转过的圆弧长度（轮距 × 转角），闭环控制旋转角度，而非依赖时间。
+7.3 光照对 HSV 阈值的影响即使使用了 HSV 空间，在极暗或极亮的测试环境中，S&#x2F;V 的阈值边界仍需现场微调。建议在系统启动时加入自动白平衡校正步骤，或对 V 通道做直方图均衡化后再分割。
+
+8. 系统设计亮点
+完全守护线程化：编码器采样、PWM 更新、颜色检测、距离测量全部运行在守护线程中（thread.daemon = True），主线程退出时自动回收，无需手动管理线程生命周期；
+
+颜色确认防抖：多帧确认机制将单帧噪声的影响降到最低，代价是引入了固定延迟（约 N × 100ms），在实际调试中需要在检测速度和稳定性之间权衡；
+
+模块化代码结构：motor_controller.py / detect_color.py / detect_distance.py / main_controller.py 四模块解耦，每个模块可独立测试，最终在 main_controller.py 中聚合。
+
+
+
+延伸阅读
+[PID 自整定]：Ziegler-Nichols 方法——在没有精确数学模型的情况下系统化调定 PID 参数
+[卡尔曼滤波]：比简单中值滤波更优的传感器融合方法，适用于距离与速度的联合估计
+下一篇预告：在树莓派上用 YOLOv8 替代 HSV 阈值分割——目标检测的实时性与精度权衡
+
+]]></content>
+      <categories>
+        <category>Projects</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>项目实战</tag>
+        <tag>树莓派</tag>
+        <tag>OpenCV</tag>
+        <tag>PID控制</tag>
+        <tag>嵌入式系统</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>深入 PostgreSQL 内核：实现块嵌套循环连接优化</title>
+    <url>/2025/06/05/postgresql-bnlj-implementation/</url>
+    <content><![CDATA[
+嵌套循环连接（Nested Loop Join）是关系型数据库最基础的连接算法，但其糟糕的缓存利用率一直是性能瓶颈所在。本文记录了在 PostgreSQL 源码层面实现块嵌套循环连接（Block Nested Loop Join，BNLJ）的完整过程：从 GUC 参数注册、执行节点状态扩展，到流水线状态机的设计，以及用 palloc 替代 malloc 踩坑的教训。最终实验表明，将块大小调至 128 可获得约 48.5% 的性能提升。
+
+1. 背景：嵌套循环连接的缓存困境PostgreSQL 原始嵌套循环连接的逻辑极为直白：
+for each outer tuple i:
+    for each inner tuple j:
+        if join_condition(i, j): emit (i, j)
+
+其时间复杂度为 $O(|R| \cdot |S|)$，每处理一个外表元组就要完整扫描一遍内表。这在 I&#x2F;O 层面造成两个问题：
+
+内表重复扫描：内表被扫描 $|R|$ 次，每次都从磁盘重新加载；
+CPU 缓存浪费：每次只有一个外表元组在缓存，块内比较无从发生。
+
+块嵌套循环连接通过批量缓存外表元组来解决这两个问题：
+for each block B of outer tuples (size = block_size):
+    for each inner tuple j:
+        for each outer tuple i in B:
+            if join_condition(i, j): emit (i, j)
+
+设外表元组数为 $R$、内表元组数为 $S$、块大小为 $B$，理论 I&#x2F;O 代价对比：
+$$T_{\text{NLJ}} &#x3D; R \times S \times C_{\text{page}}$$
+$$T_{\text{BNLJ}} &#x3D; \left\lceil \frac{R}{B} \right\rceil \times S \times C_{\text{page}}$$
+当 $B$ 足够大时，内表扫描次数从 $R$ 降至 $\lceil R&#x2F;B \rceil$，理论加速比为 $B$（受边际效应限制）。
+
+2. PostgreSQL 执行器架构概述在动手修改之前，需要理解 PostgreSQL 的执行器工作模式。每个计划节点（Plan Node）实现三个标准接口：
+ExecInitNode();                              // 初始化节点，分配资源
+while ((tuple = ExecProcNode()) != NULL) {   // 循环拉取元组（Volcano 模型）
+    // 处理元组
+}
+ExecEndNode();                               // 清理资源
+
+这是经典的 Volcano&#x2F;Iterator 模型：父节点调用子节点的 Next()，子节点按需产出一个元组。对于嵌套循环连接节点（nodeNestloop.c），ExecNestLoop 函数就是这个 Next() 的实现。
+本实验的目标就是修改 ExecNestLoop，使其从”每次取一个外表元组”变为”每次取一批外表元组”。
+
+3. 实现步骤3.1 注册 GUC 参数为了允许通过 SQL 命令动态调整块大小，在 src/backend/utils/misc/guc.c 中注册一个整型 GUC 参数：
+int block_nested_loop_join_block_size;
+
+static struct config_int ConfigureNamesInt[] =
+{
+    {
+        {&quot;block_nested_loop_size&quot;, PGC_USERSET, RESOURCES_MEM,
+            gettext_noop(&quot;Sets the block size for blocked nested loop joins.&quot;),
+            NULL,
+            GUC_UNIT_BLOCKS
+        },
+        &amp;block_nested_loop_join_block_size,
+        4, 1, 1024,          // 默认值 4，范围 [1, 1024]
+        NULL, NULL, NULL
+    },
+    // ... 其他参数
+}
+
+之后可以通过 SET block_nested_loop_size = 64; 在会话级别动态调整块大小。在 src/include/executor/nodeNestloop.h 中导出该变量：
+extern int block_nested_loop_join_block_size;
+
+3.2 扩展 NestLoopState 结构原始的 NestLoopState 只需维护”是否需要新外表元组”等简单状态。BNLJ 需要额外追踪外表块的状态，在 src/include/nodes/execnodes.h 中扩展：
+typedef struct NestLoopState
+{
+    JoinState   js;                  /* 基类，必须是第一个字段 */
+    bool        nl_NeedNewOuter;
+    bool        nl_MatchedOuter;
+    TupleTableSlot *nl_NullInnerTupleSlot;
+
+    /* === BNLJ 新增字段 === */
+    int          block_size;         // 用户配置的块大小
+    TupleTableSlot **outerBlock;     // 外表块缓冲区（指针数组）
+    int          outerStoredCount;   // 当前块中实际存储的元组数
+    int          outerCount;         // 当前正在处理的块内元组索引
+    bool         nl_NeedNewBlock;    // 是否需要加载新的外表块
+    bool         nl_NeedNewInner;    // 是否需要获取新的内表元组
+    bool         no_more_tuple;      // 外表已无更多元组
+} NestLoopState;
+
+关键设计：outerBlock 是 TupleTableSlot * 的指针数组，每个槽位独立持有一个元组的拷贝，由 PostgreSQL 统一的元组槽抽象管理生命周期。
+3.3 初始化：分配块缓冲区在 ExecInitNestLoop 末尾，从全局 GUC 参数读取块大小并分配内存：
+nlstate-&gt;block_size = block_nested_loop_join_block_size;
+nlstate-&gt;outerCount = 0;
+nlstate-&gt;outerStoredCount = 0;
+
+// 使用 palloc 而非 malloc！
+nlstate-&gt;outerBlock = (TupleTableSlot **)palloc(
+    nlstate-&gt;block_size * sizeof(TupleTableSlot *));
+
+nlstate-&gt;nl_NeedNewBlock = true;
+nlstate-&gt;nl_NeedNewInner = false;
+nlstate-&gt;no_more_tuple = false;
+
+// 为每个槽位初始化独立的 TupleTableSlot
+for (int i = 0; i &lt; nlstate-&gt;block_size; i++) {
+    nlstate-&gt;outerBlock[i] = ExecInitExtraTupleSlot(
+        estate,
+        ExecGetResultType(outerPlanState(nlstate)),
+        ExecGetResultSlotOps(outerPlanState(nlstate), NULL));
+}
+
+
+关键教训：这里必须用 palloc，不能用 malloc。PostgreSQL 的元组槽绑定到内存上下文（Memory Context），如果使用 malloc 分配缓冲区，部分自动清理机制会和手动 free 产生冲突，导致 SELECT COUNT(*) 结果偏大甚至段错误（见第 6 节）。
+
+3.4 清理：释放块缓冲区在 ExecEndNestLoop 中清理新分配的状态：
+if (node-&gt;outerBlock != NULL) {
+    for (int i = 0; i &lt; node-&gt;block_size; i++) {
+        if (node-&gt;outerBlock[i])
+            ExecClearTuple(node-&gt;outerBlock[i]);  // 清除槽位，而非 pfree
+    }
+    node-&gt;outerCount = 0;
+    node-&gt;outerStoredCount = 0;
+    node-&gt;block_size = 0;
+}
+
+注意使用 ExecClearTuple 而不是直接 pfree，因为槽位的内存由上下文管理，强制 pfree 会破坏内存上下文的完整性。
+3.5 核心执行逻辑：三层流水线状态机ExecNestLoop 是最核心的改动。BNLJ 由三个嵌套的逻辑层构成，使用三个 bool 标志控制状态转移：
+nl_NeedNewBlock  →  加载外表块
+nl_NeedNewInner  →  获取一个内表元组
+nl_NeedNewOuter  →  取块内下一个外表元组（触发匹配）
+
+状态转移图：
+初始 → [NeedNewBlock=true]
+  └→ 加载块（最多 block_size 个外表元组）
+  └→ [NeedNewInner=true] 重置内表扫描
+     └→ 获取一个内表元组
+        ├→ 内表元组为空 → [NeedNewBlock=true]（内表扫描完，换下一块）
+        └→ [NeedNewOuter=true]，重置块内索引
+           └→ 遍历块内每个外表元组，执行连接判断
+              ├→ 块内元组耗尽 → [NeedNewInner=true]
+              └→ 匹配成功 → 投影并返回
+
+层一：加载外表块
+if (node-&gt;nl_NeedNewBlock) {
+    node-&gt;outerStoredCount = 0;
+    while (node-&gt;outerStoredCount &lt; node-&gt;block_size) {
+        outerTupleSlot = ExecProcNode(outerPlan);
+        if (TupIsNull(outerTupleSlot) &amp;&amp; !node-&gt;outerStoredCount)
+            return NULL;  // 外表为空，整个连接结束
+        if (TupIsNull(outerTupleSlot)) {
+            node-&gt;no_more_tuple = true;
+            break;        // 外表已取完，块可能不满
+        }
+        ExecCopySlot(node-&gt;outerBlock[node-&gt;outerStoredCount], outerTupleSlot);
+        node-&gt;outerStoredCount++;
+    }
+    node-&gt;nl_NeedNewBlock = false;
+    node-&gt;nl_NeedNewInner = true;
+    ExecReScan(innerPlan);  // 重置内表，准备新一轮扫描
+}
+
+层二：获取内表元组
+if (node-&gt;nl_NeedNewInner) {
+    innerTupleSlot = ExecProcNode(innerPlan);
+    econtext-&gt;ecxt_innertuple = innerTupleSlot;
+    node-&gt;nl_NeedNewInner = false;
+    node-&gt;outerCount = 0;
+    node-&gt;nl_NeedNewOuter = true;
+    if (TupIsNull(innerTupleSlot)) {
+        node-&gt;nl_NeedNewBlock = true;  // 内表扫描完，需要新块
+        if (node-&gt;no_more_tuple)
+            return NULL;               // 外表也完了，结束
+        continue;
+    }
+}
+
+层三：遍历块内外表元组（最内层）
+if (node-&gt;nl_NeedNewOuter) {
+    if (node-&gt;outerCount &gt;= node-&gt;outerStoredCount) {
+        node-&gt;nl_NeedNewInner = true;  // 块内遍历完，取下一个内表元组
+        node-&gt;outerCount = 0;
+        continue;
+    }
+    outerTupleSlot = node-&gt;outerBlock[node-&gt;outerCount++];
+    econtext-&gt;ecxt_outertuple = outerTupleSlot;
+}
+// 执行连接条件判断，成功则投影返回
+
+
+4. 实验结果实验使用 PostgreSQL 内置的 restaurantphone 表（外表，2463 个元组）进行连接测试，禁用哈希连接与归并连接以强制使用嵌套循环，对不同块大小测量执行时间（每组运行两次取第二次热启动结果）：
+
+
+
+块大小
+运行时间（ms）
+相对未优化的加速比
+
+
+
+修改前（原始 NLJ）
+455.807
+——
+
+
+1
+457.915
+-0.46%（略慢）
+
+
+2
+332.043
+27.15%
+
+
+4
+323.550
+29.02%
+
+
+8
+283.995
+37.69%
+
+
+16
+255.516
+43.94%
+
+
+32
+243.390
+46.60%
+
+
+64
+239.891
+47.37%
+
+
+128
+234.610
+48.53%
+
+
+256
+231.298
+49.26%
+
+
+512
+230.491
+49.43%
+
+
+1024
+229.880
+49.57%
+
+
+
+
+5. 性能分析块大小为 1 时反而变慢块大小为 1 时，BNLJ 等价于原始的 NLJ，但由于 PostgreSQL 优化器会自动选择代价最低的内外表顺序，我们强制指定的内外表分配与优化器原来的选择互换了角色，导致性能略微下降。
+边际效应：块大小 &gt; 32 后收益递减从数据可以看出：块大小 32 → 64 的提升约 0.77%，64 → 128 约 1.16%，128 → 256 约 0.73%，此后几乎平台化。原因在于：
+当 $B$ 增大到 $R&#x2F;k$（$k$ 为小常数）后，$\lceil R&#x2F;B \rceil$ 变化微乎其微，此时外表加载本身的固定代价成为瓶颈：
+$$T \approx \underbrace{R \times C_{\text{page}}}{\text{固定（外表加载）}} + \underbrace{\left\lceil \frac{R}{B} \right\rceil \times S \times C{\text{page}}}_{\text{可优化部分}}$$
+此外 CPU 缓存大小也构成物理上限——当块大小超出 L3 缓存容量时，块内比较本身也开始产生 cache miss。
+工程建议块大小 32 ~ 128 是性价比最高的区间：对于大多数工作负载，这已能获得接近最优的 I&#x2F;O 减少效果，同时避免过大块占用过多内存。在实际 PostgreSQL 配置中，可以通过 block_nested_loop_size 在会话级别为特定查询精细调优。
+
+6. 实验中踩的坑坑 1：malloc 导致 SELECT COUNT(*) 结果偏大这是本次最诡异的 bug。将块缓冲区用 malloc 分配后，执行 SELECT COUNT(*) 的结果比实际值偏大。
+原因：PostgreSQL 的执行器是流水线（pipeline）式的，内存管理依赖**内存上下文（Memory Context）**的生命周期。部分元组槽和 plan node 状态会在查询结束时由上下文统一回收。malloc 分配的内存游离于上下文之外，当上下文的自动清理和 pfree 产生冲突时，可能导致内存重叠或 use-after-free，使得已释放的元组数据仍被计数。
+解法：改用 palloc，所有分配纳入查询内存上下文，随查询结束自动回收。
+
+
+坑 2：死循环定位困难流水线状态机逻辑中，nl_NeedNewBlock 的初始值设置错误，导致程序陷入死循环。由于 PostgreSQL 是多进程架构，GDB 无法直接 attach 到查询进程。解法：
+
+先完成用户连接（psql）；
+ps aux | grep postgres 获取查询子进程 PID；
+gdb -p &lt;pid&gt; attach 后中断，观察调用栈和局部变量。
+
+坑 3：GDB 调试时内外进程分离PostgreSQL 会为每个连接 fork 一个子进程，GDB attach 父进程无法追踪查询执行逻辑。需要 attach 到实际执行查询的子进程（postgres: user db ... 进程）。
+
+7. PostgreSQL 内部机制补充说明Volcano 模型中的 ExecReScanExecReScan(innerPlan) 是 BNLJ 能够正确工作的关键调用。每当外表块切换时，内表需要从头扫描，ExecReScan 将内表计划节点的状态重置到初始状态（等价于 rewind）。
+注意：只在块切换时调用，而不是每个外表元组触发一次——这正是 BNLJ 相比 NLJ 的核心优化所在（内表扫描次数从 $R$ 降为 $\lceil R&#x2F;B \rceil$）。
+TupleTableSlot 与 ExecCopySlotTupleTableSlot 是 PostgreSQL 中元组的统一抽象容器。ExecCopySlot(dst, src) 将源槽位的元组深拷贝到目标槽位，确保外表块持有独立的元组数据，不受后续 ExecProcNode 调用的影响。
+
+延伸阅读
+[Hash Join 实现]：哈希连接适用于等值连接，内存需求更高但均摊代价 $O(|R| + |S|)$，与 BNLJ 的适用场景互补
+[Grace Hash Join]：当哈希表超出内存时退化为分区式连接，可类比 BNLJ 的分块思路
+下一篇预告：PostgreSQL 查询优化器代价模型——优化器如何决定使用 NLJ 还是 Hash Join
+
+]]></content>
+      <categories>
+        <category>Projects</category>
+      </categories>
+      <tags>
+        <tag>项目实战</tag>
+        <tag>性能优化</tag>
+        <tag>PostgreSQL</tag>
+        <tag>数据库内核</tag>
+        <tag>缓存优化</tag>
+        <tag>C</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>操作系统的演进：从批处理到万物互联的架构变革</title>
+    <url>/2025/09/02/os-evolution-and-future/</url>
+    <content><![CDATA[原始论文：https://dl.acm.org/doi/10.1145/2880150https://dl.ccf.org.cn/article/articleDetail.html?type=xhtx_thesis&amp;_ack=1&amp;id=6262501625219072
+
+操作系统（OS）是计算机系统中最具历史厚度的软件层。它的每一次范式转移，都深刻地折射出硬件能力的跃升与应用需求的演变。本文尝试梳理操作系统半个世纪以来的发展脉络，并对其未来走向作出前瞻性思考。
+
+1. 两大阶段：从”操作自动化”到”资源管理者”操作系统的历史可以划分为两个性质截然不同的大阶段。
+第一阶段（1950s）：批处理操作系统。彼时的操作系统是对”操作员”角色的自动化替代，其核心功能是将人工的磁带换装、卡片递交等流程自动化，以批处理方式串行执行用户作业。系统对资源没有动态调度，程序员需手动规划所有资源使用。
+第二阶段（1965 年后）：多道程序与资源管理框架。随着计算机开始服务于多个用户和多个并发任务，一个根本性的矛盾浮现：程序员对资源的手动控制既不充分（无法感知冲突），也不全面（无法充分利用空闲资源）。操作系统因此从”自动化批处理程序”升级为一个具备控制权和调度权的资源管理框架，以供其他程序在其上受控地运行。
+这一阶段的标志性成果是”计算机系统工程师”总结出的八条操作系统基本原则：交互式计算、分层文件系统、容错结构、中断系统、虚拟内存、多道程序设计、模块化设计。此后几乎所有主流操作系统都是在这八条原则的基础上构建的。
+2. 三次关键转型2.1 从汇编语言到高级语言早期操作系统以汇编语言编写，与特定硬件强绑定，不同架构的机器需要独立开发操作系统。Multics 的出现打破了这一局面：它证明了用高级语言（PL&#x2F;I）编写的操作系统不仅可行，而且在可维护性和可移植性上具有显著优势。此后，以 C 语言编写 Unix 成为里程碑式的实践，将”操作系统用高级语言实现”确立为行业共识。
+2.2 从通用主义到精简内核Multics 的设计哲学是最大通用性——尽可能解决一切问题，导致系统庞大、运行成本高昂。这一经验教训推动了反向思考：操作系统应当尽可能精简（Minimal），只提供最核心的机制，其余由用户空间程序实现。
+这一思想的产物正是 Unix，以及后来的 Linux。微内核（Microkernel）架构将内核功能精简至线程调度、基本 IPC 和最小内存管理，其他服务以独立进程形式运行于用户空间，实现了出色的模块化与可移植性。
+2.3 不同设计目标催生多元内核形态微内核并非唯一正确答案。Windows 将图形子系统（GUI）集成进内核，以牺牲部分安全隔离性为代价，换取了极低的用户态-内核态切换开销，满足了消费级用户对交互响应速度的需求。实时操作系统（RTOS） 则为了保证极低且可预测的调度延迟，甚至省去了内核态&#x2F;用户态的权限分离。
+这说明操作系统的架构选择本质上是设计目标之间的权衡，不存在普适的最优方案，只有在特定约束下的最优解。
+3. 未来操作系统的演进方向3.1 从”人机交互接口”到”世界连接层”当下的操作系统概念正在经历一次深刻的语义扩展。传统意义上的操作系统是”设备硬件资源的管理者”，但当数十亿设备接入物联网（IoT），当数字与物理世界的边界消融，操作系统开始被抽象为连接数字世界与物理世界的数字纽带。
+在这一框架下，一套分布于医疗设备、工厂机器人和家庭电器的协同调度层，在逻辑上构成了一个超宏观的”操作系统”，尽管不再与任何单一设备绑定。
+3.2 自然人机交互的新形态当前人与操作系统的交互仍以”硬交互”为主——键盘、触摸屏。然而新兴的交互技术正在重塑这一范式：Apple Vision Pro 通过眼动追踪实现光标定位，脑机接口尝试建立意图与指令之间的直接通道。这些方向预示着操作系统的输入层将向感知融合（Perceptual Integration）演进，要求 OS 能够处理高维、低延迟的感知数据流。
+3.3 元 OS Kit：面向多样设备的组件化架构面对从微控制器到超级计算机的巨大设备异质性，未来可能出现一种元 OS（Meta-OS）思路：操作系统不再是针对特定设备类型的固定实现，而是一套可按需组装的组件库（Kit）——不同场景选取不同组件子集，通过标准化接口实现跨设备互操作，让物理设备在操作系统层面实现原生协同，而非依赖复杂的软件适配层。
+3.4 异构计算与 CPU&#x2F;XPU 融合高性能计算（HPC）与人工智能对计算精度和并行度的要求迥异，二者长期处于不同的硬件生态。随着 AI 工作负载向 HPC 基础设施融合，操作系统需要统一调度 CPU（通用标量计算）与各类 XPU（GPU、TPU、NPU 等专用加速器），实现异构计算资源的透明化调度，降低数据在不同计算单元间迁移带来的能效损耗。
+3.5 机密计算：不可信基础设施下的安全保障传统操作系统的安全模型建立在”信任硬件”的前提下：只要物理设备不被篡改，数据即可视为安全。然而在云计算模式下，基础设施提供商对底层硬件具有完全控制权，应用数据面临来自”受信任但不透明”的基础设施的威胁。
+**机密计算（Confidential Computing）**架构（如 Intel SGX、AMD SEV、ARM TrustZone）通过硬件隔离的可信执行环境（TEE），使应用数据即便在不可信的基础设施上运行，也能维持端到端的隐私保护，实现”信任自己的应用，而无需信任基础设施提供商”的新安全模式。
+3.6 垂直整合：消除抽象层的冗余开销传统的”硬件 → 操作系统 → 运行时 → 应用”分层抽象带来了大量通用化开销。**垂直整合（Vertical Integration）**通过针对特定业务场景对各层进行协同设计，消除不必要的通用抽象，实现”短链条”协同：
+
+苹果 M 系列芯片与 macOS&#x2F;iOS 的深度协同；
+谷歌 TPU 与 TensorFlow&#x2F;XLA 编译器栈的联合优化；
+量化交易系统为极致低延迟而省去内核态&#x2F;用户态切换的 kernel bypass 方案（如 DPDK、RDMA）。
+
+4. 结语操作系统的演进史，是一部在硬件能力、应用需求和工程复杂性之间反复寻找平衡的历史。从批处理自动化到多道程序，从汇编单机到高级语言可移植，从通用主义到精简微内核，每一次转型背后都有明确的技术驱动力和工程权衡逻辑。
+未来，随着异构计算、物联网协同、机密计算和自然人机交互的深入，操作系统的边界将持续扩展，从管理单一设备的软件层，逐渐演化为协调数字-物理融合世界的智能基础设施。
+延伸阅读
+[Exokernel 架构]：MIT 提出的”将资源分配权下放给应用”的极简内核设计，以及它对 OS 抽象哲学的根本性挑战。
+[Unikernel]：将应用与 OS 内核编译为单一镜像的 Library OS 思路，在云原生场景下的安全性与性能优势。
+下一篇预告：SEDA 阶段式事件驱动架构——互联网服务如何在极端负载波动下优雅降级。
+
+]]></content>
+      <categories>
+        <category>CS-Fundamentals</category>
+        <category>Paper-Reading</category>
+      </categories>
+      <tags>
+        <tag>操作系统</tag>
+        <tag>系统架构</tag>
+        <tag>微内核</tag>
+        <tag>异构计算</tag>
+        <tag>云计算</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Rust-Shyper论文研读：嵌入式Hypervisor分层隔离与安全实践</title>
+    <url>/2026/01/26/rust-shyper-embedded-hypervisor-analysis/</url>
+    <content><![CDATA[原始代码及论文仓库：https://atomgit.com/openeuler/rust_shyper
+
+随着嵌入式设备演化为混合关键性系统（Mixed-Criticality System），如何在同一块 SoC 上同时支撑硬实时控制任务与通用 Linux 工作负载，同时保证它们之间的强隔离，成为嵌入式虚拟化的核心挑战。服务器级 Hypervisor（KVM&#x2F;Xen）因调度抖动难以满足实时约束；静态分区方案（Jailhouse&#x2F;Bao）则牺牲了资源利用率与灵活性。本文围绕 Shyper 系列论文及其 Rust 重实现 Rust-Shyper，从架构设计、关键优化机制、可靠性工程，以及 Rust 语言安全实践四个维度展开深度分析，并结合 rust_shyper 仓库源码进行印证。
+
+1. 背景：嵌入式虚拟化的设计困境现代嵌入式设备（汽车 ECU、工业控制器、无人机飞控）正面临一个典型的二元悖论：
+
+实时性：硬实时任务要求中断延迟在微秒量级，不可被非确定性调度打断；
+通用性：同一平台还需运行具备完整驱动栈、网络协议栈的通用 OS，以支撑远程管理、OTA 升级等功能。
+
+以 KVM 为代表的服务器级 Hypervisor 基于宏内核架构，TCB（Trusted Computing Base）庞大；中断虚拟化依赖软件模拟 vGIC，每次物理中断均需经历 VM-Exit → EL2 处理 → 注入虚拟中断 → VM-Entry 的完整路径，延迟从原生的纳秒级暴涨到数百微秒。
+而以 Jailhouse 为代表的静态分区 Hypervisor 虽然 VM-Exit 极少，但 CPU 核心与内存在启动时静态划分，VM 之间无法共享资源，资源利用率极低，动态管理能力缺失。
+Shyper 的目标正是填补这一空白：在保证硬实时 VM 具备裸机级确定性的同时，通过管理虚拟机（MVM）提供动态资源管理与灵活的 VM 生命周期控制。
+
+2. 系统架构：分层资源隔离策略2.1 虚拟机分层模型Shyper 将系统中的虚拟机划分为四类，形成明确的优先级与资源分配层次：
+
+
+
+VM 类型
+全称
+调度策略
+内存映射
+典型负载
+
+
+
+MVM
+管理虚拟机
+固定核心
+直接映射
+Linux + 管理工具链
+
+
+HRTVM
+硬实时 VM
+固定核心
+直接映射或固定偏移
+RTOS，μs 级任务
+
+
+SRTVM
+软实时 VM
+固定核心
+同上
+软实时控制
+
+
+GVM
+通用 VM
+Round-Robin
+Buddy System 动态分配
+通用 Linux 工作负载
+
+
+
+Rust-Shyper 在实现层面将 HRTVM 与 SRTVM 合并为统一的 RTVM 类型，通过配置参数区分，减少了代码分支。
+
+这一分层并非简单的优先级标注，而是驱动了内存策略、中断路径和调度机制的差异化设计——这是 Shyper 区别于 KVM 和 Jailhouse 的核心创新。
+2.2 代码层面的抽象在 src/kernel/vm.rs 中，VmType 枚举（第 101–118 行）将上述分类编码为类型系统的一部分。统一的 Vm 结构体聚合了配置信息 config、vCPU 列表 vcpu_list、二级页表 pt 和模拟设备列表 emu_devs，通过差异化配置而非多态继承实现分层。
+src/config/qemu_riscv64_def.rs 中，MVM（VM0）的 allocate_bitmap 字段被静态设置为 0b0001，强制将其绑定在 Hart0 上，从代码层面落实了”固定核心减少上下文切换干扰”的设计原则。
+// src/config/qemu_riscv64_def.rs（示意）
+VmConfigEntry {
+    id: 0,
+    name: &quot;MVM&quot;,
+    vm_type: VmType::VmTMvm,
+    allocate_bitmap: 0b0001,  // 绑定 Hart0
+    master: Some(0),
+    // ...
+}
+
+GVM 的镜像则由 MVM 在运行时通过管理接口动态加载（src/vmm/init.rs 中的 vmm_init_image 分支逻辑），实现了管理平面与计算平面的解耦。
+
+3. 关键优化技术3.1 GPPT：消除中断虚拟化的 VM-Exit传统 vGIC 方案中，Guest 每次读写中断控制器寄存器均需陷入 EL2，这在高频中断场景（如工业传感器采样）下引入了不可接受的延迟抖动。
+GPPT（Guest Physical Passthrough） 的核心思想是：
+
+将 GIC 的 GICC（CPU 接口） 区域直接映射到 HRTVM 的 Stage-2 地址空间，Guest 可直接读写 GICC 寄存器，无需 VM-Exit；
+仅对 GICD（分发器） 的配置访问进行拦截，因为中断路由涉及全局状态，必须由 Hypervisor 仲裁以保证隔离性；
+当 Hypervisor 需要强制夺回控制权时，利用 ATF 提供的 SDEI（Software Delegated Exception Interface） 通过不可屏蔽的 NMI 机制触发陷入。
+
+实测数据表明，GPPT 将 ARM GIC 中断延迟从软件模拟 vGIC 的 140 μs 降低至 5 μs 量级，性能接近原生 Bare-Metal。额外的几百纳秒开销主要来自 Stage-2 硬件地址翻译，而非软件逻辑。
+在 RISC-V 架构下，Rust-Shyper 通过 src/arch/riscv64/vplic.rs 实现了类似机制：VPlic 结构体维护虚拟 PLIC 状态，当 Guest 操作被标记为 Passthrough 的中断源时（第 139–145 行），操作直接转发至物理 PLIC 寄存器，而非停留在软件模拟层，延续了”减少 Hypervisor 高频介入”的设计哲学。
+3.2 TRCA &#x2F; RATS：I&#x2F;O 虚拟化的异步化演进实时 VM 的 I&#x2F;O 路径面临另一个困境：Virtio 后端通常由 MVM（Linux）处理，而 RTVM 触发 I&#x2F;O 请求后若同步等待，将阻塞实时核心，破坏确定性。
+C-Shyper 中的 TRCA（Task Redirect to Core Assignee）：
+
+RTVM 发起 I&#x2F;O → Hypervisor 拦截并封装为任务对象 → 通过 IPI 发送给 Core 0（MVM 所在核）→ RTVM 同步等待结果。
+问题：IPI 本身存在延迟，且 RTVM 仍需经历一次阻塞等待。
+
+Rust-Shyper 中的 RATS（Rust Asynchronous Task Scheduling） 利用 async/await 将同步阻塞改造为异步调度：
+RTVM 发起 I/O
+    ↓ 陷入 EL2
+RATS 生成 AsyncIoTask，推入共享任务队列
+    ↓ 立即退出 EL2，RTVM vCPU 恢复运行
+MVM 在空闲时通过 poll 执行队列中的任务
+    ↓ 完成后注入虚拟中断通知 RTVM
+
+核心实现位于 src/kernel/async_task.rs，第 191–209 行通过 Pin&lt;Box&lt;dyn Future&lt;Output=()&gt; + ...&gt;&gt; 持有 Rust 编译器生成的状态机，将 C 语言中复杂的手工状态机转换为语言层面的异步逻辑：
+// src/kernel/async_task.rs（示意）
+pub struct AsyncTask {
+    pub task_data: AsyncTaskData,
+    future: Mutex&lt;Pin&lt;Box&lt;dyn Future&lt;Output = ()&gt; + Send + &#39;static&gt;&gt;&gt;,
+}
+
+impl AsyncTask {
+    pub fn poll(&amp;self, cx: &amp;mut Context&lt;&#39;_&gt;) -&gt; Poll&lt;()&gt; {
+        self.future.lock().as_mut().poll(cx)
+    }
+}
+
+相比 TRCA，RATS 的改进体现在两个维度：
+
+减少 IPI：无需每次通过核间中断显式通知 Core 0；
+消除同步阻塞：RTVM 的 vCPU 不再等待 I&#x2F;O 完成，VM-Exit 持续时间大幅缩短。
+
+在小块 I&#x2F;O 场景下，Rust-Shyper 的吞吐量甚至超过了 C-Shyper 和 KVM，正是源于 IPI 减少带来的 CPU 流水线冲刷和上下文切换的降低。
+
+4. 内存管理与设备隔离4.1 Stage-2 地址翻译与确定性内存访问Shyper 利用 ARMv8 &#x2F; RISC-V Hypervisor Extension 的二级地址翻译（IPA → PA）实现 VM 内存隔离。对于 MVM 和 HRTVM，采用直接映射或固定偏移映射，使得地址转换可以通过算术运算完成：
+$$\text{PA} &#x3D; \text{IPA} + \text{offset}$$
+src/kernel/vm.rs 中的 vm_ipa2pa 函数即实现了这一语义，避免了页表遍历带来的时间不确定性，满足 DMA 操作和硬实时任务对访存延迟的严格要求。GVM 则使用 Buddy System 动态分配，兼顾内存利用率。
+4.2 虚拟设备树与硬件视图隔离src/device/device_tree.rs（第 293–360 行）实现了动态设备树生成逻辑：Hypervisor 根据每个 VM 的配置，重新构建暴露给 Guest 的设备描述符，Guest OS 只能探测到显式分配的设备，无法感知物理平台上未授权的硬件。这是一种通过软件定义硬件视图来实现强隔离的设计，避免了昂贵的 IOMMU 硬件依赖。
+
+5. 可靠性工程5.1 虚拟机实时迁移嵌入式 ARMv8 平台普遍不支持 Stage-2 硬件脏页位（Dirty Bit），Shyper 因此实现了纯软件脏页追踪：
+
+迁移初始化：将所有 Stage-2 页表项修改为只读；
+脏页捕获：VM 写内存时触发 Data Abort 陷入 EL2，记录故障地址到脏页位图，恢复可写权限并单步执行；
+增量传输：MVM 通过共享内存直接读取 GVM 内存，经 Linux 成熟网络栈发送至目标节点，将”数据搬运”这一重负载从 Hypervisor TCB 中剥离；
+最终停机：脏页收敛至阈值后，暂停源 VM，传输 CPU 上下文与最终脏页集合，完成切换。
+
+实测停机时间约为 798 μs，远优于 KVM 的 2 ms，原因在于 Shyper 的 TCB 极小，VM 状态数据量远少于 KVM。
+5.2 Hypervisor 热更新Shyper 支持在不重启任何 VM 的情况下在线替换 Hypervisor 自身——这是嵌入式领域极为罕见的能力：
+旧 Hypervisor 将所有 VM 状态序列化到预留内存区域
+    ↓
+MVM 加载新 Hypervisor 镜像到隔离内存
+    ↓
+Core 0 发送 IPI 暂停所有核心
+    ↓
+位置无关汇编重置 vbar_el2，指向新镜像入口
+    ↓
+新 Hypervisor 初始化后解析旧版数据结构指针，重建运行时状态
+
+“两阶段更新法”的设计目标是兼容新旧版本数据结构的 ABI 变化。整个过程最大系统停顿仅为 36 μs，对硬实时任务的干扰具有确定性——相比 KVM 毫秒级不可预测抖动，嵌入式系统更需要的是”干扰可预测”，而非”干扰消失”。
+
+注：在 QEMU RISC-V64 分支中，src/kernel/hvc.rs 内的 HVC_SYS_UPDATE 及迁移相关处理函数（hvc_vmm_handler）的大量分支仍标记为 todo!() 或 unimplemented!，受限于 RISC-V 硬件脏页位语义与 QEMU 仿真行为的差异。但 CLI 层（cli/src/sys.rs 的 update_image）和整体架构已就位，为后续在真实 RISC-V 硬件上补全实现提供了清晰路径。
+
+
+6. Rust 的安全工程实践6.1 所有权与生命周期：消除 Use-After-FreeC 版 Shyper 中，VM 销毁时的页帧释放依赖手工管理，历史上出现过 Use-After-Free 漏洞。Rust-Shyper 中，Vm 结构体通过 Box&lt;Vm&gt; 和 Arc&lt;Vm&gt; 管理所有权：
+// VM 销毁时，Drop trait 自动回收所有关联资源
+impl Drop for Vm {
+    fn drop(&amp;mut self) {
+        // 编译器保证此处必然执行，页帧自动归还分配器
+        self.free_page_frames();
+    }
+}
+
+当 Vm 实例从全局列表中移除时，引用计数归零，Drop 自动触发，从根本上消除了内存泄漏与悬垂指针。
+6.2 类型系统驱动的并发安全所有共享可变状态均被 SpinLock&lt;T&gt; 或 Mutex&lt;T&gt; 封装。Rust 编译器在类型层面强制要求”访问 T 必须先持有锁”，数据竞争在编译期即被拒绝，无需依赖 ThreadSanitizer 等运行时检测工具。
+对于创建后不再修改的只读数据（如静态配置表），则直接暴露为 &amp;T 引用，无需加锁，兼顾了安全性与性能。
+6.3 unsafe 的精确封装Rust-Shyper 全量代码约 1.8 万行，其中 unsafe 代码块仅 141 行，集中于：
+
+底层寄存器读写（csrr&#x2F;csrw、mrs&#x2F;msr）；
+Stage-2 页表操作（裸指针写入）；
+FFI 与外部汇编接口。
+
+这一比例意味着 99%+ 的代码受到编译器的内存安全保证，极大降低了安全审计的成本与难度。对比 C-Shyper 静态分析检测出的大量中高危漏洞（空指针解引用、格式化字符串错误等），Rust 版本在编译阶段已消除了绝大多数同类问题。
+6.4 性能代价性能测试表明：
+
+计算密集型任务：Rust-Shyper 与 C 版本及 Native 的差异 &lt; 7%，证明 Rust 的零成本抽象在 Hypervisor 场景中是真实的；
+小块 I&#x2F;O 吞吐：Rust-Shyper 优于 C-Shyper，得益于 RATS 的异步模型减少了 IPI 与上下文切换；
+大块 I&#x2F;O：略逊于 KVM，因为 KVM 具备成熟的请求合并（I&#x2F;O Merging）机制，这是 Rust-Shyper 尚待补强的方向。
+
+
+7. 总结Shyper 系列工作的核心贡献可以归纳为以下三点：
+
+打破实时性与灵活性的二元对立：通过分层 VM 模型和 GPPT 技术，Shyper 在保证硬实时 VM 延迟达到 Jailhouse 量级的同时，通过 MVM 提供了 KVM 级别的动态管理能力；
+I&#x2F;O 虚拟化的异步化演进：RATS 机制将同步阻塞的 I&#x2F;O 路径改造为 Rust async/await 驱动的任务队列，是 Rust 语言特性在系统级场景中最具说服力的工程实践之一；
+Rust 可行性的工程验证：18000 行代码，141 行 unsafe，性能损失 &lt; 7%，Rust-Shyper 为业界提供了”用 Rust 实现高性能嵌入式 Hypervisor 是可行的”的有力证据。
+
+当前在 QEMU RISC-V64 平台上，迁移与热更新的内核后端尚未完整实现，这也指出了后续工作的明确方向：在真实 RISC-V 硬件（如 HiFive Unmatched）上验证软件脏页追踪的正确性，并补全 AIA（Advanced Interrupt Architecture）下的 GPPT 等价实现。
+
+延伸阅读
+[嵌入式实时操作系统]：理解 RTOS 的调度模型（Rate Monotonic、EDF）有助于深入理解 Hypervisor 的实时性设计权衡
+[RISC-V Hypervisor Extension]：RISC-V H 扩展的 HS&#x2F;VS&#x2F;VU 特权模式划分与 ARMv8 EL2 的对应关系
+下一篇预告：内存模型与无锁编程——从 MESI 协议到 C++11 memory_order 的精确语义
+
+]]></content>
+      <categories>
+        <category>Systems-HPC</category>
+        <category>Paper-Reading</category>
+      </categories>
+      <tags>
+        <tag>ARM</tag>
+        <tag>操作系统</tag>
+        <tag>性能优化</tag>
+        <tag>微内核</tag>
+        <tag>Rust</tag>
+        <tag>虚拟化</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构</title>
+    <url>/2025/12/17/seda-architecture-scalable-internet-services/</url>
+    <content><![CDATA[原始论文：https://dl.acm.org/doi/10.1145/502059.502057
+
+互联网访问量的极端波动性，使得传统线程模型和事件驱动模型均难以在高并发场景下实现优雅降级。SEDA（Staged Event-Driven Architecture，阶段式事件驱动架构）通过将服务拆分为以事件队列隔开的阶段网络，并引入动态资源控制器，在不牺牲可编程性的前提下，实现了对负载的自适应管理。本文对该论文的核心思想、架构设计与实验评估进行系统梳理。
+
+1. 背景：传统并发模型的根本局限互联网服务的负载特征极不均匀——峰值与低谷的访问量可能相差数个数量级。理想的服务器架构应当在高负载下优雅降级而非崩溃，在低负载下节约资源而非空转。
+然而，现有的两种主流并发范式均难以达到这一目标。
+1.1 基于线程的并发每个请求独占一个线程，编程模型直观。但线程数量与并发连接数正相关，导致在高并发下：
+
+上下文切换与 TLB 未命中开销急剧上升；
+调度开销与锁竞争成为吞吐量瓶颈；
+操作系统通过”资源虚拟化”对应用层隐藏了资源紧张的事实，导致应用无法感知过载，最终引发服务崩溃。
+
+有界线程池在一定程度上缓解了上述问题，但固定的连接上限会造成不公平性，且单线程处理单请求的模型使得内部性能瓶颈难以识别和调优。
+1.2 基于事件驱动的并发Flash 等服务器引入了事件驱动模型：以少量线程驱动大量事件，将请求处理抽象为有限状态机（FSM）。其优势在于，超过饱和点后吞吐量几乎不下降，延迟仅随事件队列长度线性增长。
+然而，该模型存在以下固有缺陷：
+
+阻塞假设脆弱：要求事件处理函数不得阻塞，而中断、页故障、垃圾回收均可能导致阻塞；
+开发复杂度高：开发者需手动管理调度顺序、多流 FSM 的公平性与响应时间的权衡；
+模块化困难：必须信任每个模块的代码不会大量消耗 CPU 或阻塞。
+
+2. SEDA 的核心思想SEDA 的核心洞察在于：以显式的事件队列解耦各处理阶段，并为每个阶段配备动态资源控制器，从而同时实现模块化和自适应负载管理。
+2.1 阶段（Stage）的定义每个阶段由四部分组成：
+Stage = {
+    事件处理器（Event Handler），  // 应用逻辑
+    入站队列（Incoming Queue），   // 阶段间解耦缓冲
+    线程池（Thread Pool），        // 并发执行单元
+    控制器（Controller）           // 资源动态调节
+}
+
+阶段之间通过队列通信，自然实现了解耦。每个阶段可以被独立监控、调优和测试，这对于大型服务的性能分析至关重要。
+2.2 动态资源控制器SEDA 提供了两种控制器：
+线程池控制器：根据入站队列的深度动态调整线程数量。队列变长时增加线程，队列缩短时减少线程，从而避免传统线程模型的资源浪费，也避免线程过多导致的调度抖动。
+批处理控制器：通过观测吞吐量的变化，动态调整每次批量处理的事件数量。批量处理能够提升缓存局部性，降低每请求的处理开销。
+即便操作系统的线程调度策略不可见，SEDA 也能通过上述控制器自适应地响应环境变化。
+3. 底层实现：高效异步 I&#x2F;OSEDA 的高性能依赖于对底层 I&#x2F;O 的精细设计。
+3.1 异步套接字 I&#x2F;O网络操作被拆分为三个独立阶段：read、write、listen。通过操作系统提供的非阻塞 I&#x2F;O，单个服务进程可正常处理 8192 个并发客户端连接。相比之下，常规线程模型在超过 400 个线程时即会触及 Linux 的用户线程数量上限而崩溃。
+3.2 异步文件 I&#x2F;O文件 I&#x2F;O 本质上仍依赖阻塞调用，SEDA 通过有界线程池加以包装，并动态调整线程数以匹配负载，同时利用队列对并发文件操作施加背压（back-pressure），避免大量并发磁盘 I&#x2F;O 引发的性能崩溃。
+4. 性能评估4.1 HTTP 服务器对比论文使用基于 Java 实现的 Haboob 服务器（SEDA 架构）与 C 语言实现的 Apache 和 Flash 服务器对比。结果表明：
+
+Haboob 的吞吐量超过了 Apache 和 Flash，这一结果来自于 SEDA 的负载感知和自适应调度；
+Apache 和 Flash 在高并发下，因 TCP 重传定时器的指数退避（exponential backoff），响应时间出现严重的长尾分布；
+动态负载卸载功能在过载时自动丢弃积压过久的请求并返回错误响应，显著降低了平均和尾部延迟，而非无声地让所有请求超时。
+
+4.2 Gnutella 包路由器传统 Gnutella 路由器在慢速套接字场景下会因出站队列无限增长引发内存泄漏。SEDA 通过设置出站队列阈值，超阈值时自动关闭连接。当查询请求阻塞时（实验中注入 20ms 延迟），线程池控制器自动增加线程数以消化积压，有效消除了延迟峰值。
+5. 架构意义与局限SEDA 最深刻的贡献在于将”资源感知“（resource awareness）的理念引入了服务器架构设计。传统操作系统通过虚拟化隐藏了资源的有限性，SEDA 则反其道而行之，将资源状态显式暴露给控制器，使应用能够主动管理过载，而非被动等待系统崩溃。
+然而，SEDA 也存在若干局限：
+
+控制器参数（如线程数变化速率、批处理阈值）需要仔细调优；
+检测过载条件本身具有挑战性，过度激进的卸载可能误伤正常请求；
+每个阶段的队列引入了一定的延迟，对于极低延迟要求的场景可能不适用。
+
+作者也指出，SEDA 的思想为专用操作系统设计提供了新方向：若操作系统赋予应用更大的调度和资源控制权，将有可能超越当前通用 OS 的性能上限。
+延伸阅读
+[事件驱动 vs 多线程]：深入比较 epoll&#x2F;io_uring 与线程池模型在高并发 I&#x2F;O 下的性能特征与适用场景。
+[背压机制]：响应式系统（Reactive Systems）中的背压（back-pressure）设计模式与 SEDA 队列机制的异曲同工之处。
+下一篇预告：日志结构文件系统（LFS）——如何通过顺序写将磁盘带宽利用率推向极限。
+
+]]></content>
+      <categories>
+        <category>Systems-HPC</category>
+        <category>Paper-Reading</category>
+      </categories>
+      <tags>
+        <tag>性能优化</tag>
+        <tag>服务器架构</tag>
+        <tag>事件驱动</tag>
+        <tag>并发</tag>
+        <tag>负载控制</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>基于 UDP 在应用层实现可靠传输：Go-Back-N 与 SACK 的工程实践</title>
+    <url>/2024/11/14/rudp-reliable-transport-over-udp/</url>
+    <content><![CDATA[link to source code:https://github.com/Kevin589981/RUDP_python3
+
+TCP 的可靠性来自精心设计的重传机制，但其内部细节对上层应用透明。如果要在 UDP 这张”白纸”上手工绘制可靠传输，需要多少工程量？本文复盘了一次 RUDP（Reliable UDP）的完整实现，包括 Go-Back-N 与选择重传（SACK），以及针对各类异常场景的健壮性测试。
+
+一、问题背景与协议设计UDP 是面向无连接的无状态协议：快，但不可靠。数据包可能丢失、乱序、重复或损坏。在 UDP 之上实现可靠传输（RUDP），本质上是在应用层重新实现 TCP 的核心语义，但可以选择性地裁剪开销。
+1.1 消息类型定义RUDP 协议定义四种消息类型：start、data、end、ack（及 sack）。每个数据包格式如下：
+&lt;type&gt;|&lt;sequence number&gt;|&lt;data&gt;|&lt;checksum&gt;
+
+checksum 用于检测传输过程中的数据损坏，接收方在序列号确认前首先验证校验和。
+1.2 核心发送策略发送端需要满足以下约束：
+
+数据包按序、可靠送达，支持丢包、乱序、重复等异常场景；
+支持 Go-Back-N（GBN）与选择重传（Selective ACK, SACK）两种模式；
+发送窗口大小为 5，超时时间 500ms。
+
+
+二、发送端实现（Sender.py）2.1 数据分片与窗口管理文件内容按最大 1472 字节分片，加上 start 和 end 包，构成完整报文序列。核心状态变量包括：
+
+base：窗口左边界，指向最早未确认的包；
+next_seq_num：下一个待发送包的序号；
+timer：用于超时重传的时间戳。
+
+# 分片与打包
+chunks = [content[i:i+MAX_DATA_SIZE] for i in range(0, len(content), MAX_DATA_SIZE)]
+self.packets.append(self.make_packet(&#39;start&#39;, self.isn, &quot;&quot;))
+for i, chunk in enumerate(chunks[:-1]):
+    seq = self.isn + 1 + i
+    self.packets.append(self.make_packet(&#39;data&#39;, seq, chunk))
+self.packets.append(self.make_packet(&#39;end&#39;, self.isn + len(self.packets), chunks[-1]))
+
+2.2 主循环：滑动窗口 + 超时重传while self.base &lt; len(self.packets):
+    # 填满发送窗口
+    while (self.next_seq_num &lt; self.base + self.window_size
+           and self.next_seq_num &lt; len(self.packets)):
+        self.send(self.packets[self.next_seq_num])
+        if self.base == self.next_seq_num:
+            self.timer = time.time()    # 仅当新窗口打开时启动计时器
+        self.next_seq_num += 1
+
+    # 超时检测：重传窗口内所有未确认包
+    if (self.base &lt; self.next_seq_num
+            and time.time() - self.timer &gt; self.timeout):
+        self.handle_timeout()
+
+窗口语义的关键设计点：计时器仅在窗口从空变非空时启动，窗口滑动时重置，窗口归零时停止。这一逻辑若出现偏差，轻则包未及时重传，重则触发死锁。
+2.3 ACK&#x2F;SACK 处理：快速重传def handle_new_ack(self, ack):
+    self.dup_ack_count = 0
+    cum_idx, sack_indices = self._parse_ack_string(ack)
+    if cum_idx &gt; self.base:
+        self.base = cum_idx    # 滑动窗口左边界
+    if self.base &lt; self.next_seq_num:
+        self.timer = time.time()    # 仍有未确认包，重启计时器
+    else:
+        self.timer = None           # 所有包已确认，停止计时器
+    if self.sackMode:
+        self._update_sack_bitmap(sack_indices)    # 标记已选择确认的包
+
+三次重复 ACK 触发快速重传（不等待超时），这是对 TCP Fast Retransmit 的直接移植，可在高丢包场景下显著缩短恢复延迟。
+SACK 位图的核心价值在于：GBN 模式下一旦发生丢包，窗口内所有后续包必须全部重传；而 SACK 允许接收方精确告知哪些包已到达，发送端只需重传真正缺失的包，大幅降低重传放大倍数。
+
+三、测试设计：覆盖各类异常场景除了基础功能测试，以下健壮性测试用例专门针对不同类型的网络异常：
+
+
+
+测试用例
+模拟场景
+验证目标
+
+
+
+AckCorruptionTest
+ACK&#x2F;SACK 包内容损坏
+发送端对无效确认的处理
+
+
+AckDuplicationTest
+ACK&#x2F;SACK 包重复
+防止重复确认触发不必要的重传
+
+
+AckLossTest
+ACK&#x2F;SACK 包丢失
+超时重传与窗口滑动正确性
+
+
+AckReorderTest
+ACK&#x2F;SACK 包乱序
+对乱序确认的兼容性
+
+
+DataCorruptionTest
+数据包内容损坏
+接收端丢弃损坏包并正确反馈
+
+
+DataDuplicationTest
+数据包重复
+接收端去重能力
+
+
+DataReorderTest
+数据包乱序
+接收端乱序缓存与窗口滑动
+
+
+GBNTests / SackTests
+上述场景分别用于两种模式
+双模式的全覆盖验证
+
+
+RandomDropTest
+随机丢包
+高丢包环境下的整体可靠性
+
+
+3.1 测试结果分析
+GBN 模式：所有测试（含高丢包、乱序、重复）均通过，数据可靠送达，未出现死锁或永久丢包。
+SACK 模式：选择重传有效减少重传量，在高丢包环境下吞吐量明显优于 GBN。
+大文件 &#x2F; 二进制文件传输：均通过，无数据错误，证明校验与分片逻辑正确。
+
+
+四、遇到的问题与解决策略4.1 窗口滑动与定时器同步初始实现中，定时器更新时机与窗口滑动逻辑耦合不紧，导致部分已发包在某些状态下既不在定时器覆盖范围内、也未收到确认，形成”灰色包”，最终被遗忘。
+解决方案：明确定义”计时器生命周期”为”窗口非空→停机”，窗口任何变动（发包、收 ACK）都触发相应的计时器操作，消除中间状态。
+4.2 SACK 位图的双计数问题SACK 模式下，如果位图更新逻辑与累计 ACK 解析之间存在重叠，可能对同一帧计数两次，导致提前重传或错误统计。通过将 cum_idx 推进逻辑与 sack_indices 位图更新逻辑严格串行化来消除此问题。
+4.3 测试框架适配实验框架对命令行参数格式和包格式有严格要求，手动测试时通过的逻辑在自动化测试中可能因格式错误失败。应在开发阶段就对齐框架期望的格式，避免后期大量调试。
+
+五、设计权衡总结RUDP 的实现让两个关键权衡变得清晰：
+
+窗口大小 vs 延迟：窗口越大，吞吐量越高，但重传代价（GBN 模式）也越大。SACK 通过精确重传打破了这一耦合。
+超时值 vs 响应速度：超时过短导致误重传（假阳性），过长则恢复延迟高。三次重复 ACK 触发的快速重传是应对突发丢包的低延迟补偿机制，无需等待超时周期。
+
+从系统设计角度看，Go-Back-N 与 SACK 的选择实质上是”实现复杂度”与”网络效率”之间的权衡——在今天高丢包的无线网络环境中，SACK 早已是默认选择。
+
+延伸阅读
+[RFC 2018 TCP SACK 选项规范]：选择重传的标准定义，值得对照实现细节阅读。
+[QUIC 协议设计]：Google 在 UDP 之上重新设计的可靠传输协议，融合了多路复用、0-RTT 握手等现代设计，是 RUDP 思想的工业级延伸。
+下一篇预告：从传输层向上走——应用层的长程记忆问题：MemOS 记忆操作系统的工程实践。
+
+]]></content>
+      <categories>
+        <category>Projects</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>网络编程</tag>
+        <tag>UDP</tag>
+        <tag>可靠传输</tag>
+        <tag>Go-Back-N</tag>
+        <tag>SACK</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>局部性原理：计算机系统资源管理的底层逻辑</title>
+    <url>/2025/10/11/locality-principle-in-os-and-computer-systems/</url>
+    <content><![CDATA[原始论文链接：https://onlinelibrary.wiley.com/doi/abs/10.1002/9780470050118.ecse960
+
+局部性原理（Locality Principle）是计算机系统设计中最具普适性的基础理论之一。它揭示了计算过程中资源引用的聚集性规律，为虚拟内存、CPU 缓存、数据库索引乃至推荐系统提供了统一的理论基础。本文以 Denning（2008）的综述论文为线索，系统梳理局部性原理的数学建模、历史渊源与跨领域应用。
+
+1. 局部性的核心定义在几乎所有计算过程中，程序在长时间尺度内只会反复使用资源全集的某个子集，这一普遍规律被称为局部性。
+局部性表现为两种基本形式：
+
+时间局部性（Temporal Locality）：近期被访问的对象在不久的将来大概率再次被访问。典型场景是循环体内的变量反复读写。
+空间局部性（Spatial Locality）：被访问对象的邻近对象也将很快被访问。典型场景是数组的顺序遍历。
+
+这一规律的工程价值在于：无需将完整地址空间驻留内存，只保留当前活跃的局部子集（称为局部集），即可在不显著损失性能的前提下大幅降低内存占用，同时支持对近未来访问的精准预测。
+2. 局部性的数学建模2.1 静态模型的局限早期研究将局部性表述为引用概率的非均匀分布：假设对象 $k$ 的访问概率 $p_k \propto 1&#x2F;k$（即齐普夫定律，Zipf’s Law），在整个运行时间内保持不变。
+然而，静态模型存在根本缺陷：它忽略了程序执行的阶段性，将不同阶段的访问模式混为一谈，会系统性地高估平均局部性 2 到 3 倍。
+2.2 动态局部性模型动态模型的核心改进在于引入了**阶段（Phase）**的概念。程序执行可拆分为若干阶段，每个阶段具有独立的访问概率分布；阶段间存在短暂的过渡区间，此期间对任意对象均可能发生访问。
+形式化地，动态局部性由两个层次描述：
+
+宏观模型：定义阶段的生成方式、阶段持续时间分布 $\tau$ 以及阶段间过渡概率；
+微观模型：在每个阶段内，以固定的静态概率分布生成对局部集成员的引用序列。
+
+阶段平均持续时间远长于过渡区间，这保证了在活跃阶段内缓存或模型可以有效发挥作用。
+2.3 工作集模型工作集模型（Working Set Model）是动态局部性的最重要工程化实现，由 Denning 于 1968 年提出。
+定义：$W(t, T)$ 为在时刻 $t$ 回溯时间窗口 $[t-T, t]$ 内被引用过的对象集合：
+$$W(t, T) &#x3D; { p \mid \exists t’ \in [t-T, t], \ \text{page}(t’) &#x3D; p }$$
+选取合适的窗口大小 $T$，工作集能够动态追踪程序的当前局部集，且随阶段切换自然演化。工作集模型的关键应用是防止抖动（Thrashing）：当系统为各进程分配的内存帧数之和小于所有进程工作集大小之和时，页面置换将陷入死循环，导致 CPU 有效利用率趋近于零。操作系统通过监控工作集大小并动态调整多程序度，可将系统维持在稳定工作区。
+3. 历史沿革：从 Atlas 到工作集理论局部性原理的形成经历了若干关键节点：
+Atlas 系统（1950s–60s）：最早的虚拟内存系统之一，其基于”程序具有访问循环”的假设，开发了预测未来最长时间不会使用的页面并置换之的 OPT（最优置换）算法。然而，许多程序并不具有明确循环，OPT 的预测总体表现不佳。
+IBM 沃森实验室研究：通过大量实验发现，LRU（最近最少使用，Least Recently Used）置换策略在最广泛的程序范围内表现最优，其理论根基正是引用的时间局部性聚集行为——最近被使用过的页面，在近未来被再次使用的概率最高。
+MIT MAC 项目：提出了工作集的形式化定义，并验证了其预防抖动的有效性。局部性的物理成因被归结为两点：循环执行带来的时间聚集效应，以及数据结构内部的相关数值分配带来的空间聚集效应——两者均源于人类”分而治之”的编程实践。
+4. 局部性的经典应用局部性原理被操作系统、数据库和硬件架构师广泛采纳：
+
+
+
+领域
+应用方式
+核心收益
+
+
+
+虚拟内存
+工作集驱动的页面置换与多程序度调控
+防止抖动，提升 CPU 利用率
+
+
+CPU 缓存（L1&#x2F;L2&#x2F;L3）
+将近期引用的内存块缓存于高速存储
+弥合处理器与内存间的速度鸿沟
+
+
+数据库 B 树索引
+将同一查询可能引用的记录聚集存储，以 B 树组织索引块
+减少磁盘随机访问次数
+
+
+文件系统
+将频繁共同访问的文件块分组存储
+降低磁头寻道延迟
+
+
+编译器代码生成
+将代码与数据布局于同一缓存行，减少 cache miss
+提升指令流水线效率
+
+
+搜索引擎
+对高频查询结果缓存，热点文档优先驻留内存
+降低平均查询延迟
+
+
+5. 现代局部性模型：上下文感知扩展经典局部性以”地址空间中的内存页”作为被管理的对象，现代模型将其进一步泛化，引入四个核心概念：
+
+观察者（Observer）：期望利用系统完成任务的代理，可以是用户或内置程序；
+邻域（Neighborhood）：观察者当前最相关的对象集合，不再局限于地址空间；
+推理（Inference）：从邻域出发预测未来最可能访问的对象集合；
+最优行动（Optimal Action）：以最小代价完成任务目标的策略。
+
+这一框架将局部性从内存管理推广至推荐系统、上下文感知应用等场景：例如，贝叶斯垃圾邮件过滤器在用户邮件的”邻域”中推断相关性并采取过滤行动；Google 则在网页的”邻域”（链接关系、内容语义）中推断相关性并排序搜索结果。
+6. 总结局部性原理的意义在于揭示了计算行为与资源调度需求之间的深层关联。通过捕捉程序执行的阶段性和引用的聚集性，操作系统得以实现按需分配而非全量驻留，从而在有限的物理资源上支撑复杂的多道程序环境。
+从虚拟内存的工作集理论，到 CPU 缓存的 LRU 置换，再到数据库索引的聚集存储，局部性原理始终是系统性能优化的核心推手。随着上下文感知计算的兴起，这一原理的适用边界仍在持续扩展。
+延伸阅读
+[缓存替换算法]：从 OPT、LRU 到 ARC（Adaptive Replacement Cache）的演进，以及在 NVM 存储层次下替换策略的新挑战。
+[NUMA 与局部性]：非均匀内存访问架构（NUMA）中，远程内存访问如何打破经典局部性假设，以及 numactl 等工具的使用实践。
+下一篇预告：日志结构文件系统（LFS）——顺序写如何将磁盘带宽利用率推向极限。
+
+]]></content>
+      <categories>
+        <category>CS-Fundamentals</category>
+        <category>Paper-Reading</category>
+      </categories>
+      <tags>
+        <tag>操作系统</tag>
+        <tag>局部性原理</tag>
+        <tag>虚拟内存</tag>
+        <tag>缓存</tag>
+        <tag>工作集模型</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Transformer 架构精读：从 Self-Attention 的物理意义到 Multi-Head 的并行之美</title>
+    <url>/2025/03/02/transformer-deep-dive/</url>
+    <content><![CDATA[
+「Attention is All You Need」(Vaswani et al., 2017) 不仅是 NLP 的转折点，更是现代大模型（LLM）的物理基石。本文旨在从数学本质、代码实现及系统效率三个维度，深度拆解 Transformer 的核心机制。
+
+1. Self-Attention：非局部的全局关联传统的 CNN 受限于卷积核大小，RNN 受限于时间步的串行依赖。而 Self-Attention 实现了 $O(1)$ 的路径长度，让序列中任意两个 Token 都能实现“瞬间通信”。
+1.1 物理意义：Q、K、V 到底在做什么？我们可以将 Self-Attention 理解为一个寻址过程：
+
+Query ($Q$): “我要找什么？”（当前 Token 的需求特征）
+Key ($K$): “我有什么？”（其他 Token 的属性标签）
+Value ($V$): “我能提供什么信息？”（实际承载的内容）
+
+通过 $QK^T$ 计算相似度，模型实际上在学习：在当前语境下，哪些 Token 的信息对我是最重要的。
+1.2 缩放因子 $\sqrt{d_k}$ 的数学必要性为什么公式中要除以 $\sqrt{d_k}$？
+
+防止梯度消失：当 $d_k$ 很大时，$QK^T$ 的点积结果方差会很大。
+Softmax 饱和区：如果点积值过大，经过 Softmax 后会进入极度平缓的分散区，导致梯度接近于 0。通过缩放，我们将分布拉回梯度敏感区。
+
+$$\text{Attention}(Q, K, V) &#x3D; \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
+
+2. 工程实现：PyTorch 视角下的注意力掩码在处理 Batch 数据或 Decoder 自回归生成时，Mask（掩码） 是保证模型“不作弊”的关键。
+import torch
+import torch.nn.functional as F
+
+def scaled_dot_product_attention(Q, K, V, mask=None):
+    &quot;&quot;&quot;
+    精简版 Scaled Dot-Product Attention 实现
+    &quot;&quot;&quot;
+    d_k = Q.size(-1)
+    
+    # 1. 计算注意力分数: (Batch, Head, Seq, Seq)
+    scores = torch.matmul(Q, K.transpose(-2, -1)) / (d_k ** 0.5)
+    
+    # 2. 应用掩码: 
+    # 在 Decoder 中，需屏蔽未来信息；在 Padding 处，需屏蔽无效位置
+    if mask is not None:
+        # 将 mask 为 0 的位置设为极小值，Softmax 后权重接近 0
+        scores = scores.masked_fill(mask == 0, -1e9)
+    
+    # 3. 归一化权重
+    attn_weights = F.softmax(scores, dim=-1)
+    
+    # 4. 加权求和得到 context vector
+    return torch.matmul(attn_weights, V), attn_weights
+
+
+3. Multi-Head Attention：特征空间的“分而治之”单一的 Attention 容易让模型陷入局部关注。Multi-Head 的本质是特征空间的并行采样。
+
+子空间投影：将 $d_{model}$ 维度的特征切分为 $h$ 个低维空间。
+语义分工：在实际观测中，不同的 Head 会自发演化出不同的职能——有的 Head 关注句法结构（如动宾关系），有的关注实体指代，有的关注标点符号。
+
+计算复杂度分析：虽然看似增加了计算量，但在并行计算框架下，Multi-Head 实际上是通过矩阵分块实现的，总参数量与 Single-Head 保持一致（通过 $W^Q, W^K, W^V$ 的降维投影）。
+
+4. 架构对比与系统瓶颈作为计算机专业学生，我们需要关注算法背后的系统代价：
+
+
+
+维度
+RNN &#x2F; LSTM
+Transformer
+
+
+
+并行度
+差 (依赖前一时刻状态)
+极佳 (矩阵运算天然适配 GPU)
+
+
+长距离依赖
+易丢失 (梯度消失&#x2F;爆炸)
+无损 (任意距离 $O(1)$ 通信)
+
+
+计算复杂度
+$O(n \cdot d^2)$
+$O(n^2 \cdot d)$ (注意力矩阵平方向增长)
+
+
+显存瓶颈
+较低
+高 (Self-Attention 矩阵随序列长度平方级爆炸)
+
+
+5. 关于“Attention 局限性”的思考尽管 Transformer 极度强大，但其 $O(n^2)$ 的复杂度限制了它处理超长文本（如整本书）的能力。目前学术界的研究热点，如 FlashAttention（通过算子融合减少内存 I&#x2F;O）和 Linear Attention，正是在试图解决这个系统级的瓶颈。
+
+延伸阅读：
+
+Visualizing A Neural Machine Translation Model
+FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness
+
+]]></content>
+      <categories>
+        <category>AI-Research</category>
+      </categories>
+      <tags>
+        <tag>深度学习</tag>
+        <tag>Transformer</tag>
+        <tag>论文研读</tag>
+        <tag>大模型底层</tag>
       </tags>
   </entry>
 </search>

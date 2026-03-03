@@ -67,9 +67,8 @@
 
   
 
-  <script class="next-config" data-name="enableMath" type="application/json">false</script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha256-UF1fgpAiu3tPJN/uCqEUHNe7pnr+QR0SQDNfgglgtcM=" crossorigin="anonymous">
-  <script class="next-config" data-name="katex" type="application/json">{"copy_tex_js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/copy-tex.min.js","integrity":"sha256-Us54+rSGDSTvIhKKUs4kygE2ipA0RXpWWh0/zLqw3bs="}}</script>
-  <script src="/js/third-party/math/katex.js" defer></script>
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -112,7 +111,7 @@
 
 
 <nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">15</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">4</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">59</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">18</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">71</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
       <li class="menu-item menu-item-search">
         <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
         </a>
@@ -177,18 +176,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-count">18</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">5</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">59</span>
+        <span class="site-state-item-count">71</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -219,7 +218,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2025/09/23/log-structured-filesystem-design/">
+    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2025/06/05/postgresql-bnlj-implementation/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
@@ -237,7 +236,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/09/23/log-structured-filesystem-design/" class="post-title-link" itemprop="url">日志结构文件系统：磁盘带宽利用的极致追求</a>
+          <a href="/2025/06/05/postgresql-bnlj-implementation/" class="post-title-link" itemprop="url">深入 PostgreSQL 内核：实现块嵌套循环连接优化</a>
         </h2>
 
         <div class="post-meta-container">
@@ -248,14 +247,14 @@
       </span>
       <span class="post-meta-item-text">发表于</span>
 
-      <time title="创建时间：2025-09-23 00:00:00" itemprop="dateCreated datePublished" datetime="2025-09-23T00:00:00+08:00">2025-09-23</time>
+      <time title="创建时间：2025-06-05 00:00:00" itemprop="dateCreated datePublished" datetime="2025-06-05T00:00:00+08:00">2025-06-05</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:24:25" itemprop="dateModified" datetime="2026-03-02T23:24:25+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:50:36" itemprop="dateModified" datetime="2026-03-03T13:50:36+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -263,7 +262,7 @@
       </span>
       <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Systems-HPC/" itemprop="url" rel="index"><span itemprop="name">Systems-HPC</span></a>
+          <a href="/categories/Projects/" itemprop="url" rel="index"><span itemprop="name">Projects</span></a>
         </span>
     </span>
 
@@ -278,86 +277,278 @@
     
     <div class="post-body" itemprop="articleBody">
           <blockquote>
-<p>传统文件系统将磁盘视为可随机寻址的块设备，大量小文件操作导致磁盘带宽利用率不足 5%。Rosenblum 与 Ousterhout 在 1992 年发表的论文《The Design and Implementation of a Log-Structured File System》，从硬件发展趋势的不平衡性出发，提出了一种颠覆性方案：将整个磁盘视为一个顺序追加的日志，在极大提升写性能的同时，兼顾了崩溃恢复的高效性。</p>
+<p>嵌套循环连接（Nested Loop Join）是关系型数据库最基础的连接算法，但其糟糕的缓存利用率一直是性能瓶颈所在。本文记录了在 PostgreSQL 源码层面实现块嵌套循环连接（Block Nested Loop Join，BNLJ）的完整过程：从 GUC 参数注册、执行节点状态扩展，到流水线状态机的设计，以及用 <code>palloc</code> 替代 <code>malloc</code> 踩坑的教训。最终实验表明，将块大小调至 128 可获得约 48.5% 的性能提升。</p>
 </blockquote>
-<h2 id="1-问题的根源：硬件发展的不平衡"><a href="#1-问题的根源：硬件发展的不平衡" class="headerlink" title="1. 问题的根源：硬件发展的不平衡"></a>1. 问题的根源：硬件发展的不平衡</h2><p>文件系统性能由三个核心硬件组件共同决定，而它们的发展速度存在根本性的不对称：</p>
-<ul>
-<li><strong>处理器</strong>：性能呈指数级增长，形成巨大的 I&#x2F;O 压力；</li>
-<li><strong>主内存</strong>：容量持续扩大，能够缓存大量读请求，使磁盘的<strong>读负载大幅降低</strong>，工作负载逐渐以<strong>写操作为主</strong>；</li>
-<li><strong>机械磁盘</strong>：传输带宽提升有限，而<strong>寻道时间几乎没有改善</strong>。</li>
-</ul>
-<p>这一趋势意味着：磁盘的主要瓶颈不在于数据传输速率，而在于<strong>随机寻道的机械延迟</strong>。</p>
-<p>传统文件系统（如 Unix FFS）对写操作的实现与此趋势严重背离。以创建一个小文件为例，该操作会被分解为多次独立的磁盘写入（目录数据、目录 inode、文件数据、文件 inode、位图等），<strong>每次写入均可能触发一次独立寻道</strong>，导致磁盘大部分时间耗费在机械臂移动上，<strong>实际带宽利用率甚至低于 5%</strong>。</p>
-<h2 id="2-LFS-的核心思想：顺序写日志"><a href="#2-LFS-的核心思想：顺序写日志" class="headerlink" title="2. LFS 的核心思想：顺序写日志"></a>2. LFS 的核心思想：顺序写日志</h2><p>LFS（Log-Structured File System）的设计哲学是：<strong>将文件系统的接口实现与底层磁盘布局彻底解耦</strong>。</p>
-<h3 id="2-1-写入策略"><a href="#2-1-写入策略" class="headerlink" title="2.1 写入策略"></a>2.1 写入策略</h3><p>无论上层发起多少次零散的写操作，LFS 在内存中维护一个<strong>写缓冲区</strong>，将所有脏数据（包括文件数据、inode、目录块等）集中缓存，待积累到足够大（通常为若干 MB）时，以一次大的<strong>顺序磁盘写入</strong>将所有变更追加到磁盘日志的末尾，<strong>丢弃原始位置的旧数据块</strong>，不执行原地更新（in-place update）。</p>
-<pre><code>传统 FFS 写 N 个小文件：N 次随机写 → 带宽 &lt; 5%
-LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
+<h2 id="1-背景：嵌套循环连接的缓存困境"><a href="#1-背景：嵌套循环连接的缓存困境" class="headerlink" title="1. 背景：嵌套循环连接的缓存困境"></a>1. 背景：嵌套循环连接的缓存困境</h2><p>PostgreSQL 原始嵌套循环连接的逻辑极为直白：</p>
+<pre><code class="language-python">for each outer tuple i:
+    for each inner tuple j:
+        if join_condition(i, j): emit (i, j)
 </code></pre>
-<p>这一设计将大量随机写操作转化为单次大型顺序写，<strong>从根本上规避了寻道延迟</strong>。</p>
-<h3 id="2-2-崩溃恢复的简化"><a href="#2-2-崩溃恢复的简化" class="headerlink" title="2.2 崩溃恢复的简化"></a>2.2 崩溃恢复的简化</h3><p>由于最新的所有修改都集中在日志末尾，崩溃恢复无需像 <code>fsck</code> 那样扫描整个磁盘寻找不一致。LFS 只需检查日志的最新部分，将恢复时间从数十分钟缩短到数十秒。</p>
-<h2 id="3-高效读取：inode-Map-机制"><a href="#3-高效读取：inode-Map-机制" class="headerlink" title="3. 高效读取：inode Map 机制"></a>3. 高效读取：inode Map 机制</h2><h3 id="3-1-传统文件系统的定位优势"><a href="#3-1-传统文件系统的定位优势" class="headerlink" title="3.1 传统文件系统的定位优势"></a>3.1 传统文件系统的定位优势</h3><p>在 FFS 中，inode 的磁盘位置由文件编号直接计算得出，定位开销为零。LFS 每次修改文件都会将 inode 写入新位置，<strong>inode 的磁盘地址不再固定</strong>，若不加处理，读取性能将急剧退化。</p>
-<h3 id="3-2-inode-Map：解耦接口与实现"><a href="#3-2-inode-Map：解耦接口与实现" class="headerlink" title="3.2 inode Map：解耦接口与实现"></a>3.2 inode Map：解耦接口与实现</h3><p>LFS 引入了 <strong>inode Map</strong>（inode 映射表）来解决这一问题：</p>
-<pre><code>文件编号 → inode Map → inode 在日志中的当前物理地址 → 文件数据
-</code></pre>
-<p>inode Map 的元数据本身也以顺序方式写入日志，其当前位置由磁盘<strong>固定区域</strong>（检查点区域，Checkpoint Region）记录。</p>
-<p>由于 inode Map 所占空间相对于总磁盘空间极小，其<strong>活跃部分可完整缓存在主内存中</strong>。因此，绝大多数文件定位操作不需要额外的磁盘访问，读取性能可与 Unix FFS 相媲美。</p>
-<p>这正是”<strong>接口与实现解耦</strong>“思想的体现：上层看到的仍是”通过文件编号访问文件”的稳定抽象，底层实现则通过 inode Map 透明地处理了日志化带来的地址不固定问题。</p>
-<h2 id="4-空间回收：段清理的成本-收益策略"><a href="#4-空间回收：段清理的成本-收益策略" class="headerlink" title="4. 空间回收：段清理的成本-收益策略"></a>4. 空间回收：段清理的成本-收益策略</h2><h3 id="4-1-碎片化问题的必然性"><a href="#4-1-碎片化问题的必然性" class="headerlink" title="4.1 碎片化问题的必然性"></a>4.1 碎片化问题的必然性</h3><p>由于 LFS 不执行原地更新，旧数据块持续积累，必须有机制回收这些<strong>已失效的磁盘空间</strong>。LFS 将磁盘组织为固定大小的<strong>段（Segment）</strong>，段是日志追加和垃圾回收的基本单位。</p>
-<h3 id="4-2-贪心策略的失败"><a href="#4-2-贪心策略的失败" class="headerlink" title="4.2 贪心策略的失败"></a>4.2 贪心策略的失败</h3><p>直觉上，应优先清理有效数据比例最低的段（即”最空段优先”策略）。然而仿真实验证明，贪心策略在稳态下会导致：</p>
-<ul>
-<li>所有段的有效数据比例趋向同一阈值，磁盘利用率被人为压低；</li>
-<li>包含”冷数据”（访问频率极低）的段，因数据失效缓慢，会在略高于清理阈值的位置<strong>长期占用磁盘空间，难以被回收</strong>。</li>
-</ul>
-<h3 id="4-3-成本-收益分析的引入"><a href="#4-3-成本-收益分析的引入" class="headerlink" title="4.3 成本-收益分析的引入"></a>4.3 成本-收益分析的引入</h3><p>LFS 论文设计了基于<strong>清理收益与清理成本比值</strong>的评分函数来选择待清理段：</p>
-<p>$$\text{score}(s) &#x3D; \frac{\text{收益}}{\text{成本}} &#x3D; \frac{(1 - u) \cdot \text{age}}{1 + u}$$</p>
-<p>其中 $u$ 为段的有效数据比例，$\text{age}$ 为段中最年轻数据的”年龄”（衡量数据保持稳定的时间）。</p>
-<ul>
-<li><strong>热段</strong>（有效数据快速失效）：代入公式，只有当 $u$ 极低时得分才足够高，<strong>约在 15% 有效数据比例时被清理</strong>；</li>
-<li><strong>冷段</strong>（有效数据长期稳定）：age 值高，即便 $u$ 较大（约 75%）也能获得高分，<strong>会被提前主动清理</strong>。</li>
-</ul>
-<p>这一策略自然促成了理想的 <strong>双峰段分布（Bimodal Segment Distribution）</strong>：磁盘上的段要么几乎全满（冷数据稳定占用），要么几乎全空（可快速分配）。超过一半被清理的段完全为空，此时总体写入放大系数仅为 <strong>1.2–1.6</strong>，意味着 LFS 能将超过 <strong>70% 的磁盘原始带宽</strong>用于写入新数据。</p>
-<h2 id="5-崩溃恢复：检查点与前滚"><a href="#5-崩溃恢复：检查点与前滚" class="headerlink" title="5. 崩溃恢复：检查点与前滚"></a>5. 崩溃恢复：检查点与前滚</h2><p>LFS 的崩溃恢复机制极其简洁：</p>
+<p>其时间复杂度为 $O(|R| \cdot |S|)$，每处理一个外表元组就要完整扫描一遍内表。这在 I&#x2F;O 层面造成两个问题：</p>
 <ol>
-<li><strong>检查点（Checkpoint）</strong>：系统周期性地将当前一致状态的所有元数据（包括 inode Map 的完整快照）写入磁盘固定区域，固化一个”已知良好”的文件系统状态；</li>
-<li><strong>前滚（Roll-Forward）</strong>：崩溃后，系统从最新检查点恢复，再向前扫描日志尾部，重放检查点之后的操作，尽可能恢复更多数据。</li>
+<li><strong>内表重复扫描</strong>：内表被扫描 $|R|$ 次，每次都从磁盘重新加载；</li>
+<li><strong>CPU 缓存浪费</strong>：每次只有一个外表元组在缓存，块内比较无从发生。</li>
 </ol>
-<p>所有待恢复信息集中于日志末尾，完全无需对整个磁盘进行 <code>fsck</code> 式的全量扫描。</p>
-<h2 id="6-与相关工作的对比"><a href="#6-与相关工作的对比" class="headerlink" title="6. 与相关工作的对比"></a>6. 与相关工作的对比</h2><p>LFS 的设计广泛借鉴并改造了已有系统思想：</p>
+<p>块嵌套循环连接通过批量缓存外表元组来解决这两个问题：</p>
+<pre><code class="language-python">for each block B of outer tuples (size = block_size):
+    for each inner tuple j:
+        for each outer tuple i in B:
+            if join_condition(i, j): emit (i, j)
+</code></pre>
+<p>设外表元组数为 $R$、内表元组数为 $S$、块大小为 $B$，理论 I&#x2F;O 代价对比：</p>
+<p>$$T_{\text{NLJ}} &#x3D; R \times S \times C_{\text{page}}$$</p>
+<p>$$T_{\text{BNLJ}} &#x3D; \left\lceil \frac{R}{B} \right\rceil \times S \times C_{\text{page}}$$</p>
+<p>当 $B$ 足够大时，内表扫描次数从 $R$ 降至 $\lceil R&#x2F;B \rceil$，理论加速比为 $B$（受边际效应限制）。</p>
+<hr>
+<h2 id="2-PostgreSQL-执行器架构概述"><a href="#2-PostgreSQL-执行器架构概述" class="headerlink" title="2. PostgreSQL 执行器架构概述"></a>2. PostgreSQL 执行器架构概述</h2><p>在动手修改之前，需要理解 PostgreSQL 的执行器工作模式。每个计划节点（Plan Node）实现三个标准接口：</p>
+<pre><code class="language-c">ExecInitNode();                              // 初始化节点，分配资源
+while ((tuple = ExecProcNode()) != NULL) {   // 循环拉取元组（Volcano 模型）
+    // 处理元组
+}
+ExecEndNode();                               // 清理资源
+</code></pre>
+<p>这是经典的 <strong>Volcano&#x2F;Iterator 模型</strong>：父节点调用子节点的 <code>Next()</code>，子节点按需产出一个元组。对于嵌套循环连接节点（<code>nodeNestloop.c</code>），<code>ExecNestLoop</code> 函数就是这个 <code>Next()</code> 的实现。</p>
+<p>本实验的目标就是修改 <code>ExecNestLoop</code>，使其从”每次取一个外表元组”变为”每次取一批外表元组”。</p>
+<hr>
+<h2 id="3-实现步骤"><a href="#3-实现步骤" class="headerlink" title="3. 实现步骤"></a>3. 实现步骤</h2><h3 id="3-1-注册-GUC-参数"><a href="#3-1-注册-GUC-参数" class="headerlink" title="3.1 注册 GUC 参数"></a>3.1 注册 GUC 参数</h3><p>为了允许通过 SQL 命令动态调整块大小，在 <code>src/backend/utils/misc/guc.c</code> 中注册一个整型 GUC 参数：</p>
+<pre><code class="language-c">int block_nested_loop_join_block_size;
+
+static struct config_int ConfigureNamesInt[] =
+{
+    {
+        {&quot;block_nested_loop_size&quot;, PGC_USERSET, RESOURCES_MEM,
+            gettext_noop(&quot;Sets the block size for blocked nested loop joins.&quot;),
+            NULL,
+            GUC_UNIT_BLOCKS
+        },
+        &amp;block_nested_loop_join_block_size,
+        4, 1, 1024,          // 默认值 4，范围 [1, 1024]
+        NULL, NULL, NULL
+    },
+    // ... 其他参数
+}
+</code></pre>
+<p>之后可以通过 <code>SET block_nested_loop_size = 64;</code> 在会话级别动态调整块大小。在 <code>src/include/executor/nodeNestloop.h</code> 中导出该变量：</p>
+<pre><code class="language-c">extern int block_nested_loop_join_block_size;
+</code></pre>
+<h3 id="3-2-扩展-NestLoopState-结构"><a href="#3-2-扩展-NestLoopState-结构" class="headerlink" title="3.2 扩展 NestLoopState 结构"></a>3.2 扩展 NestLoopState 结构</h3><p>原始的 <code>NestLoopState</code> 只需维护”是否需要新外表元组”等简单状态。BNLJ 需要额外追踪外表<strong>块</strong>的状态，在 <code>src/include/nodes/execnodes.h</code> 中扩展：</p>
+<pre><code class="language-c">typedef struct NestLoopState
+{
+    JoinState   js;                  /* 基类，必须是第一个字段 */
+    bool        nl_NeedNewOuter;
+    bool        nl_MatchedOuter;
+    TupleTableSlot *nl_NullInnerTupleSlot;
+
+    /* === BNLJ 新增字段 === */
+    int          block_size;         // 用户配置的块大小
+    TupleTableSlot **outerBlock;     // 外表块缓冲区（指针数组）
+    int          outerStoredCount;   // 当前块中实际存储的元组数
+    int          outerCount;         // 当前正在处理的块内元组索引
+    bool         nl_NeedNewBlock;    // 是否需要加载新的外表块
+    bool         nl_NeedNewInner;    // 是否需要获取新的内表元组
+    bool         no_more_tuple;      // 外表已无更多元组
+} NestLoopState;
+</code></pre>
+<p>关键设计：<code>outerBlock</code> 是 <code>TupleTableSlot *</code> 的指针数组，每个槽位独立持有一个元组的拷贝，由 PostgreSQL 统一的元组槽抽象管理生命周期。</p>
+<h3 id="3-3-初始化：分配块缓冲区"><a href="#3-3-初始化：分配块缓冲区" class="headerlink" title="3.3 初始化：分配块缓冲区"></a>3.3 初始化：分配块缓冲区</h3><p>在 <code>ExecInitNestLoop</code> 末尾，从全局 GUC 参数读取块大小并分配内存：</p>
+<pre><code class="language-c">nlstate-&gt;block_size = block_nested_loop_join_block_size;
+nlstate-&gt;outerCount = 0;
+nlstate-&gt;outerStoredCount = 0;
+
+// 使用 palloc 而非 malloc！
+nlstate-&gt;outerBlock = (TupleTableSlot **)palloc(
+    nlstate-&gt;block_size * sizeof(TupleTableSlot *));
+
+nlstate-&gt;nl_NeedNewBlock = true;
+nlstate-&gt;nl_NeedNewInner = false;
+nlstate-&gt;no_more_tuple = false;
+
+// 为每个槽位初始化独立的 TupleTableSlot
+for (int i = 0; i &lt; nlstate-&gt;block_size; i++) {
+    nlstate-&gt;outerBlock[i] = ExecInitExtraTupleSlot(
+        estate,
+        ExecGetResultType(outerPlanState(nlstate)),
+        ExecGetResultSlotOps(outerPlanState(nlstate), NULL));
+}
+</code></pre>
+<blockquote>
+<p><strong>关键教训</strong>：这里<strong>必须用 <code>palloc</code>，不能用 <code>malloc</code></strong>。PostgreSQL 的元组槽绑定到内存上下文（Memory Context），如果使用 <code>malloc</code> 分配缓冲区，部分自动清理机制会和手动 <code>free</code> 产生冲突，导致 <code>SELECT COUNT(*)</code> 结果偏大甚至段错误（见第 6 节）。</p>
+</blockquote>
+<h3 id="3-4-清理：释放块缓冲区"><a href="#3-4-清理：释放块缓冲区" class="headerlink" title="3.4 清理：释放块缓冲区"></a>3.4 清理：释放块缓冲区</h3><p>在 <code>ExecEndNestLoop</code> 中清理新分配的状态：</p>
+<pre><code class="language-c">if (node-&gt;outerBlock != NULL) {
+    for (int i = 0; i &lt; node-&gt;block_size; i++) {
+        if (node-&gt;outerBlock[i])
+            ExecClearTuple(node-&gt;outerBlock[i]);  // 清除槽位，而非 pfree
+    }
+    node-&gt;outerCount = 0;
+    node-&gt;outerStoredCount = 0;
+    node-&gt;block_size = 0;
+}
+</code></pre>
+<p>注意使用 <code>ExecClearTuple</code> 而不是直接 <code>pfree</code>，因为槽位的内存由上下文管理，强制 <code>pfree</code> 会破坏内存上下文的完整性。</p>
+<h3 id="3-5-核心执行逻辑：三层流水线状态机"><a href="#3-5-核心执行逻辑：三层流水线状态机" class="headerlink" title="3.5 核心执行逻辑：三层流水线状态机"></a>3.5 核心执行逻辑：三层流水线状态机</h3><p><code>ExecNestLoop</code> 是最核心的改动。BNLJ 由三个嵌套的逻辑层构成，使用三个 bool 标志控制状态转移：</p>
+<pre><code>nl_NeedNewBlock  →  加载外表块
+nl_NeedNewInner  →  获取一个内表元组
+nl_NeedNewOuter  →  取块内下一个外表元组（触发匹配）
+</code></pre>
+<p>状态转移图：</p>
+<pre><code>初始 → [NeedNewBlock=true]
+  └→ 加载块（最多 block_size 个外表元组）
+  └→ [NeedNewInner=true] 重置内表扫描
+     └→ 获取一个内表元组
+        ├→ 内表元组为空 → [NeedNewBlock=true]（内表扫描完，换下一块）
+        └→ [NeedNewOuter=true]，重置块内索引
+           └→ 遍历块内每个外表元组，执行连接判断
+              ├→ 块内元组耗尽 → [NeedNewInner=true]
+              └→ 匹配成功 → 投影并返回
+</code></pre>
+<p><strong>层一：加载外表块</strong></p>
+<pre><code class="language-c">if (node-&gt;nl_NeedNewBlock) {
+    node-&gt;outerStoredCount = 0;
+    while (node-&gt;outerStoredCount &lt; node-&gt;block_size) {
+        outerTupleSlot = ExecProcNode(outerPlan);
+        if (TupIsNull(outerTupleSlot) &amp;&amp; !node-&gt;outerStoredCount)
+            return NULL;  // 外表为空，整个连接结束
+        if (TupIsNull(outerTupleSlot)) {
+            node-&gt;no_more_tuple = true;
+            break;        // 外表已取完，块可能不满
+        }
+        ExecCopySlot(node-&gt;outerBlock[node-&gt;outerStoredCount], outerTupleSlot);
+        node-&gt;outerStoredCount++;
+    }
+    node-&gt;nl_NeedNewBlock = false;
+    node-&gt;nl_NeedNewInner = true;
+    ExecReScan(innerPlan);  // 重置内表，准备新一轮扫描
+}
+</code></pre>
+<p><strong>层二：获取内表元组</strong></p>
+<pre><code class="language-c">if (node-&gt;nl_NeedNewInner) {
+    innerTupleSlot = ExecProcNode(innerPlan);
+    econtext-&gt;ecxt_innertuple = innerTupleSlot;
+    node-&gt;nl_NeedNewInner = false;
+    node-&gt;outerCount = 0;
+    node-&gt;nl_NeedNewOuter = true;
+    if (TupIsNull(innerTupleSlot)) {
+        node-&gt;nl_NeedNewBlock = true;  // 内表扫描完，需要新块
+        if (node-&gt;no_more_tuple)
+            return NULL;               // 外表也完了，结束
+        continue;
+    }
+}
+</code></pre>
+<p><strong>层三：遍历块内外表元组（最内层）</strong></p>
+<pre><code class="language-c">if (node-&gt;nl_NeedNewOuter) {
+    if (node-&gt;outerCount &gt;= node-&gt;outerStoredCount) {
+        node-&gt;nl_NeedNewInner = true;  // 块内遍历完，取下一个内表元组
+        node-&gt;outerCount = 0;
+        continue;
+    }
+    outerTupleSlot = node-&gt;outerBlock[node-&gt;outerCount++];
+    econtext-&gt;ecxt_outertuple = outerTupleSlot;
+}
+// 执行连接条件判断，成功则投影返回
+</code></pre>
+<hr>
+<h2 id="4-实验结果"><a href="#4-实验结果" class="headerlink" title="4. 实验结果"></a>4. 实验结果</h2><p>实验使用 PostgreSQL 内置的 <code>restaurantphone</code> 表（外表，2463 个元组）进行连接测试，禁用哈希连接与归并连接以强制使用嵌套循环，对不同块大小测量执行时间（每组运行两次取第二次热启动结果）：</p>
 <table>
 <thead>
 <tr>
-<th>参考来源</th>
-<th>借鉴点</th>
-<th>LFS 的改进&#x2F;区别</th>
+<th>块大小</th>
+<th>运行时间（ms）</th>
+<th>相对未优化的加速比</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>一次性写入介质文件系统</td>
-<td>追加写模式</td>
-<td>LFS 额外实现了日志空间回收</td>
+<td>修改前（原始 NLJ）</td>
+<td>455.807</td>
+<td>——</td>
 </tr>
 <tr>
-<td>分代垃圾回收器</td>
-<td>成本-收益选择回收对象</td>
-<td>LFS 必须顺序访问，利用”块最多属于一个文件”简化垃圾识别</td>
+<td>1</td>
+<td>457.915</td>
+<td>-0.46%（略慢）</td>
 </tr>
 <tr>
-<td>数据库日志</td>
-<td>日志作为持久化手段</td>
-<td>LFS 需写完整数据块（非字节级差分），并设计了段清理来压缩日志</td>
+<td>2</td>
+<td>332.043</td>
+<td>27.15%</td>
 </tr>
 <tr>
-<td>数据库组提交（Group Commit）</td>
-<td>批量合并写入</td>
-<td>LFS 将这一思想应用于文件系统层</td>
+<td>4</td>
+<td>323.550</td>
+<td>29.02%</td>
+</tr>
+<tr>
+<td>8</td>
+<td>283.995</td>
+<td>37.69%</td>
+</tr>
+<tr>
+<td>16</td>
+<td>255.516</td>
+<td>43.94%</td>
+</tr>
+<tr>
+<td>32</td>
+<td>243.390</td>
+<td>46.60%</td>
+</tr>
+<tr>
+<td>64</td>
+<td>239.891</td>
+<td>47.37%</td>
+</tr>
+<tr>
+<td>128</td>
+<td>234.610</td>
+<td><strong>48.53%</strong></td>
+</tr>
+<tr>
+<td>256</td>
+<td>231.298</td>
+<td>49.26%</td>
+</tr>
+<tr>
+<td>512</td>
+<td>230.491</td>
+<td>49.43%</td>
+</tr>
+<tr>
+<td>1024</td>
+<td>229.880</td>
+<td>49.57%</td>
 </tr>
 </tbody></table>
-<h2 id="7-总结"><a href="#7-总结" class="headerlink" title="7. 总结"></a>7. 总结</h2><p>LFS 的核心贡献在于：<strong>从硬件趋势的不平衡性出发，以”顺序追加写”重构了文件系统的底层存储模型</strong>，并通过 inode Map 保证读取性能不退化，通过成本-收益段清理解决了空间回收的复杂性，最终在一个真实系统（Sprite LFS）上验证了设计的可行性与优越性。</p>
-<p>LFS 的思想对后续存储系统产生了深远影响：现代 SSD 的 FTL（Flash Translation Layer）、数据库的 LSM-Tree（LevelDB、RocksDB）均采用了类似的”追加写+后台整理”策略，可以说 LFS 是这一设计范式的奠基性工作。</p>
+<p><img src="/images/postgresql-bnlj/image-2.png" alt="初始嵌套循环连接测试（禁用 hash&#x2F;merge）"></p>
+<hr>
+<h2 id="5-性能分析"><a href="#5-性能分析" class="headerlink" title="5. 性能分析"></a>5. 性能分析</h2><h3 id="块大小为-1-时反而变慢"><a href="#块大小为-1-时反而变慢" class="headerlink" title="块大小为 1 时反而变慢"></a>块大小为 1 时反而变慢</h3><p>块大小为 1 时，BNLJ 等价于原始的 NLJ，但由于 PostgreSQL 优化器会自动选择代价最低的内外表顺序，我们强制指定的内外表分配与优化器原来的选择<strong>互换了角色</strong>，导致性能略微下降。</p>
+<h3 id="边际效应：块大小-32-后收益递减"><a href="#边际效应：块大小-32-后收益递减" class="headerlink" title="边际效应：块大小 &gt; 32 后收益递减"></a>边际效应：块大小 &gt; 32 后收益递减</h3><p>从数据可以看出：块大小 32 → 64 的提升约 0.77%，64 → 128 约 1.16%，128 → 256 约 0.73%，此后几乎平台化。原因在于：</p>
+<p>当 $B$ 增大到 $R&#x2F;k$（$k$ 为小常数）后，$\lceil R&#x2F;B \rceil$ 变化微乎其微，此时<strong>外表加载本身的固定代价</strong>成为瓶颈：</p>
+<p>$$T \approx \underbrace{R \times C_{\text{page}}}<em>{\text{固定（外表加载）}} + \underbrace{\left\lceil \frac{R}{B} \right\rceil \times S \times C</em>{\text{page}}}_{\text{可优化部分}}$$</p>
+<p>此外 CPU 缓存大小也构成物理上限——当块大小超出 L3 缓存容量时，块内比较本身也开始产生 cache miss。</p>
+<h3 id="工程建议"><a href="#工程建议" class="headerlink" title="工程建议"></a>工程建议</h3><p>块大小 <strong>32 ~ 128</strong> 是性价比最高的区间：对于大多数工作负载，这已能获得接近最优的 I&#x2F;O 减少效果，同时避免过大块占用过多内存。在实际 PostgreSQL 配置中，可以通过 <code>block_nested_loop_size</code> 在会话级别为特定查询精细调优。</p>
+<hr>
+<h2 id="6-实验中踩的坑"><a href="#6-实验中踩的坑" class="headerlink" title="6. 实验中踩的坑"></a>6. 实验中踩的坑</h2><h3 id="坑-1：malloc-导致-SELECT-COUNT-结果偏大"><a href="#坑-1：malloc-导致-SELECT-COUNT-结果偏大" class="headerlink" title="坑 1：malloc 导致 SELECT COUNT(*) 结果偏大"></a>坑 1：<code>malloc</code> 导致 <code>SELECT COUNT(*)</code> 结果偏大</h3><p>这是本次最诡异的 bug。将块缓冲区用 <code>malloc</code> 分配后，执行 <code>SELECT COUNT(*)</code> 的结果比实际值偏大。</p>
+<p>原因：PostgreSQL 的执行器是<strong>流水线（pipeline）式</strong>的，内存管理依赖**内存上下文（Memory Context）**的生命周期。部分元组槽和 plan node 状态会在查询结束时由上下文统一回收。<code>malloc</code> 分配的内存游离于上下文之外，当上下文的自动清理和 <code>pfree</code> 产生冲突时，可能导致内存重叠或 use-after-free，使得已释放的元组数据仍被计数。</p>
+<p><strong>解法</strong>：改用 <code>palloc</code>，所有分配纳入查询内存上下文，随查询结束自动回收。</p>
+<p><img src="/images/postgresql-bnlj/ef0afdae194f6a2c5fb918e4c0001cb.png" alt="&#96;malloc&#96; 导致 count 偏大的调试输出"></p>
+<p><img src="/images/postgresql-bnlj/f5eb8b6ccb88b2dd835808ef070cbb3.png" alt="另一次 debug 截图"></p>
+<h3 id="坑-2：死循环定位困难"><a href="#坑-2：死循环定位困难" class="headerlink" title="坑 2：死循环定位困难"></a>坑 2：死循环定位困难</h3><p>流水线状态机逻辑中，<code>nl_NeedNewBlock</code> 的初始值设置错误，导致程序陷入死循环。由于 PostgreSQL 是多进程架构，GDB 无法直接 attach 到查询进程。解法：</p>
+<ol>
+<li>先完成用户连接（<code>psql</code>）；</li>
+<li><code>ps aux | grep postgres</code> 获取查询子进程 PID；</li>
+<li><code>gdb -p &lt;pid&gt;</code> attach 后中断，观察调用栈和局部变量。</li>
+</ol>
+<h3 id="坑-3：GDB-调试时内外进程分离"><a href="#坑-3：GDB-调试时内外进程分离" class="headerlink" title="坑 3：GDB 调试时内外进程分离"></a>坑 3：GDB 调试时内外进程分离</h3><p>PostgreSQL 会为每个连接 fork 一个子进程，GDB attach 父进程无法追踪查询执行逻辑。需要 attach 到实际执行查询的子进程（<code>postgres: user db ...</code> 进程）。</p>
+<hr>
+<h2 id="7-PostgreSQL-内部机制补充说明"><a href="#7-PostgreSQL-内部机制补充说明" class="headerlink" title="7. PostgreSQL 内部机制补充说明"></a>7. PostgreSQL 内部机制补充说明</h2><h3 id="Volcano-模型中的-ExecReScan"><a href="#Volcano-模型中的-ExecReScan" class="headerlink" title="Volcano 模型中的 ExecReScan"></a>Volcano 模型中的 ExecReScan</h3><p><code>ExecReScan(innerPlan)</code> 是 BNLJ 能够正确工作的关键调用。每当外表块切换时，内表需要从头扫描，<code>ExecReScan</code> 将内表计划节点的状态重置到初始状态（等价于 <code>rewind</code>）。</p>
+<p><strong>注意</strong>：只在块切换时调用，而不是每个外表元组触发一次——这正是 BNLJ 相比 NLJ 的核心优化所在（内表扫描次数从 $R$ 降为 $\lceil R&#x2F;B \rceil$）。</p>
+<h3 id="TupleTableSlot-与-ExecCopySlot"><a href="#TupleTableSlot-与-ExecCopySlot" class="headerlink" title="TupleTableSlot 与 ExecCopySlot"></a>TupleTableSlot 与 ExecCopySlot</h3><p><code>TupleTableSlot</code> 是 PostgreSQL 中元组的统一抽象容器。<code>ExecCopySlot(dst, src)</code> 将源槽位的元组<strong>深拷贝</strong>到目标槽位，确保外表块持有独立的元组数据，不受后续 <code>ExecProcNode</code> 调用的影响。</p>
+<hr>
 <h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
-<li><strong>[LSM-Tree]</strong>：LevelDB&#x2F;RocksDB 中的 Log-Structured Merge-Tree 与 LFS 的段清理机制有何异同，以及写放大的量化分析。</li>
-<li><strong>[F2FS]</strong>：专为闪存设计的 F2FS（Flash-Friendly File System），如何将 LFS 的思想适配到 SSD 的页擦除粒度限制。</li>
-<li>下一篇预告：系统程序员视角下的并发陷阱——内存模型、内存屏障与无锁编程的权衡取舍。</li>
+<li><strong>[Hash Join 实现]</strong>：哈希连接适用于等值连接，内存需求更高但均摊代价 $O(|R| + |S|)$，与 BNLJ 的适用场景互补</li>
+<li><strong>[Grace Hash Join]</strong>：当哈希表超出内存时退化为分区式连接，可类比 BNLJ 的分块思路</li>
+<li>下一篇预告：PostgreSQL 查询优化器代价模型——优化器如何决定使用 NLJ 还是 Hash Join</li>
 </ul>
 
       
@@ -385,7 +576,7 @@ LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2025/09/02/os-evolution-and-future/">
+    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2025/04/07/bookstore-fastapi-vue3/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
@@ -403,7 +594,7 @@ LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/09/02/os-evolution-and-future/" class="post-title-link" itemprop="url">操作系统的演进：从批处理到万物互联的架构变革</a>
+          <a href="/2025/04/07/bookstore-fastapi-vue3/" class="post-title-link" itemprop="url">全栈图书管理系统：FastAPI + Vue3 工程实践</a>
         </h2>
 
         <div class="post-meta-container">
@@ -414,14 +605,14 @@ LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
       </span>
       <span class="post-meta-item-text">发表于</span>
 
-      <time title="创建时间：2025-09-02 00:00:00" itemprop="dateCreated datePublished" datetime="2025-09-02T00:00:00+08:00">2025-09-02</time>
+      <time title="创建时间：2025-04-07 00:00:00" itemprop="dateCreated datePublished" datetime="2025-04-07T00:00:00+08:00">2025-04-07</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:34:01" itemprop="dateModified" datetime="2026-03-02T23:34:01+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:50:22" itemprop="dateModified" datetime="2026-03-03T13:50:22+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -429,7 +620,7 @@ LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
       </span>
       <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/CS-Fundamentals/" itemprop="url" rel="index"><span itemprop="name">CS-Fundamentals</span></a>
+          <a href="/categories/Projects/" itemprop="url" rel="index"><span itemprop="name">Projects</span></a>
         </span>
     </span>
 
@@ -444,36 +635,251 @@ LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
     
     <div class="post-body" itemprop="articleBody">
           <blockquote>
-<p>操作系统（OS）是计算机系统中最具历史厚度的软件层。它的每一次范式转移，都深刻地折射出硬件能力的跃升与应用需求的演变。本文尝试梳理操作系统半个世纪以来的发展脉络，并对其未来走向作出前瞻性思考。</p>
+<p>一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI、从 pytest 转向 Postman 调试的全过程思考，以及那个调了三天的”200 OK 但前端不显示”的神奇 bug。</p>
 </blockquote>
-<h2 id="1-两大阶段：从”操作自动化”到”资源管理者”"><a href="#1-两大阶段：从”操作自动化”到”资源管理者”" class="headerlink" title="1. 两大阶段：从”操作自动化”到”资源管理者”"></a>1. 两大阶段：从”操作自动化”到”资源管理者”</h2><p>操作系统的历史可以划分为两个性质截然不同的大阶段。</p>
-<p><strong>第一阶段（1950s）：批处理操作系统</strong>。彼时的操作系统是对”操作员”角色的自动化替代，其核心功能是将人工的磁带换装、卡片递交等流程自动化，以批处理方式串行执行用户作业。系统对资源没有动态调度，程序员需手动规划所有资源使用。</p>
-<p><strong>第二阶段（1965 年后）：多道程序与资源管理框架</strong>。随着计算机开始服务于多个用户和多个并发任务，一个根本性的矛盾浮现：<strong>程序员对资源的手动控制既不充分（无法感知冲突），也不全面（无法充分利用空闲资源）</strong>。操作系统因此从”自动化批处理程序”升级为一个具备<strong>控制权和调度权</strong>的资源管理框架，以供其他程序在其上受控地运行。</p>
-<p>这一阶段的标志性成果是”计算机系统工程师”总结出的八条操作系统基本原则：<strong>交互式计算、分层文件系统、容错结构、中断系统、虚拟内存、多道程序设计、模块化设计</strong>。此后几乎所有主流操作系统都是在这八条原则的基础上构建的。</p>
-<h2 id="2-三次关键转型"><a href="#2-三次关键转型" class="headerlink" title="2. 三次关键转型"></a>2. 三次关键转型</h2><h3 id="2-1-从汇编语言到高级语言"><a href="#2-1-从汇编语言到高级语言" class="headerlink" title="2.1 从汇编语言到高级语言"></a>2.1 从汇编语言到高级语言</h3><p>早期操作系统以汇编语言编写，与特定硬件强绑定，不同架构的机器需要独立开发操作系统。<strong>Multics</strong> 的出现打破了这一局面：它证明了用高级语言（PL&#x2F;I）编写的操作系统不仅可行，而且在可维护性和可移植性上具有显著优势。此后，以 C 语言编写 Unix 成为里程碑式的实践，将”操作系统用高级语言实现”确立为行业共识。</p>
-<h3 id="2-2-从通用主义到精简内核"><a href="#2-2-从通用主义到精简内核" class="headerlink" title="2.2 从通用主义到精简内核"></a>2.2 从通用主义到精简内核</h3><p>Multics 的设计哲学是<strong>最大通用性</strong>——尽可能解决一切问题，导致系统庞大、运行成本高昂。这一经验教训推动了反向思考：操作系统应当尽可能<strong>精简（Minimal）</strong>，只提供最核心的机制，其余由用户空间程序实现。</p>
-<p>这一思想的产物正是 <strong>Unix</strong>，以及后来的 <strong>Linux</strong>。微内核（Microkernel）架构将内核功能精简至线程调度、基本 IPC 和最小内存管理，其他服务以独立进程形式运行于用户空间，实现了出色的模块化与可移植性。</p>
-<h3 id="2-3-不同设计目标催生多元内核形态"><a href="#2-3-不同设计目标催生多元内核形态" class="headerlink" title="2.3 不同设计目标催生多元内核形态"></a>2.3 不同设计目标催生多元内核形态</h3><p>微内核并非唯一正确答案。<strong>Windows</strong> 将图形子系统（GUI）集成进内核，以牺牲部分安全隔离性为代价，换取了极低的用户态-内核态切换开销，满足了消费级用户对交互响应速度的需求。<strong>实时操作系统（RTOS）</strong> 则为了保证极低且可预测的调度延迟，甚至省去了内核态&#x2F;用户态的权限分离。</p>
-<p>这说明操作系统的架构选择本质上是<strong>设计目标之间的权衡</strong>，不存在普适的最优方案，只有在特定约束下的最优解。</p>
-<h2 id="3-未来操作系统的演进方向"><a href="#3-未来操作系统的演进方向" class="headerlink" title="3. 未来操作系统的演进方向"></a>3. 未来操作系统的演进方向</h2><h3 id="3-1-从”人机交互接口”到”世界连接层”"><a href="#3-1-从”人机交互接口”到”世界连接层”" class="headerlink" title="3.1 从”人机交互接口”到”世界连接层”"></a>3.1 从”人机交互接口”到”世界连接层”</h3><p>当下的操作系统概念正在经历一次深刻的语义扩展。传统意义上的操作系统是”设备硬件资源的管理者”，但当数十亿设备接入物联网（IoT），当数字与物理世界的边界消融，<strong>操作系统开始被抽象为连接数字世界与物理世界的数字纽带</strong>。</p>
-<p>在这一框架下，一套分布于医疗设备、工厂机器人和家庭电器的协同调度层，在逻辑上构成了一个超宏观的”操作系统”，尽管不再与任何单一设备绑定。</p>
-<h3 id="3-2-自然人机交互的新形态"><a href="#3-2-自然人机交互的新形态" class="headerlink" title="3.2 自然人机交互的新形态"></a>3.2 自然人机交互的新形态</h3><p>当前人与操作系统的交互仍以”硬交互”为主——键盘、触摸屏。然而新兴的交互技术正在重塑这一范式：Apple Vision Pro 通过眼动追踪实现光标定位，脑机接口尝试建立意图与指令之间的直接通道。这些方向预示着操作系统的<strong>输入层将向感知融合（Perceptual Integration）演进</strong>，要求 OS 能够处理高维、低延迟的感知数据流。</p>
-<h3 id="3-3-元-OS-Kit：面向多样设备的组件化架构"><a href="#3-3-元-OS-Kit：面向多样设备的组件化架构" class="headerlink" title="3.3 元 OS Kit：面向多样设备的组件化架构"></a>3.3 元 OS Kit：面向多样设备的组件化架构</h3><p>面对从微控制器到超级计算机的巨大设备异质性，未来可能出现一种<strong>元 OS（Meta-OS）<strong>思路：操作系统不再是针对特定设备类型的固定实现，而是一套</strong>可按需组装的组件库（Kit）</strong>——不同场景选取不同组件子集，通过标准化接口实现跨设备互操作，让物理设备在操作系统层面实现原生协同，而非依赖复杂的软件适配层。</p>
-<h3 id="3-4-异构计算与-CPU-XPU-融合"><a href="#3-4-异构计算与-CPU-XPU-融合" class="headerlink" title="3.4 异构计算与 CPU&#x2F;XPU 融合"></a>3.4 异构计算与 CPU&#x2F;XPU 融合</h3><p>高性能计算（HPC）与人工智能对计算精度和并行度的要求迥异，二者长期处于不同的硬件生态。随着 AI 工作负载向 HPC 基础设施融合，操作系统需要统一调度 CPU（通用标量计算）与各类 XPU（GPU、TPU、NPU 等专用加速器），实现<strong>异构计算资源的透明化调度</strong>，降低数据在不同计算单元间迁移带来的能效损耗。</p>
-<h3 id="3-5-机密计算：不可信基础设施下的安全保障"><a href="#3-5-机密计算：不可信基础设施下的安全保障" class="headerlink" title="3.5 机密计算：不可信基础设施下的安全保障"></a>3.5 机密计算：不可信基础设施下的安全保障</h3><p>传统操作系统的安全模型建立在”信任硬件”的前提下：只要物理设备不被篡改，数据即可视为安全。然而在云计算模式下，<strong>基础设施提供商对底层硬件具有完全控制权，应用数据面临来自”受信任但不透明”的基础设施的威胁</strong>。</p>
-<p>**机密计算（Confidential Computing）**架构（如 Intel SGX、AMD SEV、ARM TrustZone）通过硬件隔离的可信执行环境（TEE），使应用数据即便在不可信的基础设施上运行，也能维持端到端的隐私保护，实现”信任自己的应用，而无需信任基础设施提供商”的新安全模式。</p>
-<h3 id="3-6-垂直整合：消除抽象层的冗余开销"><a href="#3-6-垂直整合：消除抽象层的冗余开销" class="headerlink" title="3.6 垂直整合：消除抽象层的冗余开销"></a>3.6 垂直整合：消除抽象层的冗余开销</h3><p>传统的”硬件 → 操作系统 → 运行时 → 应用”分层抽象带来了大量通用化开销。**垂直整合（Vertical Integration）**通过针对特定业务场景对各层进行协同设计，消除不必要的通用抽象，实现”短链条”协同：</p>
+<h2 id="1-项目概述与技术选型"><a href="#1-项目概述与技术选型" class="headerlink" title="1. 项目概述与技术选型"></a>1. 项目概述与技术选型</h2><h3 id="业务边界"><a href="#业务边界" class="headerlink" title="业务边界"></a>业务边界</h3><p>系统覆盖一个书城的核心管理流程：</p>
 <ul>
-<li>苹果 M 系列芯片与 macOS&#x2F;iOS 的深度协同；</li>
-<li>谷歌 TPU 与 TensorFlow&#x2F;XLA 编译器栈的联合优化；</li>
-<li>量化交易系统为极致低延迟而省去内核态&#x2F;用户态切换的 kernel bypass 方案（如 DPDK、RDMA）。</li>
+<li><strong>用户管理</strong>：超级管理员 &#x2F; 普通管理员双角色，基于 Token 的会话管理，单设备登录限制；</li>
+<li><strong>库存管理</strong>：书籍 CRUD，支持 ISBN 精确&#x2F;模糊查询；</li>
+<li><strong>进货流程</strong>：创建进货单 → 付款 → 到货确认，全流程状态机，操作员留痕；</li>
+<li><strong>零售流程</strong>：多品类购物车 → 创建销售单 → 自动扣减库存；</li>
+<li><strong>财务管理</strong>：进货&#x2F;零售双向账单，支持日期&#x2F;金额范围查询及趋势图。</li>
 </ul>
-<h2 id="4-结语"><a href="#4-结语" class="headerlink" title="4. 结语"></a>4. 结语</h2><p>操作系统的演进史，是一部在<strong>硬件能力</strong>、<strong>应用需求</strong>和<strong>工程复杂性</strong>之间反复寻找平衡的历史。从批处理自动化到多道程序，从汇编单机到高级语言可移植，从通用主义到精简微内核，每一次转型背后都有明确的技术驱动力和工程权衡逻辑。</p>
-<p>未来，随着异构计算、物联网协同、机密计算和自然人机交互的深入，操作系统的边界将持续扩展，从管理单一设备的软件层，逐渐演化为协调数字-物理融合世界的智能基础设施。</p>
+<h3 id="技术栈选型过程"><a href="#技术栈选型过程" class="headerlink" title="技术栈选型过程"></a>技术栈选型过程</h3><p>最初计划使用 Django，研究 6 小时后因上手成本过高放弃。最终选型方案：</p>
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th>选择</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>后端框架</td>
+<td>FastAPI</td>
+<td>自动生成 OpenAPI 文档，类型注解友好，异步支持</td>
+</tr>
+<tr>
+<td>ORM</td>
+<td>SQLAlchemy</td>
+<td>数据库无关，防 SQL 注入，Python 生态成熟</td>
+</tr>
+<tr>
+<td>数据库</td>
+<td>SQLite</td>
+<td>部署简单，满足课程项目规模</td>
+</tr>
+<tr>
+<td>前端框架</td>
+<td>Vue3 + Vite</td>
+<td>中文文档丰富，响应式系统直观</td>
+</tr>
+<tr>
+<td>接口调试</td>
+<td>Postman</td>
+<td>可持久化保存 Token，比 FastAPI 内置 Swagger 更灵活</td>
+</tr>
+</tbody></table>
+<p>架构图如下：</p>
+<p><img src="/images/bookstore-fastapi-vue3/image-1.png" alt="后端架构"></p>
+<p><img src="/images/bookstore-fastapi-vue3/image.png" alt="前端架构"></p>
+<hr>
+<h2 id="2-数据库设计"><a href="#2-数据库设计" class="headerlink" title="2. 数据库设计"></a>2. 数据库设计</h2><h3 id="2-1-用户体系：双表分离的登录态管理"><a href="#2-1-用户体系：双表分离的登录态管理" class="headerlink" title="2.1 用户体系：双表分离的登录态管理"></a>2.1 用户体系：双表分离的登录态管理</h3><p>用户信息存储在两张表中——这是整个系统最重要的设计决策之一。</p>
+<p><strong><code>User</code> 表</strong>（持久化用户信息）：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>username</code></td>
+<td>String(50) PK</td>
+<td>用户名作为主键</td>
+</tr>
+<tr>
+<td><code>employee_id</code></td>
+<td>String(20) UNIQUE</td>
+<td>工号</td>
+</tr>
+<tr>
+<td><code>true_name</code></td>
+<td>String(50)</td>
+<td>真实姓名</td>
+</tr>
+<tr>
+<td><code>gender</code></td>
+<td>Enum(‘male’,’female’)</td>
+<td>性别枚举</td>
+</tr>
+<tr>
+<td><code>isSuperAdmin</code></td>
+<td>Boolean</td>
+<td>超级管理员标识</td>
+</tr>
+<tr>
+<td><code>password_hash</code></td>
+<td>String(128)</td>
+<td>MD5 加密密码</td>
+</tr>
+</tbody></table>
+<p><img src="/images/bookstore-fastapi-vue3/image-2.png" alt="User 表结构"></p>
+<p><strong><code>LoginedUser</code> 表</strong>（活跃会话表）：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>username</code></td>
+<td>String(50) PK</td>
+<td>登录用户名</td>
+</tr>
+<tr>
+<td><code>employee_id</code></td>
+<td>String(20) UNIQUE</td>
+<td>工号（冗余字段）</td>
+</tr>
+<tr>
+<td><code>isSuperAdmin</code></td>
+<td>Boolean</td>
+<td>权限标识（冗余字段）</td>
+</tr>
+<tr>
+<td><code>token</code></td>
+<td>String(256)</td>
+<td>HS256 加密的 JWT Token</td>
+</tr>
+<tr>
+<td><code>expiration_time</code></td>
+<td>DateTime</td>
+<td>Token 过期时间戳</td>
+</tr>
+</tbody></table>
+<p><img src="/images/bookstore-fastapi-vue3/image-3.png" alt="LoginedUser 表结构"></p>
+<p><strong>为什么要将 <code>employee_id</code> 和 <code>isSuperAdmin</code> 冗余到 <code>LoginedUser</code> 表？</strong></p>
+<p>这是一个典型的<strong>以空间换时间</strong>的设计：认证中间件在每次请求时都需要验证权限，如果每次都要联表查询 <code>User</code>，N 个并发请求就是 N 次额外的 JOIN。将这两个高频读字段冗余到会话表后，权限验证退化为单表查询。</p>
+<p><strong>单设备登录限制的实现</strong>：每次新登录前，先删除该用户的已有会话记录，再插入新记录。这样旧设备的 Token 在下次请求时会因找不到对应会话而失效，被响应拦截器自动踢出并跳转登录页。</p>
+<h3 id="2-2-进货流程：状态机约束在数据库层的落地"><a href="#2-2-进货流程：状态机约束在数据库层的落地" class="headerlink" title="2.2 进货流程：状态机约束在数据库层的落地"></a>2.2 进货流程：状态机约束在数据库层的落地</h3><p>进货订单有四个状态：<code>未付款 → 已付款 → 已到货</code>，或 <code>未付款 → 已退货</code>。系统用三个操作员字段 <code>operator_id / operator_id2 / operator_id3</code> 记录每个环节的责任人，并通过 <code>CheckConstraint</code> 在数据库层强制执行状态-字段联动规则：</p>
+<pre><code class="language-sql">-- 规则：未付款状态时 operator_id2 必须为空，其他状态时必须存在
+(operator_id2 IS NULL AND payment_status == &#39;未付款&#39;) OR 
+(operator_id2 IS NOT NULL AND payment_status != &#39;未付款&#39;)
+
+-- 规则：operator_id3 仅在&quot;已到货&quot;状态时存在
+(operator_id3 IS NULL AND payment_status != &#39;已到货&#39;) OR 
+(operator_id3 IS NOT NULL AND payment_status == &#39;已到货&#39;)
+</code></pre>
+<p>将业务规则下推到数据库约束层，而不是只在应用层检查，是一种防御性设计——即使绕过 API 直接写数据库也无法破坏数据完整性。</p>
+<p>状态流转图：</p>
+<pre><code>[*] ──&gt; 未付款 ──&gt; 已付款 ──&gt; 已到货
+              └──&gt; 已退货
+</code></pre>
+<h3 id="2-3-销售体系：一对多订单明细"><a href="#2-3-销售体系：一对多订单明细" class="headerlink" title="2.3 销售体系：一对多订单明细"></a>2.3 销售体系：一对多订单明细</h3><p>一笔销售单可能包含多种书籍，采用经典的订单头（<code>SaleOrder</code>）+ 明细行（<code>SaleItem</code>）拆分：</p>
+<ul>
+<li><code>SaleOrder.transaction_no</code>：后端自动生成，格式为 <code>SO + 年月日时分秒 + 随机数</code>；</li>
+<li><code>SaleItem.sold_price</code>：独立于 <code>Book.retail_price</code>，支持折扣后价格；</li>
+<li>级联删除：<code>SaleItem</code> 设置 <code>ondelete=&quot;CASCADE&quot;</code>，删除订单时自动清理明细。</li>
+</ul>
+<h3 id="2-4-财务账单：动态外键关联"><a href="#2-4-财务账单：动态外键关联" class="headerlink" title="2.4 财务账单：动态外键关联"></a>2.4 财务账单：动态外键关联</h3><p><code>Bill</code> 表通过 <code>bill_type</code>（进货&#x2F;零售）+ <code>related_order</code> 组合实现”动态外键”：当 <code>bill_type = &quot;进货&quot;</code> 时，<code>related_order</code> 指向 <code>purchase_orders.id</code>；当 <code>bill_type = &quot;零售&quot;</code> 时，指向 <code>sale_orders.id</code>。SQLAlchemy 并不直接支持动态外键约束，这里在应用层保证一致性，数据库层用 <code>CHECK</code> 确保两字段同时存在或同时为空。</p>
+<h3 id="2-5-关于-ISBN-的存储类型选择"><a href="#2-5-关于-ISBN-的存储类型选择" class="headerlink" title="2.5 关于 ISBN 的存储类型选择"></a>2.5 关于 ISBN 的存储类型选择</h3><p>ISBN 选择 <code>String(13)</code> 而非 <code>Integer</code>：</p>
+<ol>
+<li>整数存储可能丢失前导零，造成格式错误；</li>
+<li>字符串支持 <code>LIKE</code> 模糊搜索（<code>contains</code> 函数），整数无法模糊查询；</li>
+<li>通过 <code>CheckConstraint</code> 验证 <code>LENGTH(isbn) = 13 AND isbn GLOB &#39;[0-9]*&#39;</code> 保证格式正确性。</li>
+</ol>
+<h3 id="2-6-关于-Numeric-10-2-存储金额"><a href="#2-6-关于-Numeric-10-2-存储金额" class="headerlink" title="2.6 关于 Numeric(10, 2) 存储金额"></a>2.6 关于 <code>Numeric(10, 2)</code> 存储金额</h3><p>金额字段全部使用 <code>Numeric(10, 2)</code> 而非 <code>Float</code>。原因：<code>Float</code> 是近似浮点数，在涉及财务精度的场景下 <code>0.1 + 0.2 ≠ 0.3</code> 的问题不可接受；<code>Numeric</code> 是精确小数类型，确保分位精确到两位。</p>
+<hr>
+<h2 id="3-认证与权限系统"><a href="#3-认证与权限系统" class="headerlink" title="3. 认证与权限系统"></a>3. 认证与权限系统</h2><h3 id="3-1-Token-生命周期"><a href="#3-1-Token-生命周期" class="headerlink" title="3.1 Token 生命周期"></a>3.1 Token 生命周期</h3><p>登录成功后，后端：</p>
+<ol>
+<li>生成 <code>expiration_time = 当前时间戳 + 8小时</code>；</li>
+<li>用 HS256 算法将 <code>{username, expiration_time}</code> 签名为 JWT Token；</li>
+<li>将 Token 及 <code>expiration_time</code> 写入 <code>LoginedUser</code> 表（同时踢出旧会话）；</li>
+<li>将 <code>expiration_time</code> 也单独存一列——验证时直接比较时间戳，无需解码 Token，减少计算量。</li>
+</ol>
+<p>前端将 Token 存入 <code>localStorage</code>，实现”8 小时免登录”。</p>
+<h3 id="3-2-FastAPI-依赖注入实现权限分层"><a href="#3-2-FastAPI-依赖注入实现权限分层" class="headerlink" title="3.2 FastAPI 依赖注入实现权限分层"></a>3.2 FastAPI 依赖注入实现权限分层</h3><pre><code class="language-python"># 普通认证：验证 Token 有效性
+router = APIRouter(dependencies=[Depends(auth.Auth.get_current_user)])
+
+# 超管认证：额外检查 isSuperAdmin
+router_admin = APIRouter(dependencies=[Depends(auth.Auth.admin_required)])
+</code></pre>
+<p><code>admin_required</code> 在查询 <code>LoginedUser</code> 表时检查 <code>isSuperAdmin</code> 字段，若为 False 则返回 403。</p>
+<h3 id="3-3-前端的双拦截器设计"><a href="#3-3-前端的双拦截器设计" class="headerlink" title="3.3 前端的双拦截器设计"></a>3.3 前端的双拦截器设计</h3><pre><code class="language-javascript">// 请求拦截器：自动注入 Authorization 头
+axios.interceptors.request.use(config =&gt; {
+    const token = localStorage.getItem(&#39;token&#39;)
+    if (token) config.headers[&#39;Authorization&#39;] = `Bearer ${token}`
+    return config
+})
+
+// 响应拦截器：拦截 401，清除登录状态并跳转
+axios.interceptors.response.use(null, error =&gt; {
+    if (error.response?.status === 401) {
+        localStorage.clear()
+        router.push(&#39;/login&#39;)
+    }
+    return Promise.reject(error)
+})
+</code></pre>
+<p>即使恶意用户修改前端页面绕过权限校验，后端 403&#x2F;401 响应也会触发响应拦截器强制登出，防止进一步的非授权操作。</p>
+<hr>
+<h2 id="4-前端界面展示"><a href="#4-前端界面展示" class="headerlink" title="4. 前端界面展示"></a>4. 前端界面展示</h2><p>登录页与主仪表盘：</p>
+<p><img src="/images/bookstore-fastapi-vue3/image-12.png" alt="主页"></p>
+<p><img src="/images/bookstore-fastapi-vue3/image-13.png" alt="登录页"></p>
+<p><img src="/images/bookstore-fastapi-vue3/image-14.png" alt="仪表盘"></p>
+<p>进货管理与账单流水趋势图：</p>
+<p><img src="/images/bookstore-fastapi-vue3/image-18.png" alt="进货管理"></p>
+<p><img src="/images/bookstore-fastapi-vue3/image-24.png" alt="账单流水趋势图"></p>
+<hr>
+<h2 id="5-踩坑记录"><a href="#5-踩坑记录" class="headerlink" title="5. 踩坑记录"></a>5. 踩坑记录</h2><h3 id="坑-1：200-OK-但前端页面不显示——调了三天的重定向-bug"><a href="#坑-1：200-OK-但前端页面不显示——调了三天的重定向-bug" class="headerlink" title="坑 1：200 OK 但前端页面不显示——调了三天的重定向 bug"></a>坑 1：200 OK 但前端页面不显示——调了三天的重定向 bug</h3><p>这是本项目最匪夷所思的 bug。<code>GET /book</code>（注意：没有尾部斜杠）接口返回 200 但前端完全不更新。</p>
+<p>根因链：</p>
+<ol>
+<li>前端代码写的是 <code>/book</code>，FastAPI 路由注册的是 <code>/book/</code>；</li>
+<li>FastAPI&#x2F;Starlette 对不匹配的路径执行 <strong>301 重定向</strong>：<code>/book → /book/</code>；</li>
+<li>浏览器遵守安全规范：<strong>重定向时会剥离 <code>Authorization</code> 请求头</strong>；</li>
+<li>后端收到的第二次请求（<code>/book/</code>）没有 Token，但因为代码中漏掉了认证依赖，直接查询并返回了结果；</li>
+<li>FastAPI 响应里没有 CORS <code>Access-Control-Allow-Credentials</code> 等字段，浏览器<strong>自动丢弃</strong>了这个响应。</li>
+</ol>
+<p><img src="/images/bookstore-fastapi-vue3/image-22.png" alt="请求重定向导致 Authorization 头丢失"></p>
+<p>修复方式：统一在路由中加尾部斜杠，并修复漏掉认证依赖的接口。</p>
+<p><strong>教训</strong>：状态码 200 ≠ 前端收到了正确响应，浏览器安全机制会在多个环节静默丢弃跨源或认证异常的响应。</p>
+<h3 id="坑-2：全局变量无法支撑多用户并发登录"><a href="#坑-2：全局变量无法支撑多用户并发登录" class="headerlink" title="坑 2：全局变量无法支撑多用户并发登录"></a>坑 2：全局变量无法支撑多用户并发登录</h3><p>最初用一个全局 <code>dict</code> 存储登录状态，后来发现：</p>
+<ol>
+<li>服务器重启后登录状态丢失；</li>
+<li>多用户同时登录时，全局变量存在读写竞争。</li>
+</ol>
+<p>改为数据库表 <code>LoginedUser</code> 存储，所有问题一并解决——数据库本身提供了持久化和事务隔离。</p>
+<h3 id="坑-3：pytest-无法保存动态-Token"><a href="#坑-3：pytest-无法保存动态-Token" class="headerlink" title="坑 3：pytest 无法保存动态 Token"></a>坑 3：pytest 无法保存动态 Token</h3><p>API 测试最初尝试用 pytest 编写，但 JWT Token 每次登录都会重新生成，无法在测试用例间共享。解决方案：改用 Postman，可在 Collection Variables 中持久化保存 Token，并通过 Pre-request Script 自动刷新。</p>
+<h3 id="坑-4：GET-请求-URL-中的可选参数为空"><a href="#坑-4：GET-请求-URL-中的可选参数为空" class="headerlink" title="坑 4：GET 请求 URL 中的可选参数为空"></a>坑 4：GET 请求 URL 中的可选参数为空</h3><p>当前端查询参数某个字段为空字符串时，URL 变为 <code>/books/?title=&amp;author=</code>，后端 SQLAlchemy 会将 <code>title = &quot;&quot;</code> 理解为”查 title 等于空字符串的记录”而非”不过滤”。</p>
+<p>修复：</p>
+<ul>
+<li>前端：传参前检查，空值则不加入 URL；</li>
+<li>后端：查询构建时 <code>if param and param.strip()</code> 双重判断。</li>
+</ul>
+<h3 id="坑-5：外键关联禁止删除书籍"><a href="#坑-5：外键关联禁止删除书籍" class="headerlink" title="坑 5：外键关联禁止删除书籍"></a>坑 5：外键关联禁止删除书籍</h3><p>书籍被进货单或销售单引用后，直接删除会触发外键约束错误（SQLite 默认启用外键约束需要 <code>PRAGMA foreign_keys = ON</code>）。在书籍删除接口中，检测 <code>PurchaseOrder</code> 和 <code>SaleItem</code> 两张表是否存在关联记录，若存在则返回 409 并提示原因。</p>
+<hr>
+<h2 id="6-功能完成情况"><a href="#6-功能完成情况" class="headerlink" title="6. 功能完成情况"></a>6. 功能完成情况</h2><p>所有要求的功能均已实现并测试通过：</p>
+<ul>
+<li>用户管理（登录&#x2F;注销&#x2F;权限&#x2F;CRUD）</li>
+<li>书籍管理（精确&#x2F;模糊查询，外键安全删除）</li>
+<li>进货管理（完整状态机流转，操作员留痕）</li>
+<li>零售管理（实时 ISBN&#x2F;书名模糊搜索，消抖处理）</li>
+<li>账单管理（多条件过滤，流水趋势图）</li>
+</ul>
+<p><img src="/images/bookstore-fastapi-vue3/image-25.png" alt="账单管理"></p>
+<p>项目最终代码量超过 10000 行（前后端合计）。</p>
+<hr>
+<h2 id="7-设计反思"><a href="#7-设计反思" class="headerlink" title="7. 设计反思"></a>7. 设计反思</h2><p><strong>什么没做但后来觉得应该做的</strong>：BCNF 范式分解。当前设计中有意保留了一定冗余（如 <code>LoginedUser</code> 中的 <code>employee_id</code>），这是在查询效率和规范化之间的主动权衡，并非疏忽。</p>
+<p><strong>什么设计了但没用上的</strong>：销售单价打折字段（<code>discount_price</code>）。涉及 <code>Bill</code> 外键关联和前后端所有接口变更，改动链过长，最终舍弃。这提醒我在项目初期应当更审慎地确认需求边界。</p>
+<p><strong>关于 ORM 的选择</strong>：SQLAlchemy 不仅提供了数据库无关的抽象层，其 Core 层的参数化查询机制从底层防止了 SQL 注入——这在直接拼接 SQL 字符串的方案中是需要额外处理的。</p>
 <h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
-<li><strong>[Exokernel 架构]</strong>：MIT 提出的”将资源分配权下放给应用”的极简内核设计，以及它对 OS 抽象哲学的根本性挑战。</li>
-<li><strong>[Unikernel]</strong>：将应用与 OS 内核编译为单一镜像的 Library OS 思路，在云原生场景下的安全性与性能优势。</li>
-<li>下一篇预告：SEDA 阶段式事件驱动架构——互联网服务如何在极端负载波动下优雅降级。</li>
+<li><strong>[BCNF 范式]</strong>：数据库规范化的理论边界——何时应当分解，何时冗余是合理的工程权衡</li>
+<li><strong>[JWT 的安全边界]</strong>：HS256 签名而非加密意味着 payload 可以被解码——哪些数据应该放进 Token</li>
+<li>下一篇预告：SQLAlchemy ORM 性能陷阱——N+1 查询问题与 <code>selectinload</code> &#x2F; <code>joinedload</code> 的正确用法</li>
 </ul>
 
       
@@ -519,7 +925,7 @@ LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/03/02/transformer-deep-dive/" class="post-title-link" itemprop="url">Transformer 架构精读：从 Self-Attention 到 Multi-Head Attention</a>
+          <a href="/2025/03/02/transformer-deep-dive/" class="post-title-link" itemprop="url">Transformer 架构精读：从 Self-Attention 的物理意义到 Multi-Head 的并行之美</a>
         </h2>
 
         <div class="post-meta-container">
@@ -537,7 +943,7 @@ LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:30:22" itemprop="dateModified" datetime="2026-03-02T23:30:22+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:58:29" itemprop="dateModified" datetime="2026-03-03T13:58:29+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -560,53 +966,1138 @@ LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
     
     <div class="post-body" itemprop="articleBody">
           <blockquote>
-<p>「Attention is All You Need」(Vaswani et al., 2017) 是现代 LLM 的基石，本文深入解析其核心机制。</p>
+<p>「Attention is All You Need」(Vaswani et al., 2017) 不仅是 NLP 的转折点，更是现代大模型（LLM）的物理基石。本文旨在从数学本质、代码实现及系统效率三个维度，深度拆解 Transformer 的核心机制。</p>
 </blockquote>
-<h2 id="Self-Attention-的本质"><a href="#Self-Attention-的本质" class="headerlink" title="Self-Attention 的本质"></a>Self-Attention 的本质</h2><p>Self-Attention 让序列中每个位置都能”看到”所有其他位置，从而捕获长距离依赖。</p>
-<h3 id="计算公式"><a href="#计算公式" class="headerlink" title="计算公式"></a>计算公式</h3><p>$$<br>\text{Attention}(Q, K, V) &#x3D; \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V<br>$$</p>
-<p>其中：</p>
+<h2 id="1-Self-Attention：非局部的全局关联"><a href="#1-Self-Attention：非局部的全局关联" class="headerlink" title="1. Self-Attention：非局部的全局关联"></a>1. Self-Attention：非局部的全局关联</h2><p>传统的 CNN 受限于卷积核大小，RNN 受限于时间步的串行依赖。而 Self-Attention 实现了 <strong>$O(1)$ 的路径长度</strong>，让序列中任意两个 Token 都能实现“瞬间通信”。</p>
+<h3 id="1-1-物理意义：Q、K、V-到底在做什么？"><a href="#1-1-物理意义：Q、K、V-到底在做什么？" class="headerlink" title="1.1 物理意义：Q、K、V 到底在做什么？"></a>1.1 物理意义：Q、K、V 到底在做什么？</h3><p>我们可以将 Self-Attention 理解为一个<strong>寻址过程</strong>：</p>
 <ul>
-<li>$Q$（Query）、$K$（Key）、$V$（Value）均由输入线性变换得到</li>
-<li>$\sqrt{d_k}$ 是缩放因子，防止内积过大导致 softmax 梯度消失</li>
+<li><strong>Query ($Q$)</strong>: “我要找什么？”（当前 Token 的需求特征）</li>
+<li><strong>Key ($K$)</strong>: “我有什么？”（其他 Token 的属性标签）</li>
+<li><strong>Value ($V$)</strong>: “我能提供什么信息？”（实际承载的内容）</li>
 </ul>
-<h3 id="PyTorch-实现片段"><a href="#PyTorch-实现片段" class="headerlink" title="PyTorch 实现片段"></a>PyTorch 实现片段</h3><pre><code class="language-python">import torch
+<p>通过 $QK^T$ 计算相似度，模型实际上在学习：<strong>在当前语境下，哪些 Token 的信息对我是最重要的。</strong></p>
+<h3 id="1-2-缩放因子-sqrt-d-k-的数学必要性"><a href="#1-2-缩放因子-sqrt-d-k-的数学必要性" class="headerlink" title="1.2 缩放因子 $\sqrt{d_k}$ 的数学必要性"></a>1.2 缩放因子 $\sqrt{d_k}$ 的数学必要性</h3><p>为什么公式中要除以 $\sqrt{d_k}$？</p>
+<ul>
+<li><strong>防止梯度消失</strong>：当 $d_k$ 很大时，$QK^T$ 的点积结果方差会很大。</li>
+<li><strong>Softmax 饱和区</strong>：如果点积值过大，经过 Softmax 后会进入极度平缓的分散区，导致梯度接近于 0。通过缩放，我们将分布拉回梯度敏感区。</li>
+</ul>
+<p>$$<br>\text{Attention}(Q, K, V) &#x3D; \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V<br>$$</p>
+<hr>
+<h2 id="2-工程实现：PyTorch-视角下的注意力掩码"><a href="#2-工程实现：PyTorch-视角下的注意力掩码" class="headerlink" title="2. 工程实现：PyTorch 视角下的注意力掩码"></a>2. 工程实现：PyTorch 视角下的注意力掩码</h2><p>在处理 Batch 数据或 Decoder 自回归生成时，<strong>Mask（掩码）</strong> 是保证模型“不作弊”的关键。</p>
+<pre><code class="language-python">import torch
 import torch.nn.functional as F
 
 def scaled_dot_product_attention(Q, K, V, mask=None):
+    &quot;&quot;&quot;
+    精简版 Scaled Dot-Product Attention 实现
+    &quot;&quot;&quot;
     d_k = Q.size(-1)
+    
+    # 1. 计算注意力分数: (Batch, Head, Seq, Seq)
     scores = torch.matmul(Q, K.transpose(-2, -1)) / (d_k ** 0.5)
+    
+    # 2. 应用掩码: 
+    # 在 Decoder 中，需屏蔽未来信息；在 Padding 处，需屏蔽无效位置
     if mask is not None:
-        scores = scores.masked_fill(mask == 0, float(&#39;-inf&#39;))
+        # 将 mask 为 0 的位置设为极小值，Softmax 后权重接近 0
+        scores = scores.masked_fill(mask == 0, -1e9)
+    
+    # 3. 归一化权重
     attn_weights = F.softmax(scores, dim=-1)
+    
+    # 4. 加权求和得到 context vector
     return torch.matmul(attn_weights, V), attn_weights
 </code></pre>
-<h2 id="Multi-Head-Attention"><a href="#Multi-Head-Attention" class="headerlink" title="Multi-Head Attention"></a>Multi-Head Attention</h2><p>将 Q&#x2F;K&#x2F;V 投影到 $h$ 个子空间分别计算 Attention，再拼接：</p>
-<p>$$<br>\text{MultiHead}(Q,K,V) &#x3D; \text{Concat}(\text{head}_1, \ldots, \text{head}_h)W^O<br>$$</p>
-<p><strong>好处</strong>：不同 head 可以关注不同语义维度（句法、语义、指代等）。</p>
-<h2 id="与-RNN-LSTM-的对比"><a href="#与-RNN-LSTM-的对比" class="headerlink" title="与 RNN&#x2F;LSTM 的对比"></a>与 RNN&#x2F;LSTM 的对比</h2><table>
+<hr>
+<h2 id="3-Multi-Head-Attention：特征空间的“分而治之”"><a href="#3-Multi-Head-Attention：特征空间的“分而治之”" class="headerlink" title="3. Multi-Head Attention：特征空间的“分而治之”"></a>3. Multi-Head Attention：特征空间的“分而治之”</h2><p>单一的 Attention 容易让模型陷入局部关注。Multi-Head 的本质是<strong>特征空间的并行采样</strong>。</p>
+<ul>
+<li><strong>子空间投影</strong>：将 $d_{model}$ 维度的特征切分为 $h$ 个低维空间。</li>
+<li><strong>语义分工</strong>：在实际观测中，不同的 Head 会自发演化出不同的职能——有的 Head 关注<strong>句法结构</strong>（如动宾关系），有的关注<strong>实体指代</strong>，有的关注<strong>标点符号</strong>。</li>
+</ul>
+<p><strong>计算复杂度分析</strong>：<br>虽然看似增加了计算量，但在并行计算框架下，Multi-Head 实际上是通过矩阵分块实现的，总参数量与 Single-Head 保持一致（通过 $W^Q, W^K, W^V$ 的降维投影）。</p>
+<hr>
+<h2 id="4-架构对比与系统瓶颈"><a href="#4-架构对比与系统瓶颈" class="headerlink" title="4. 架构对比与系统瓶颈"></a>4. 架构对比与系统瓶颈</h2><p>作为计算机专业学生，我们需要关注算法背后的<strong>系统代价</strong>：</p>
+<table>
 <thead>
 <tr>
-<th>维度</th>
-<th>RNN&#x2F;LSTM</th>
-<th>Transformer</th>
+<th align="left">维度</th>
+<th align="left">RNN &#x2F; LSTM</th>
+<th align="left">Transformer</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>并行度</td>
-<td>串行（时间步依赖）</td>
-<td>完全并行</td>
+<td align="left"><strong>并行度</strong></td>
+<td align="left">差 (依赖前一时刻状态)</td>
+<td align="left"><strong>极佳 (矩阵运算天然适配 GPU)</strong></td>
 </tr>
 <tr>
-<td>长依赖</td>
-<td>梯度消失</td>
-<td>O(1) 路径长度</td>
+<td align="left"><strong>长距离依赖</strong></td>
+<td align="left">易丢失 (梯度消失&#x2F;爆炸)</td>
+<td align="left"><strong>无损 (任意距离 $O(1)$ 通信)</strong></td>
 </tr>
 <tr>
-<td>复杂度</td>
-<td>O(n)</td>
-<td>O(n²) 注意力</td>
+<td align="left"><strong>计算复杂度</strong></td>
+<td align="left">$O(n \cdot d^2)$</td>
+<td align="left"><strong>$O(n^2 \cdot d)$ (注意力矩阵平方向增长)</strong></td>
+</tr>
+<tr>
+<td align="left"><strong>显存瓶颈</strong></td>
+<td align="left">较低</td>
+<td align="left"><strong>高 (Self-Attention 矩阵随序列长度平方级爆炸)</strong></td>
 </tr>
 </tbody></table>
+<h3 id="5-关于“Attention-局限性”的思考"><a href="#5-关于“Attention-局限性”的思考" class="headerlink" title="5. 关于“Attention 局限性”的思考"></a>5. 关于“Attention 局限性”的思考</h3><p>尽管 Transformer 极度强大，但其 <strong>$O(n^2)$ 的复杂度</strong>限制了它处理超长文本（如整本书）的能力。目前学术界的研究热点，如 <strong>FlashAttention</strong>（通过算子融合减少内存 I&#x2F;O）和 <strong>Linear Attention</strong>，正是在试图解决这个系统级的瓶颈。</p>
+<hr>
+<p><strong>延伸阅读</strong>：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/">Visualizing A Neural Machine Translation Model</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2205.14135">FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2024/11/14/rudp-reliable-transport-over-udp/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
+      <meta itemprop="name" content="Kevin">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin's Tech Blog">
+      <meta itemprop="description" content="探索系统编程、高性能计算、AI 研究与软件工程">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Kevin's Tech Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/11/14/rudp-reliable-transport-over-udp/" class="post-title-link" itemprop="url">基于 UDP 在应用层实现可靠传输：Go-Back-N 与 SACK 的工程实践</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-11-14 00:00:00" itemprop="dateCreated datePublished" datetime="2024-11-14T00:00:00+08:00">2024-11-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-03 13:51:06" itemprop="dateModified" datetime="2026-03-03T13:51:06+08:00">2026-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Projects/" itemprop="url" rel="index"><span itemprop="name">Projects</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>link to source code:<br><a target="_blank" rel="noopener" href="https://github.com/Kevin589981/RUDP_python3">https://github.com/Kevin589981/RUDP_python3</a></p>
+<blockquote>
+<p>TCP 的可靠性来自精心设计的重传机制，但其内部细节对上层应用透明。如果要在 UDP 这张”白纸”上手工绘制可靠传输，需要多少工程量？本文复盘了一次 RUDP（Reliable UDP）的完整实现，包括 Go-Back-N 与选择重传（SACK），以及针对各类异常场景的健壮性测试。</p>
+</blockquote>
+<h2 id="一、问题背景与协议设计"><a href="#一、问题背景与协议设计" class="headerlink" title="一、问题背景与协议设计"></a>一、问题背景与协议设计</h2><p>UDP 是面向无连接的无状态协议：快，但不可靠。数据包可能丢失、乱序、重复或损坏。在 UDP 之上实现可靠传输（RUDP），本质上是在应用层重新实现 TCP 的核心语义，但可以选择性地裁剪开销。</p>
+<h3 id="1-1-消息类型定义"><a href="#1-1-消息类型定义" class="headerlink" title="1.1 消息类型定义"></a>1.1 消息类型定义</h3><p>RUDP 协议定义四种消息类型：<code>start</code>、<code>data</code>、<code>end</code>、<code>ack</code>（及 <code>sack</code>）。每个数据包格式如下：</p>
+<pre><code>&lt;type&gt;|&lt;sequence number&gt;|&lt;data&gt;|&lt;checksum&gt;
+</code></pre>
+<p><code>checksum</code> 用于检测传输过程中的数据损坏，接收方在序列号确认前首先验证校验和。</p>
+<h3 id="1-2-核心发送策略"><a href="#1-2-核心发送策略" class="headerlink" title="1.2 核心发送策略"></a>1.2 核心发送策略</h3><p>发送端需要满足以下约束：</p>
+<ul>
+<li>数据包按序、可靠送达，支持丢包、乱序、重复等异常场景；</li>
+<li>支持 <strong>Go-Back-N</strong>（GBN）与<strong>选择重传</strong>（Selective ACK, SACK）两种模式；</li>
+<li>发送窗口大小为 5，超时时间 500ms。</li>
+</ul>
+<hr>
+<h2 id="二、发送端实现（Sender-py）"><a href="#二、发送端实现（Sender-py）" class="headerlink" title="二、发送端实现（Sender.py）"></a>二、发送端实现（Sender.py）</h2><h3 id="2-1-数据分片与窗口管理"><a href="#2-1-数据分片与窗口管理" class="headerlink" title="2.1 数据分片与窗口管理"></a>2.1 数据分片与窗口管理</h3><p>文件内容按最大 1472 字节分片，加上 <code>start</code> 和 <code>end</code> 包，构成完整报文序列。核心状态变量包括：</p>
+<ul>
+<li><code>base</code>：窗口左边界，指向最早未确认的包；</li>
+<li><code>next_seq_num</code>：下一个待发送包的序号；</li>
+<li><code>timer</code>：用于超时重传的时间戳。</li>
+</ul>
+<pre><code class="language-python"># 分片与打包
+chunks = [content[i:i+MAX_DATA_SIZE] for i in range(0, len(content), MAX_DATA_SIZE)]
+self.packets.append(self.make_packet(&#39;start&#39;, self.isn, &quot;&quot;))
+for i, chunk in enumerate(chunks[:-1]):
+    seq = self.isn + 1 + i
+    self.packets.append(self.make_packet(&#39;data&#39;, seq, chunk))
+self.packets.append(self.make_packet(&#39;end&#39;, self.isn + len(self.packets), chunks[-1]))
+</code></pre>
+<h3 id="2-2-主循环：滑动窗口-超时重传"><a href="#2-2-主循环：滑动窗口-超时重传" class="headerlink" title="2.2 主循环：滑动窗口 + 超时重传"></a>2.2 主循环：滑动窗口 + 超时重传</h3><pre><code class="language-python">while self.base &lt; len(self.packets):
+    # 填满发送窗口
+    while (self.next_seq_num &lt; self.base + self.window_size
+           and self.next_seq_num &lt; len(self.packets)):
+        self.send(self.packets[self.next_seq_num])
+        if self.base == self.next_seq_num:
+            self.timer = time.time()    # 仅当新窗口打开时启动计时器
+        self.next_seq_num += 1
+
+    # 超时检测：重传窗口内所有未确认包
+    if (self.base &lt; self.next_seq_num
+            and time.time() - self.timer &gt; self.timeout):
+        self.handle_timeout()
+</code></pre>
+<p>窗口语义的关键设计点：计时器仅在窗口从空变非空时启动，窗口滑动时重置，窗口归零时停止。这一逻辑若出现偏差，轻则包未及时重传，重则触发死锁。</p>
+<h3 id="2-3-ACK-SACK-处理：快速重传"><a href="#2-3-ACK-SACK-处理：快速重传" class="headerlink" title="2.3 ACK&#x2F;SACK 处理：快速重传"></a>2.3 ACK&#x2F;SACK 处理：快速重传</h3><pre><code class="language-python">def handle_new_ack(self, ack):
+    self.dup_ack_count = 0
+    cum_idx, sack_indices = self._parse_ack_string(ack)
+    if cum_idx &gt; self.base:
+        self.base = cum_idx    # 滑动窗口左边界
+    if self.base &lt; self.next_seq_num:
+        self.timer = time.time()    # 仍有未确认包，重启计时器
+    else:
+        self.timer = None           # 所有包已确认，停止计时器
+    if self.sackMode:
+        self._update_sack_bitmap(sack_indices)    # 标记已选择确认的包
+</code></pre>
+<p><strong>三次重复 ACK</strong> 触发快速重传（不等待超时），这是对 TCP Fast Retransmit 的直接移植，可在高丢包场景下显著缩短恢复延迟。</p>
+<p><strong>SACK 位图</strong>的核心价值在于：GBN 模式下一旦发生丢包，窗口内所有后续包必须全部重传；而 SACK 允许接收方精确告知哪些包已到达，发送端只需重传真正缺失的包，大幅降低重传放大倍数。</p>
+<hr>
+<h2 id="三、测试设计：覆盖各类异常场景"><a href="#三、测试设计：覆盖各类异常场景" class="headerlink" title="三、测试设计：覆盖各类异常场景"></a>三、测试设计：覆盖各类异常场景</h2><p>除了基础功能测试，以下健壮性测试用例专门针对不同类型的网络异常：</p>
+<table>
+<thead>
+<tr>
+<th>测试用例</th>
+<th>模拟场景</th>
+<th>验证目标</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AckCorruptionTest</code></td>
+<td>ACK&#x2F;SACK 包内容损坏</td>
+<td>发送端对无效确认的处理</td>
+</tr>
+<tr>
+<td><code>AckDuplicationTest</code></td>
+<td>ACK&#x2F;SACK 包重复</td>
+<td>防止重复确认触发不必要的重传</td>
+</tr>
+<tr>
+<td><code>AckLossTest</code></td>
+<td>ACK&#x2F;SACK 包丢失</td>
+<td>超时重传与窗口滑动正确性</td>
+</tr>
+<tr>
+<td><code>AckReorderTest</code></td>
+<td>ACK&#x2F;SACK 包乱序</td>
+<td>对乱序确认的兼容性</td>
+</tr>
+<tr>
+<td><code>DataCorruptionTest</code></td>
+<td>数据包内容损坏</td>
+<td>接收端丢弃损坏包并正确反馈</td>
+</tr>
+<tr>
+<td><code>DataDuplicationTest</code></td>
+<td>数据包重复</td>
+<td>接收端去重能力</td>
+</tr>
+<tr>
+<td><code>DataReorderTest</code></td>
+<td>数据包乱序</td>
+<td>接收端乱序缓存与窗口滑动</td>
+</tr>
+<tr>
+<td><code>GBNTests / SackTests</code></td>
+<td>上述场景分别用于两种模式</td>
+<td>双模式的全覆盖验证</td>
+</tr>
+<tr>
+<td><code>RandomDropTest</code></td>
+<td>随机丢包</td>
+<td>高丢包环境下的整体可靠性</td>
+</tr>
+</tbody></table>
+<h3 id="3-1-测试结果分析"><a href="#3-1-测试结果分析" class="headerlink" title="3.1 测试结果分析"></a>3.1 测试结果分析</h3><ul>
+<li><strong>GBN 模式</strong>：所有测试（含高丢包、乱序、重复）均通过，数据可靠送达，未出现死锁或永久丢包。</li>
+<li><strong>SACK 模式</strong>：选择重传有效减少重传量，在高丢包环境下吞吐量明显优于 GBN。</li>
+<li><strong>大文件 &#x2F; 二进制文件传输</strong>：均通过，无数据错误，证明校验与分片逻辑正确。</li>
+</ul>
+<hr>
+<h2 id="四、遇到的问题与解决策略"><a href="#四、遇到的问题与解决策略" class="headerlink" title="四、遇到的问题与解决策略"></a>四、遇到的问题与解决策略</h2><h3 id="4-1-窗口滑动与定时器同步"><a href="#4-1-窗口滑动与定时器同步" class="headerlink" title="4.1 窗口滑动与定时器同步"></a>4.1 窗口滑动与定时器同步</h3><p>初始实现中，定时器更新时机与窗口滑动逻辑耦合不紧，导致部分已发包在某些状态下既不在定时器覆盖范围内、也未收到确认，形成”灰色包”，最终被遗忘。</p>
+<p><strong>解决方案</strong>：明确定义”计时器生命周期”为”窗口非空→停机”，窗口任何变动（发包、收 ACK）都触发相应的计时器操作，消除中间状态。</p>
+<h3 id="4-2-SACK-位图的双计数问题"><a href="#4-2-SACK-位图的双计数问题" class="headerlink" title="4.2 SACK 位图的双计数问题"></a>4.2 SACK 位图的双计数问题</h3><p>SACK 模式下，如果位图更新逻辑与累计 ACK 解析之间存在重叠，可能对同一帧计数两次，导致提前重传或错误统计。通过将 <code>cum_idx</code> 推进逻辑与 <code>sack_indices</code> 位图更新逻辑严格串行化来消除此问题。</p>
+<h3 id="4-3-测试框架适配"><a href="#4-3-测试框架适配" class="headerlink" title="4.3 测试框架适配"></a>4.3 测试框架适配</h3><p>实验框架对命令行参数格式和包格式有严格要求，手动测试时通过的逻辑在自动化测试中可能因格式错误失败。应在开发阶段就对齐框架期望的格式，避免后期大量调试。</p>
+<hr>
+<h2 id="五、设计权衡总结"><a href="#五、设计权衡总结" class="headerlink" title="五、设计权衡总结"></a>五、设计权衡总结</h2><p>RUDP 的实现让两个关键权衡变得清晰：</p>
+<ol>
+<li><strong>窗口大小 vs 延迟</strong>：窗口越大，吞吐量越高，但重传代价（GBN 模式）也越大。SACK 通过精确重传打破了这一耦合。</li>
+<li><strong>超时值 vs 响应速度</strong>：超时过短导致误重传（假阳性），过长则恢复延迟高。三次重复 ACK 触发的快速重传是应对突发丢包的低延迟补偿机制，无需等待超时周期。</li>
+</ol>
+<p>从系统设计角度看，Go-Back-N 与 SACK 的选择实质上是”实现复杂度”与”网络效率”之间的权衡——在今天高丢包的无线网络环境中，SACK 早已是默认选择。</p>
+<hr>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><strong>[RFC 2018 TCP SACK 选项规范]</strong>：选择重传的标准定义，值得对照实现细节阅读。</li>
+<li><strong>[QUIC 协议设计]</strong>：Google 在 UDP 之上重新设计的可靠传输协议，融合了多路复用、0-RTT 握手等现代设计，是 RUDP 思想的工业级延伸。</li>
+<li>下一篇预告：从传输层向上走——应用层的长程记忆问题：MemOS 记忆操作系统的工程实践。</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2024/06/23/raspberry-pi-smart-car-opencv/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
+      <meta itemprop="name" content="Kevin">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin's Tech Blog">
+      <meta itemprop="description" content="探索系统编程、高性能计算、AI 研究与软件工程">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Kevin's Tech Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/06/23/raspberry-pi-smart-car-opencv/" class="post-title-link" itemprop="url">树莓派智能小车：PID 电机控制与 OpenCV 颜色识别实践</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-06-23 00:00:00" itemprop="dateCreated datePublished" datetime="2024-06-23T00:00:00+08:00">2024-06-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-03 13:50:47" itemprop="dateModified" datetime="2026-03-03T13:50:47+08:00">2026-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Projects/" itemprop="url" rel="index"><span itemprop="name">Projects</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <blockquote>
+<p>本文记录了一个基于树莓派的智能小车项目：通过 OpenCV 识别不同颜色的魔方，根据颜色规则从左侧或右侧绕行，并在遇到双魔方时从中间穿越。系统采用多线程架构，将颜色检测、距离测量、PWM 更新三条流水线并行化；电机控制使用 PID 闭环，编码器反馈速度；整体逻辑由有限状态机驱动。文章重点分析了 PID 在电压不稳定供电下的局限性，以及 HSV 颜色空间的实战调参经验。</p>
+</blockquote>
+<h2 id="1-任务描述与规则"><a href="#1-任务描述与规则" class="headerlink" title="1. 任务描述与规则"></a>1. 任务描述与规则</h2><p>场地上设有三个里程碑，每个里程碑放置 1 到 2 个魔方（颜色从红&#x2F;黄&#x2F;蓝&#x2F;绿中选取）：</p>
+<ul>
+<li><strong>里程碑 1</strong>：1 个魔方</li>
+<li><strong>里程碑 2</strong>：2 个<strong>同色</strong>魔方，间距 ≥ 2 个车身宽度</li>
+<li><strong>里程碑 3</strong>：1 个魔方</li>
+</ul>
+<p>绕行规则：</p>
+<table>
+<thead>
+<tr>
+<th>魔方颜色</th>
+<th>绕行方向</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>红色 &#x2F; 黄色</td>
+<td>从<strong>左侧</strong>绕过</td>
+</tr>
+<tr>
+<td>蓝色 &#x2F; 绿色</td>
+<td>从<strong>右侧</strong>绕过</td>
+</tr>
+<tr>
+<td>双魔方（同色）</td>
+<td>从<strong>两者中间</strong>穿越</td>
+</tr>
+</tbody></table>
+<p>小车需要在正式测试前不知道具体颜色和位置的情况下，靠实时视觉完成全程。</p>
+<hr>
+<h2 id="2-系统硬件架构"><a href="#2-系统硬件架构" class="headerlink" title="2. 系统硬件架构"></a>2. 系统硬件架构</h2><table>
+<thead>
+<tr>
+<th>硬件模块</th>
+<th>型号&#x2F;说明</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>主控</td>
+<td>树莓派</td>
+<td>运行所有控制逻辑</td>
+</tr>
+<tr>
+<td>直流电机 + 驱动板</td>
+<td>L298N 类驱动</td>
+<td>四轮驱动，PWM 调速</td>
+</tr>
+<tr>
+<td>摄像头</td>
+<td>USB 摄像头</td>
+<td>捕获图像，颜色识别</td>
+</tr>
+<tr>
+<td>超声波传感器</td>
+<td>KS103（I2C）</td>
+<td>测量与前方障碍物距离</td>
+</tr>
+<tr>
+<td>编码器</td>
+<td>Hall 效应编码器，白入 585 脉冲&#x2F;圈</td>
+<td>测量轮速，PID 反馈</td>
+</tr>
+</tbody></table>
+<p>引脚分配（BCM 编号）：</p>
+<pre><code class="language-python">EA, I2, I1 = 13, 19, 26   # 右电机：PWM + 方向
+EB, I3, I4 = 16, 20, 21   # 左电机：PWM + 方向
+LS, RS = 6, 12             # 左/右编码器输入
+</code></pre>
+<p>PWM 频率设为 100 Hz，相比更低频率可以使电机转动更平滑（减少转矩脉动）。</p>
+<hr>
+<h2 id="3-电机控制：PID-闭环-守护线程分离"><a href="#3-电机控制：PID-闭环-守护线程分离" class="headerlink" title="3. 电机控制：PID 闭环 + 守护线程分离"></a>3. 电机控制：PID 闭环 + 守护线程分离</h2><h3 id="3-1-PID-控制原理"><a href="#3-1-PID-控制原理" class="headerlink" title="3.1 PID 控制原理"></a>3.1 PID 控制原理</h3><p>控制目标是让电机实际转速（由编码器采样）跟随设定转速。PID 控制器的离散化形式：</p>
+<p>$$u_k &#x3D; K_p \cdot e_k + K_i \sum_{i&#x3D;0}^{k} e_i + K_d \cdot (e_k - e_{k-1})$$</p>
+<p>其中 $e_k &#x3D; v_{\text{target}} - v_{\text{actual}}$，$u_k$ 直接映射为 PWM 占空比（限幅在 [0, 100]）。</p>
+<pre><code class="language-python">class PID:
+    def __init__(self, P=38.57, I=0.1, D=70, speed=0.5):
+        self.Kp, self.Ki, self.Kd = P, I, D
+        self.ideal_speed = speed
+        self.integral = 0
+        self.err_last = 0
+
+    def update(self, feedback_value):
+        err = self.ideal_speed - feedback_value
+        self.integral += err
+        u = self.Kp * err + self.Ki * self.integral + self.Kd * (err - self.err_last)
+        self.err_last = err
+        return max(0, min(100, u))   # PWM 占空比限幅
+</code></pre>
+<p>最终调定的参数为左轮 $K_p&#x3D;45, K_i&#x3D;0.1, K_d&#x3D;70$，右轮 $K_p&#x3D;40, K_i&#x3D;0.1, K_d&#x3D;70$（两轮略有差异是因为电机特性不完全一致）。</p>
+<h3 id="3-2-三线程解耦架构"><a href="#3-2-三线程解耦架构" class="headerlink" title="3.2 三线程解耦架构"></a>3.2 三线程解耦架构</h3><p>直接将 PID 计算和 GPIO 写入放在主控制循环里会导致采样不均匀、响应延迟，系统采用三线程分离：</p>
+<table>
+<thead>
+<tr>
+<th>线程</th>
+<th>职责</th>
+<th>周期</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>speed_monitor</code></td>
+<td>编码器脉冲计数 → 转速（圈&#x2F;秒）</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td><code>pwm_update_daemon</code></td>
+<td>读取全局转速 → PID 计算 → 写 PWM</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>主线程</td>
+<td>状态机决策：设置目标速度 <code>left_target_speed / right_target_speed</code></td>
+<td>事件驱动</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python">def speed_monitor(interval=0.1):
+    GPIO.add_event_detect(LS, GPIO.RISING, callback=encoder_callback)
+    GPIO.add_event_detect(RS, GPIO.RISING, callback=encoder_callback)
+    while running:
+        rspeed = rcounter / 585.0   # 脉冲数 → 圈/秒（每圈 585 脉冲）
+        lspeed = lcounter / 585.0
+        rcounter = lcounter = 0
+        time.sleep(interval)
+
+def pwm_update_daemon(interval=0.1):
+    while running:
+        if left_pid_global and right_pid_global:
+            _set_motor_pwm(left_pid_global.update(lspeed),
+                           right_pid_global.update(rspeed))
+        time.sleep(interval)
+</code></pre>
+<p>主线程只需调用 <code>set_motor_speed(left, right)</code> 设定目标速度，PID 计算完全异步完成，主控逻辑得以保持简洁。</p>
+<hr>
+<h2 id="4-颜色识别：HSV-空间与区域采样"><a href="#4-颜色识别：HSV-空间与区域采样" class="headerlink" title="4. 颜色识别：HSV 空间与区域采样"></a>4. 颜色识别：HSV 空间与区域采样</h2><h3 id="4-1-为什么选-HSV-而非-RGB"><a href="#4-1-为什么选-HSV-而非-RGB" class="headerlink" title="4.1 为什么选 HSV 而非 RGB"></a>4.1 为什么选 HSV 而非 RGB</h3><p>RGB 颜色通道与亮度强耦合：同一块红色魔方在强光下 RGB 值显著不同，难以用固定阈值分割。HSV（Hue-Saturation-Value）将色调（H）与亮度（V）解耦，只需为每种颜色定义 H 通道的区间，S&#x2F;V 可设较宽范围，对光照变化鲁棒得多。</p>
+<p>四种颜色的典型 HSV 范围（OpenCV 中 H 取值范围 [0, 179]）：</p>
+<table>
+<thead>
+<tr>
+<th>颜色</th>
+<th>H 范围</th>
+<th>S 范围</th>
+<th>V 范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>红色</td>
+<td>[0,10] ∪ [170,179]</td>
+<td>[100,255]</td>
+<td>[80,255]</td>
+</tr>
+<tr>
+<td>黄色</td>
+<td>[20,35]</td>
+<td>[100,255]</td>
+<td>[80,255]</td>
+</tr>
+<tr>
+<td>蓝色</td>
+<td>[100,130]</td>
+<td>[80,255]</td>
+<td>[60,255]</td>
+</tr>
+<tr>
+<td>绿色</td>
+<td>[40,80]</td>
+<td>[60,255]</td>
+<td>[60,255]</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>注意</strong>：红色的 H 值跨越 0°（红色在色环两端），需要取两段范围做并集，再用 <code>cv2.bitwise_or</code> 合并掩码。</p>
+</blockquote>
+<h3 id="4-2-行采样优化"><a href="#4-2-行采样优化" class="headerlink" title="4.2 行采样优化"></a>4.2 行采样优化</h3><p>全帧处理（640×480）在树莓派上帧率很低。系统在图像高度 25% 处取 50 像素高度的横带进行处理：</p>
+<pre><code class="language-python">DEFAULT_ROW_PERCENT = 0.25   # 采样行位置（图像 25% 高度处）
+DEFAULT_ROW_HEIGHT  = 50     # 采样区域高度
+</code></pre>
+<p>这样每帧只需处理 640×50 &#x3D; 32000 像素，计算量降低约 94%，同时该高度对应小车前方地面上的魔方区域，有效减少背景干扰。</p>
+<h3 id="4-3-颜色区域定位"><a href="#4-3-颜色区域定位" class="headerlink" title="4.3 颜色区域定位"></a>4.3 颜色区域定位</h3><p>对二值化掩码做高斯模糊去噪后，通过 <code>cv2.findNonZero</code> 找到非零像素，计算连续色块的横坐标范围 $[x_{\text{start}}, x_{\text{end}}]$ 和中心 $x_{\text{center}}$，返回给状态机：</p>
+<pre><code class="language-python">def detect_color(frame):
+    roi = frame[row_start:row_end, :]
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    results = {}
+    for color_name, (lower, upper) in COLOR_RANGES.items():
+        mask = cv2.inRange(hsv, lower, upper)
+        mask = cv2.GaussianBlur(mask, (5,5), 0)
+        # 提取横向色块段落，返回 (x_start, x_end, x_center) 列表
+        results[color_name] = extract_segments(mask)
+    return results
+</code></pre>
+<hr>
+<h2 id="5-距离测量：KS103-超声波传感器（I2C）"><a href="#5-距离测量：KS103-超声波传感器（I2C）" class="headerlink" title="5. 距离测量：KS103 超声波传感器（I2C）"></a>5. 距离测量：KS103 超声波传感器（I2C）</h2><p>KS103 通过 I2C 总线通信，触发测量与读取结果的时序：</p>
+<pre><code class="language-python">def measure_distance():
+    bus.write_byte_data(KS103_ADDR, REG_TRIGGER, 0x01)  # 发送触发指令
+    time.sleep(0.06)                                       # 等待测量完成（约 60ms）
+    data = bus.read_i2c_block_data(KS103_ADDR, REG_RESULT, 2)
+    distance_cm = (data[0] &lt;&lt; 8 | data[1]) / 10.0        # 合并高低字节，单位 mm → cm
+    return distance_cm
+</code></pre>
+<p>系统对距离数据做滑动窗口中值滤波（窗口大小 5），剔除超声波在近距离或倾斜表面的反射异常值，并在距离小于阈值时触发”即将碰撞”警告信号给状态机。</p>
+<hr>
+<h2 id="6-状态机：三阶段顺序执行"><a href="#6-状态机：三阶段顺序执行" class="headerlink" title="6. 状态机：三阶段顺序执行"></a>6. 状态机：三阶段顺序执行</h2><p>主控逻辑由 <code>StateManager</code> 类管理，顺序执行三个阶段，每个阶段对应一个里程碑：</p>
+<pre><code class="language-python">class StateManager:
+    def __init__(self):
+        self.current_state = 0         # 当前所处里程碑阶段（1/2/3）
+        self.detected_color = None     # 当前识别到的魔方颜色
+        self.color_confirm_counter = {} # 颜色稳定确认计数器
+        self.last_bypass_direction = None
+
+    def determine_bypass_direction(self):
+        if self.current_state in (1, 3):
+            # 单魔方：由颜色决定方向
+            return &#39;left&#39; if self.detected_color in LEFT_TURN_COLORS else &#39;right&#39;
+        else:  # 状态 2：双魔方，从中间穿越
+            # 基于上一次绕行方向的对称策略
+            return &#39;right&#39; if self.last_bypass_direction == &#39;left&#39; else &#39;left&#39;
+</code></pre>
+<p><strong>颜色确认机制</strong>：避免单帧误识别，要求同一颜色连续出现 <code>N</code> 帧才确认。通过 <code>color_confirm_counter</code> 对每种颜色计数，达到阈值后方触发绕行动作。</p>
+<p><strong>顺序执行主循环</strong>：</p>
+<pre><code class="language-python">def main_control_sequential():
+    init_gpio(); start_speed_monitor(); start_pwm_update_daemon()
+    init_i2c();  start_distance_measurement()
+    camera = init_camera(); start_color_detection()
+    time.sleep(2)   # 等待所有线程稳定
+
+    for state in (1, 2, 3):
+        state_manager.current_state = state
+        handle_state_sequential(state)   # 靠近→识别→绕行→恢复直行
+
+    final_sprint_sequential()           # 全速冲向终点
+</code></pre>
+<p>绕行策略采用<strong>矩形绕行</strong>而非圆弧：先原地转向，直行绕过，再原地转回，优点是实现简单、调试方便、不依赖精确的弧度控制。</p>
+<hr>
+<h2 id="7-实验分析：问题与局限"><a href="#7-实验分析：问题与局限" class="headerlink" title="7. 实验分析：问题与局限"></a>7. 实验分析：问题与局限</h2><h3 id="7-1-直行偏差严重"><a href="#7-1-直行偏差严重" class="headerlink" title="7.1 直行偏差严重"></a>7.1 直行偏差严重</h3><p><strong>根本原因</strong>：电池输出电压不稳定，随放电程度持续下降。PID 控制器虽然理论上能通过积分项补偿稳态误差，但电压变化导致<strong>电机特性曲线本身在漂移</strong>，PID 参数无法通用于整场测试。</p>
+<p>即便引入了基于颜色中心偏移量的方向修正（<code>drive_with_color</code>），实际效果也表现出明显的摆动——修正增益大了蛇行，小了又偏。</p>
+<pre><code class="language-python">def drive_with_color(color_offset, speed=0.5, offset_factor=0.2):
+    normalized = min(1.0, abs(color_offset) / 200.0)
+    if color_offset &gt; 0:
+        right_speed = speed * (1 - offset_factor * normalized)  # 向右偏：压右轮
+    else:
+        left_speed  = speed * (1 - offset_factor * normalized)  # 向左偏：压左轮
+</code></pre>
+<p><strong>更好的方案</strong>：使用<strong>自适应 PID</strong>，周期性重新标定电机特性（如每次起步前做短暂标定行驶），或改用步进电机消除速度控制对电压的依赖。</p>
+<h3 id="7-2-转角不准：时间控制转向的缺陷"><a href="#7-2-转角不准：时间控制转向的缺陷" class="headerlink" title="7.2 转角不准：时间控制转向的缺陷"></a>7.2 转角不准：时间控制转向的缺陷</h3><p>系统用”旋转固定时间”来实现 90° 转向：</p>
+<pre><code class="language-python">rotate_in_place(&#39;clockwise&#39;, speed=0.5)
+time.sleep(t_90_deg)   # 经验值，与电压强相关
+stop_motor()
+</code></pre>
+<p>电压不稳 → PID 漂移 → 实际转速与设计转速不符 → 旋转角度近似随机。导致绕行两阶段无法正确衔接，出现找不到下一个魔方、撞墙等问题。</p>
+<p><strong>更好的方案</strong>：用编码器积分计算转过的圆弧长度（轮距 × 转角），闭环控制旋转角度，而非依赖时间。</p>
+<h3 id="7-3-光照对-HSV-阈值的影响"><a href="#7-3-光照对-HSV-阈值的影响" class="headerlink" title="7.3 光照对 HSV 阈值的影响"></a>7.3 光照对 HSV 阈值的影响</h3><p>即使使用了 HSV 空间，在极暗或极亮的测试环境中，S&#x2F;V 的阈值边界仍需现场微调。建议在系统启动时加入<strong>自动白平衡校正</strong>步骤，或对 V 通道做直方图均衡化后再分割。</p>
+<hr>
+<h2 id="8-系统设计亮点"><a href="#8-系统设计亮点" class="headerlink" title="8. 系统设计亮点"></a>8. 系统设计亮点</h2><ol>
+<li><p><strong>完全守护线程化</strong>：编码器采样、PWM 更新、颜色检测、距离测量全部运行在守护线程中（<code>thread.daemon = True</code>），主线程退出时自动回收，无需手动管理线程生命周期；</p>
+</li>
+<li><p><strong>颜色确认防抖</strong>：多帧确认机制将单帧噪声的影响降到最低，代价是引入了固定延迟（约 <code>N × 100ms</code>），在实际调试中需要在检测速度和稳定性之间权衡；</p>
+</li>
+<li><p><strong>模块化代码结构</strong>：<code>motor_controller.py / detect_color.py / detect_distance.py / main_controller.py</code> 四模块解耦，每个模块可独立测试，最终在 <code>main_controller.py</code> 中聚合。</p>
+</li>
+</ol>
+<hr>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><strong>[PID 自整定]</strong>：Ziegler-Nichols 方法——在没有精确数学模型的情况下系统化调定 PID 参数</li>
+<li><strong>[卡尔曼滤波]</strong>：比简单中值滤波更优的传感器融合方法，适用于距离与速度的联合估计</li>
+<li>下一篇预告：在树莓派上用 YOLOv8 替代 HSV 阈值分割——目标检测的实时性与精度权衡</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2024/01/17/Cplusplus-and-data-structure/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
+      <meta itemprop="name" content="Kevin">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin's Tech Blog">
+      <meta itemprop="description" content="探索系统编程、高性能计算、AI 研究与软件工程">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Kevin's Tech Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/01/17/Cplusplus-and-data-structure/" class="post-title-link" itemprop="url">C++与数据结构</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-01-17 00:00:00" itemprop="dateCreated datePublished" datetime="2024-01-17T00:00:00+08:00">2024-01-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-03 13:54:25" itemprop="dateModified" datetime="2026-03-03T13:54:25+08:00">2026-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/CS-Fundamentals/" itemprop="url" rel="index"><span itemprop="name">CS-Fundamentals</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h3 id="第一章：环境与头文件-Environment-Headers"><a href="#第一章：环境与头文件-Environment-Headers" class="headerlink" title="第一章：环境与头文件 (Environment &amp; Headers)"></a>第一章：环境与头文件 (Environment &amp; Headers)</h3><ol>
+<li><strong>万能头</strong>：<code>#include &lt;bits/stdc++.h&gt;</code> (包含几乎所有STL)。</li>
+<li><strong>I&#x2F;O流</strong>：<code>#include &lt;iostream&gt;</code> (cin, cout, endl)。</li>
+<li><strong>C风格I&#x2F;O</strong>：<code>#include &lt;cstdio&gt;</code> (scanf, printf, getchar, puts)。</li>
+<li><strong>字符串</strong>：<code>#include &lt;string&gt;</code> (string类)。</li>
+<li><strong>C字符串</strong>：<code>#include &lt;cstring&gt;</code> (strlen, memset, strcpy, memcpy)。</li>
+<li><strong>数学</strong>：<code>#include &lt;cmath&gt;</code> (pow, sqrt, sin, cos, abs-浮点)。</li>
+<li><strong>算法</strong>：<code>#include &lt;algorithm&gt;</code> (sort, max, min, reverse, unique, lower_bound)。</li>
+<li><strong>向量</strong>：<code>#include &lt;vector&gt;</code>。</li>
+<li><strong>栈</strong>：<code>#include &lt;stack&gt;</code>。</li>
+<li><strong>队列</strong>：<code>#include &lt;queue&gt;</code> (包含 queue 和 priority_queue)。</li>
+<li><strong>双端队列</strong>：<code>#include &lt;deque&gt;</code>。</li>
+<li><strong>集合</strong>：<code>#include &lt;set&gt;</code> (包含 set 和 multiset)。</li>
+<li><strong>映射</strong>：<code>#include &lt;map&gt;</code> (包含 map 和 multimap)。</li>
+<li><strong>位集合</strong>：<code>#include &lt;bitset&gt;</code>。</li>
+<li><strong>命名空间</strong>：<code>using namespace std;</code> (必须写在头文件后)。</li>
+</ol>
+<hr>
+<h3 id="第二章：输入输出详解-I-O-Detail"><a href="#第二章：输入输出详解-I-O-Detail" class="headerlink" title="第二章：输入输出详解 (I&#x2F;O Detail)"></a>第二章：输入输出详解 (I&#x2F;O Detail)</h3><p><strong>cin&#x2F;cout 系列</strong></p>
+<ol>
+<li><strong>加速指令</strong>：<code>ios::sync_with_stdio(0); cin.tie(0); cout.tie(0);</code> (写在main第一行)。</li>
+<li><strong>加速后果</strong>：开启加速后，<strong>严禁</strong>混用 <code>scanf/printf</code>。</li>
+<li><strong>cin读取字符串</strong>：<code>cin &gt;&gt; s;</code> (遇到空格、Tab、换行符停止)。</li>
+<li><strong>读一整行</strong>：<code>getline(cin, s);</code> (读取直到换行符，<strong>包含空格</strong>)。</li>
+<li><strong>吃掉换行符</strong>：在 <code>cin &gt;&gt; n;</code> 后若接 <code>getline</code>，必须先 <code>cin.ignore();</code> 或 <code>getchar();</code>。</li>
+<li><strong>输出换行</strong>：<code>cout &lt;&lt; &#39;\n&#39;;</code> (比 <code>endl</code> 快，<code>endl</code> 强制刷新缓冲区)。</li>
+<li><strong>多组输入(EOF)</strong>：<code>while(cin &gt;&gt; n) { ... }</code>。</li>
+</ol>
+<p><strong>scanf&#x2F;printf 系列 (格式化)</strong><br>23. <strong>int</strong>：<code>%d</code><br>24. <strong>long long</strong>：<code>%lld</code><br>25. <strong>float</strong>：<code>%f</code><br>26. <strong>double</strong>：<code>%lf</code> (scanf必须用lf，printf可用f或lf)。<br>27. <strong>char</strong>：<code>%c</code><br>28. <strong>char数组(字符串)</strong>：<code>%s</code> (遇到空格&#x2F;换行停止，<strong>不</strong>包含&amp;)。<br>29. <strong>string类输出</strong>：<code>printf(&quot;%s&quot;, s.c_str());</code> (必须转c_str)。<br>30. <strong>读取单个字符跳过空白</strong>：<code>scanf(&quot; %c&quot;, &amp;c);</code> (注意%c前面的<strong>空格</strong>，可跳过回车&#x2F;空格)。<br>31. <strong>固定宽度输出</strong>：<code>%05d</code> (宽度5，不足补0)。<br>32. <strong>保留小数</strong>：<code>%.4f</code> (保留4位小数，自动四舍五入)。<br>33. <strong>地址输出</strong>：<code>%p</code>。<br>34. <strong>输入日期格式</strong>：<code>scanf(&quot;%d-%d-%d&quot;, &amp;y, &amp;m, &amp;d);</code> (自动跳过横杠)。<br>35. <strong>多组输入(EOF)</strong>：<code>while(scanf(&quot;%d&quot;, &amp;n) != EOF) { ... }</code>。</p>
+<p><strong>其他I&#x2F;O</strong><br>36. <strong>快读(getchar)</strong>：<code>c = getchar()</code> 每次读一个字符，比scanf快。<br>37. <strong>输出精度控制(cout)</strong>：<code>#include &lt;iomanip&gt;</code>。<br>38. <strong>cout定点</strong>：<code>cout &lt;&lt; fixed;</code> (后续变为定点小数模式)。<br>39. <strong>cout精度</strong>：<code>cout &lt;&lt; setprecision(4) &lt;&lt; val;</code>。</p>
+<hr>
+<h3 id="第三章：数据结构-API-细则-Data-Structures"><a href="#第三章：数据结构-API-细则-Data-Structures" class="headerlink" title="第三章：数据结构 API 细则 (Data Structures)"></a>第三章：数据结构 API 细则 (Data Structures)</h3><h4 id="1-std-vector-动态数组"><a href="#1-std-vector-动态数组" class="headerlink" title="1. std::vector (动态数组)"></a>1. <code>std::vector</code> (动态数组)</h4><ol start="40">
+<li><strong>定义</strong>：<code>vector&lt;int&gt; v;</code></li>
+<li><strong>定义带大小</strong>：<code>vector&lt;int&gt; v(100);</code> (默认全是0)。</li>
+<li><strong>定义带初值</strong>：<code>vector&lt;int&gt; v(100, -1);</code> (100个-1)。</li>
+<li><strong>尾部插入</strong>：<code>v.push_back(val);</code></li>
+<li><strong>尾部删除</strong>：<code>v.pop_back();</code> (无返回值，空vector调用会RE)。</li>
+<li><strong>大小</strong>：<code>v.size();</code> (返回 <code>size_t</code>，比较时建议转 <code>(int)v.size()</code>)。</li>
+<li><strong>判空</strong>：<code>v.empty();</code> (空返回true)。</li>
+<li><strong>清空</strong>：<code>v.clear();</code> (size变0，capacity不一定变)。</li>
+<li><strong>首元素</strong>：<code>v.front();</code> 或 <code>v[0]</code>。</li>
+<li><strong>尾元素</strong>：<code>v.back();</code> 或 <code>v[v.size()-1]</code>。</li>
+<li><strong>调整大小</strong>：<code>v.resize(n);</code> (多退少补0)。</li>
+<li><strong>翻转</strong>：<code>reverse(v.begin(), v.end());</code>。</li>
+<li><strong>排序</strong>：<code>sort(v.begin(), v.end());</code>。</li>
+</ol>
+<h4 id="2-std-stack-栈-LIFO"><a href="#2-std-stack-栈-LIFO" class="headerlink" title="2. std::stack (栈 - LIFO)"></a>2. <code>std::stack</code> (栈 - LIFO)</h4><ol start="53">
+<li><strong>头文件</strong>：<code>&lt;stack&gt;</code></li>
+<li><strong>入栈</strong>：<code>st.push(val);</code></li>
+<li><strong>出栈</strong>：<code>st.pop();</code> (<strong>无返回值</strong>，仅删除)。</li>
+<li><strong>栈顶</strong>：<code>st.top();</code> (返回栈顶元素，<strong>不删除</strong>)。</li>
+<li><strong>判空</strong>：<code>st.empty();</code></li>
+<li><strong>大小</strong>：<code>st.size();</code></li>
+<li><strong>RE警示</strong>：对空栈调用 <code>pop()</code> 或 <code>top()</code> 必报错。</li>
+<li><strong>没有clear</strong>：清空需 <code>while(!st.empty()) st.pop();</code> 或 <code>st = stack&lt;int&gt;();</code>。</li>
+</ol>
+<h4 id="3-std-queue-队列-FIFO"><a href="#3-std-queue-队列-FIFO" class="headerlink" title="3. std::queue (队列 - FIFO)"></a>3. <code>std::queue</code> (队列 - FIFO)</h4><ol start="61">
+<li><strong>头文件</strong>：<code>&lt;queue&gt;</code></li>
+<li><strong>入队</strong>：<code>q.push(val);</code></li>
+<li><strong>出队</strong>：<code>q.pop();</code> (删除队头，<strong>无返回值</strong>)。</li>
+<li><strong>队头</strong>：<code>q.front();</code> (注意不是top)。</li>
+<li><strong>队尾</strong>：<code>q.back();</code></li>
+<li><strong>判空</strong>：<code>q.empty();</code></li>
+<li><strong>大小</strong>：<code>q.size();</code></li>
+</ol>
+<h4 id="4-std-priority-queue-优先队列-堆"><a href="#4-std-priority-queue-优先队列-堆" class="headerlink" title="4. std::priority_queue (优先队列&#x2F;堆)"></a>4. <code>std::priority_queue</code> (优先队列&#x2F;堆)</h4><ol start="68">
+<li><strong>头文件</strong>：<code>&lt;queue&gt;</code></li>
+<li><strong>默认定义</strong>：<code>priority_queue&lt;int&gt; pq;</code> (<strong>大根堆</strong>，最大的在top)。</li>
+<li><strong>小根堆定义</strong>：<code>priority_queue&lt;int, vector&lt;int&gt;, greater&lt;int&gt;&gt; pq;</code>。</li>
+<li><strong>入堆</strong>：<code>pq.push(val);</code> (O(logN))。</li>
+<li><strong>堆顶</strong>：<code>pq.top();</code> (注意不是front)。</li>
+<li><strong>出堆</strong>：<code>pq.pop();</code> (删除堆顶)。</li>
+<li><strong>结构体堆</strong>：需在结构体内部重载 <code>&lt;</code> 运算符。</li>
+<li><strong>重载注意</strong>：大根堆按 <code>&lt;</code> 排序，如果想让小的在top，重载 <code>&lt;</code> 时逻辑要反过来(或者直接重载 <code>&gt;</code>)，或者简单点：<code>return a.x &gt; b.x</code> (x小的优先级高)。</li>
+</ol>
+<h4 id="5-std-deque-双端队列"><a href="#5-std-deque-双端队列" class="headerlink" title="5. std::deque (双端队列)"></a>5. <code>std::deque</code> (双端队列)</h4><ol start="76">
+<li><strong>头队插</strong>：<code>dq.push_front(val);</code></li>
+<li><strong>尾队插</strong>：<code>dq.push_back(val);</code></li>
+<li><strong>头队出</strong>：<code>dq.pop_front();</code></li>
+<li><strong>尾队出</strong>：<code>dq.pop_back();</code></li>
+<li><strong>访问</strong>：<code>dq[i]</code> (支持随机访问)。</li>
+</ol>
+<h4 id="6-std-set-集合-自动排序-去重"><a href="#6-std-set-集合-自动排序-去重" class="headerlink" title="6. std::set (集合 - 自动排序+去重)"></a>6. <code>std::set</code> (集合 - 自动排序+去重)</h4><ol start="81">
+<li><strong>插入</strong>：<code>s.insert(val);</code></li>
+<li><strong>删除值</strong>：<code>s.erase(val);</code></li>
+<li><strong>删除迭代器</strong>：<code>s.erase(iterator);</code></li>
+<li><strong>查找</strong>：<code>s.find(val);</code> (返回迭代器，找不到等于 <code>s.end()</code>)。</li>
+<li><strong>计数</strong>：<code>s.count(val);</code> (在set里只能是0或1)。</li>
+<li><strong>大小</strong>：<code>s.size();</code></li>
+<li><strong>清空</strong>：<code>s.clear();</code></li>
+<li><strong>最小值</strong>：<code>*s.begin()</code>。</li>
+<li><strong>最大值</strong>：<code>*s.rbegin()</code>。</li>
+<li><strong>二分查找</strong>：<code>s.lower_bound(val);</code> (返回首个 &gt;&#x3D; val 的迭代器)。</li>
+<li><strong>二分查找</strong>：<code>s.upper_bound(val);</code> (返回首个 &gt; val 的迭代器)。</li>
+<li><strong>遍历</strong>：<code>for(auto x : s) { ... }</code> (从小到大)。</li>
+</ol>
+<h4 id="7-std-map-键值对映射"><a href="#7-std-map-键值对映射" class="headerlink" title="7. std::map (键值对映射)"></a>7. <code>std::map</code> (键值对映射)</h4><ol start="93">
+<li><strong>定义</strong>：<code>map&lt;key_type, value_type&gt; mp;</code></li>
+<li><strong>插入&#x2F;修改</strong>：<code>mp[key] = val;</code></li>
+<li><strong>副作用</strong>：若 <code>mp[key]</code> 不存在，读取它会自动创建并赋值为0&#x2F;空串，导致size+1。</li>
+<li><strong>安全查找</strong>：<code>if (mp.find(key) != mp.end()) ...</code> 或 <code>if (mp.count(key)) ...</code></li>
+<li><strong>遍历</strong>：<code>for(auto it = mp.begin(); it != mp.end(); it++)</code>。</li>
+<li><strong>键</strong>：<code>it-&gt;first</code>。</li>
+<li><strong>值</strong>：<code>it-&gt;second</code>。</li>
+<li><strong>按键排序</strong>：map默认按key从小到大排序。</li>
+</ol>
+<hr>
+<h3 id="第四章：字符串与常用算法-String-Algo"><a href="#第四章：字符串与常用算法-String-Algo" class="headerlink" title="第四章：字符串与常用算法 (String &amp; Algo)"></a>第四章：字符串与常用算法 (String &amp; Algo)</h3><p><strong>String 常用函数</strong></p>
+<ol>
+<li><strong>长度</strong>：<code>s.length()</code> 或 <code>s.size()</code>。</li>
+<li><strong>判空</strong>：<code>s.empty()</code>。</li>
+<li><strong>拼接</strong>：<code>s1 += s2;</code> 或 <code>s = s1 + s2;</code>。</li>
+<li><strong>比较</strong>：<code>if (s1 == s2)</code> (字典序比较)。</li>
+<li><strong>截取</strong>：<code>s.substr(pos, len);</code> (<strong>重要</strong>：第二个参数是长度)。</li>
+<li><strong>截取到末尾</strong>：<code>s.substr(pos);</code>。</li>
+<li><strong>查找</strong>：<code>s.find(&quot;abc&quot;);</code> (返回首个位置下标)。</li>
+<li><strong>查找失败</strong>：<code>s.find(...) == string::npos</code>。</li>
+<li><strong>插入</strong>：<code>s.insert(pos, &quot;str&quot;);</code>。</li>
+<li><strong>删除</strong>：<code>s.erase(pos, len);</code>。</li>
+<li><strong>替换</strong>：<code>s.replace(pos, len, &quot;str&quot;);</code>。</li>
+<li><strong>转数字</strong>：<code>stoi(s)</code> (转int), <code>stoll(s)</code> (转long long)。</li>
+<li><strong>数字转字符</strong>：<code>to_string(123)</code>。</li>
+</ol>
+<p><strong>Algorithm 常用函数</strong><br>114. <strong>排序</strong>：<code>sort(begin, end);</code> (默认升序)。<br>115. <strong>降序</strong>：<code>sort(begin, end, greater&lt;int&gt;());</code>。<br>116. <strong>自定义排序</strong>：<code>sort(..., cmp);</code> (cmp函数返回true表示前者排在前)。<br>117. <strong>结构体排序</strong>：必须写cmp或重载<code>&lt;</code>。<br>118. <strong>最大值</strong>：<code>max(a, b);</code> 或 <code>max({a, b, c, d});</code> (C++11)。<br>119. <strong>最小值</strong>：<code>min(a, b);</code>。<br>120. <strong>交换</strong>：<code>swap(a, b);</code>。<br>121. <strong>反转</strong>：<code>reverse(begin, end);</code>。<br>122. <strong>去重</strong>：<code>unique(begin, end);</code> (只对<strong>相邻</strong>重复有效，需先sort)。<br>123. <strong>去重长度</strong>：<code>int len = unique(a, a+n) - a;</code>。<br>124. <strong>二分查找(&gt;&#x3D;)</strong>：<code>lower_bound(begin, end, val);</code> (返回迭代器)。<br>125. <strong>二分查找(&gt;)</strong>：<code>upper_bound(begin, end, val);</code> (返回迭代器)。<br>126. <strong>获取下标</strong>：<code>lower_bound(...) - begin;</code>。<br>127. <strong>全排列</strong>：<code>next_permutation(begin, end);</code> (变到下一个字典序，返回bool)。<br>128. <strong>填充</strong>：<code>fill(begin, end, val);</code> (按元素填充)。<br>129. <strong>最大公约数</strong>：<code>__gcd(a, b);</code> (注意前面是两个下划线)。<br>130. <strong>绝对值</strong>：<code>abs(x)</code> (整数), <code>fabs(x)</code> (小数)。</p>
+<hr>
+<h3 id="第五章：C语言内存操作与类型-C-Style-Types"><a href="#第五章：C语言内存操作与类型-C-Style-Types" class="headerlink" title="第五章：C语言内存操作与类型 (C-Style &amp; Types)"></a>第五章：C语言内存操作与类型 (C-Style &amp; Types)</h3><ol>
+<li><strong>memset</strong>：<code>memset(arr, 0, sizeof(arr));</code> (全0)。</li>
+<li><strong>memset</strong>：<code>memset(arr, -1, sizeof(arr));</code> (全-1)。</li>
+<li><strong>memset</strong>：<code>memset(arr, 0x3f, sizeof(arr));</code> (无穷大，约10^9)。</li>
+<li><strong>memset陷阱</strong>：<strong>不能</strong>用来赋值1, 2等任意数，因为它是按字节赋值。</li>
+<li><strong>memcpy</strong>：<code>memcpy(dst, src, sizeof(src));</code> (复制数组)。</li>
+<li><strong>strlen</strong>：<code>strlen(s)</code> (O(N)复杂度，不要放在for循环条件里！)。</li>
+<li><strong>int范围</strong>：约 $\pm 2 \times 10^9$。</li>
+<li><strong>long long范围</strong>：约 $\pm 9 \times 10^{18}$。</li>
+<li><strong>unsigned long long</strong>：约 $1.8 \times 10^{19}$。</li>
+<li><strong>LL常量</strong>：<code>long long x = 10000000000LL;</code> (结尾加LL)。</li>
+<li><strong>溢出防范</strong>：<code>long long ans = 1LL * a * b;</code>。</li>
+<li><strong>无穷大(int)</strong>：<code>INT_MAX</code> 或 <code>0x3f3f3f3f</code>。</li>
+<li><strong>无穷大(LL)</strong>：<code>LLONG_MAX</code>。</li>
+<li><strong>double比较</strong>：不能直接 <code>==</code>，要用 <code>abs(a-b) &lt; 1e-9</code>。</li>
+</ol>
+<hr>
+<h3 id="第六章：结构体与重载模板-Struct-Overload"><a href="#第六章：结构体与重载模板-Struct-Overload" class="headerlink" title="第六章：结构体与重载模板 (Struct &amp; Overload)"></a>第六章：结构体与重载模板 (Struct &amp; Overload)</h3><ol>
+<li><strong>结构体定义</strong>：<br><code>cpp struct Node {    int x, y; }; </code></li>
+<li><strong>构造函数</strong>：<br><code>cpp struct Node {    int x, y;    Node(int _x, int _y) : x(_x), y(_y) {} // 方便使用    Node() {} // 必须手动补上默认构造 }; </code></li>
+<li><strong>重载小于号 (用于Sort&#x2F;Set)</strong>：<br><code>cpp bool operator &lt; (const Node &amp;a) const {    if (x != a.x) return x &lt; a.x; // x升序    return y &lt; a.y; // x相同，y升序 } </code></li>
+<li><strong>重载小于号 (用于优先队列)</strong>：<br><code>cpp bool operator &lt; (const Node &amp;a) const {    return x &lt; a.x; // 大根堆：x大的在顶（逻辑反直觉，标准库默认是大根堆）    // 如果想实现小根堆效果（小的在顶），这里写 return x &gt; a.x; } </code></li>
+</ol>
+<hr>
+<h3 id="第七章：容易遗忘的坑点-Common-Pitfalls"><a href="#第七章：容易遗忘的坑点-Common-Pitfalls" class="headerlink" title="第七章：容易遗忘的坑点 (Common Pitfalls)"></a>第七章：容易遗忘的坑点 (Common Pitfalls)</h3><ol>
+<li><strong>数组大小</strong>：全局变量数组最大可开约 <code>5e7</code> (int)，main内部只能开 <code>2e5</code> 左右。</li>
+<li><strong>RE原因</strong>：除以0。</li>
+<li><strong>RE原因</strong>：数组越界 (index &lt; 0 或 index &gt;&#x3D; N)。</li>
+<li><strong>RE原因</strong>：爆栈 (递归太深，或局部变量数组太大)。</li>
+<li><strong>TLE原因</strong>：<code>cin</code> 没关同步。</li>
+<li><strong>TLE原因</strong>：<code>endl</code> 用太多。</li>
+<li><strong>TLE原因</strong>：在循环里重复 <code>strlen(s)</code>。</li>
+<li><strong>TLE原因</strong>：<code>vector</code> 在头部 <code>insert</code> 或 <code>erase</code> (O(N)操作)。</li>
+<li><strong>WA原因</strong>：多组数据，该清空的全局变量没清空 (flag, vector, map, count数组)。</li>
+<li><strong>WA原因</strong>：<code>1 &lt;&lt; 40</code> 溢出 (int只有32位)，应写 <code>1LL &lt;&lt; 40</code>。</li>
+<li><strong>位运算优先级</strong>：<code>a &amp; b == c</code> 会先算 <code>b==c</code>。<strong>必须加括号</strong>：<code>(a &amp; b) == c</code>。</li>
+<li><strong>宏定义陷阱</strong>：<code>#define mul(a,b) a*b</code> -&gt; <code>mul(1+2, 3)</code> 变成 <code>1+2*3=7</code>。应写 <code>(a)*(b)</code>。</li>
+<li><strong>变量命名</strong>：不要用 <code>time</code>, <code>next</code>, <code>y1</code> (cmath&#x2F;algorithm里可能有冲突)。建议用 <code>nxt</code>, <code>yy1</code>。</li>
+<li><strong>交互题</strong>：每次输出后必须 <code>cout.flush()</code> 或 <code>fflush(stdout)</code>。</li>
+<li><strong>Map访问</strong>：只查不改一定用 <code>find</code>，不要用 <code>[]</code>，否则会增加垃圾数据导致TLE&#x2F;MLE。</li>
+<li><strong>浮点数陷阱</strong>：<code>double ans = 1/2;</code> 结果是0。要写 <code>1.0/2</code>。</li>
+<li><strong>Set修改</strong>：Set里的元素是const的，不能直接修改 <code>it-&gt;x</code>，必须先erase再insert新值。</li>
+<li><strong>Mod负数</strong>：<code>(a - b) % mod</code> 可能是负数。正确写法：<code>((a - b) % mod + mod) % mod</code>。</li>
+</ol>
+<h3 id="第八章：图论存储与遍历-Graph-Storage-Traversal"><a href="#第八章：图论存储与遍历-Graph-Storage-Traversal" class="headerlink" title="第八章：图论存储与遍历 (Graph Storage &amp; Traversal)"></a>第八章：图论存储与遍历 (Graph Storage &amp; Traversal)</h3><ol>
+<li><strong>邻接矩阵</strong>：<code>int g[N][N];</code> 适用于点数 $N \le 2000$。</li>
+<li><strong>邻接表(Vector)</strong>：<code>vector&lt;int&gt; g[N];</code> 最通用，带权图用 <code>struct Edge {int to, w;}; vector&lt;Edge&gt; g[N];</code>。</li>
+<li><strong>链式前向星</strong>：虽然快但容易写错，建议校赛优先用 Vector，除非卡常。</li>
+<li><strong>建图(无向)</strong>：<code>g[u].push_back(v); g[v].push_back(u);</code> (记得双向push)。</li>
+<li><strong>建图(有向)</strong>：<code>g[u].push_back(v);</code>。</li>
+<li><strong>DFS栈溢出</strong>：系统栈通常只有几MB，深度超过 $10^5$ 可能爆栈，需改为手写栈或扩栈。</li>
+<li><strong>BFS队列</strong>：<code>queue&lt;int&gt; q; q.push(start); vis[start]=1;</code>。</li>
+<li><strong>BFS核心</strong>：<strong>入队时</strong>立刻标记 <code>vis[x]=1</code>，不要等到出队才标记（否则会导致大量重复节点入队，退化成指数级）。</li>
+<li><strong>图的清空</strong>：多组数据时，<code>for(int i=0; i&lt;=n; i++) g[i].clear();</code>。</li>
+<li><strong>最短路初始化</strong>：<code>memset(dis, 0x3f, sizeof(dis));</code>。</li>
+<li><strong>Floyd算法</strong>：三层循环顺序必须是 <strong>k, i, j</strong> (中间点k在最外层)。</li>
+<li><strong>Floyd核心</strong>：<code>f[i][j] = min(f[i][j], f[i][k] + f[k][j]);</code>。</li>
+<li><strong>Dijkstra(朴素)</strong>：$O(N^2)$，适用于稠密图，不用堆。</li>
+<li><strong>Dijkstra(堆优化)</strong>：必须用 <code>priority_queue&lt;PII, vector&lt;PII&gt;, greater&lt;PII&gt;&gt;</code> (小根堆)。</li>
+<li><strong>Pair定义</strong>：<code>typedef pair&lt;int, int&gt; PII;</code> (first存距离，second存点编号)。</li>
+<li><strong>Dijkstra出堆判断</strong>：<code>if (dis[u] &lt; d) continue;</code> (懒惰删除，处理重复入堆的旧数据)。</li>
+<li><strong>SPFA&#x2F;Bellman</strong>：判断负环（入队次数 &gt; n 或 松弛次数 &gt; n）。</li>
+<li><strong>拓扑排序</strong>：维护 <code>in_degree[]</code> 数组。</li>
+<li><strong>拓扑步骤</strong>：将所有 <code>degree==0</code> 入队 -&gt; 循环 -&gt; 删边(degree–) -&gt; 若为0入队。</li>
+<li><strong>树的直径</strong>：两次DFS（先找最远点A，再从A找最远点B）。</li>
+<li><strong>并查集初始化</strong>：<code>for(int i=1; i&lt;=n; i++) fa[i] = i;</code>。</li>
+<li><strong>并查集Find(路径压缩)</strong>：<br><code>cpp int find(int x) { return x == fa[x] ? x : fa[x] = find(fa[x]); } </code></li>
+<li><strong>并查集Merge</strong>：<code>fa[find(x)] = find(y);</code>。</li>
+<li><strong>最小生成树(Kruskal)</strong>：按边权排序 + 并查集。</li>
+<li><strong>二分图判定</strong>：染色法 (DFS&#x2F;BFS)，相邻节点颜色不同。</li>
+<li><strong>网格图方向数组</strong>：<code>int dx[] = {0, 0, 1, -1}; int dy[] = {1, -1, 0, 0};</code>。</li>
+<li><strong>网格图边界检查</strong>：<code>if (nx &gt;= 1 &amp;&amp; nx &lt;= n &amp;&amp; ny &gt;= 1 &amp;&amp; ny &lt;= m)</code>。</li>
+<li><strong>链式前向星头数组</strong>：<code>head</code> 数组初始化为 -1。</li>
+<li><strong>LCA(倍增法)</strong>：<code>f[u][i] = f[f[u][i-1]][i-1]</code>。</li>
+<li><strong>树状数组(Lowbit)</strong>：<code>int lowbit(int x) { return x &amp; -x; }</code>。</li>
+<li><strong>树状数组(Update)</strong>：<code>for(; i&lt;=n; i+=lowbit(i)) c[i] += k;</code>。</li>
+<li><strong>树状数组(Query)</strong>：<code>for(; i&gt;0; i-=lowbit(i)) res += c[i];</code>。</li>
+<li><strong>线段树大小</strong>：数组要开 <strong>4N</strong> (<code>tree[4 * N]</code>)。</li>
+<li><strong>线段树下标</strong>：左儿 <code>2*p</code> (或 <code>p&lt;&lt;1</code>)，右儿 <code>2*p+1</code> (或 <code>p&lt;&lt;1|1</code>)。</li>
+</ol>
+<hr>
+<h3 id="第九章：数学与数论-Math-Number-Theory"><a href="#第九章：数学与数论-Math-Number-Theory" class="headerlink" title="第九章：数学与数论 (Math &amp; Number Theory)"></a>第九章：数学与数论 (Math &amp; Number Theory)</h3><ol>
+<li><strong>快速幂</strong>：<code>res = 1; while(b) { if(b&amp;1) res=res*a%mod; a=a*a%mod; b&gt;&gt;=1; }</code>。</li>
+<li><strong>取模防负</strong>：<code>(a - b % mod + mod) % mod</code>。</li>
+<li><strong>最大公约数(GCD)</strong>：<code>__gcd(a, b)</code> (注意a,b不能同时为0，否则可能RE，但在算法题少见)。</li>
+<li><strong>最小公倍数(LCM)</strong>：<code>(a / gcd(a, b)) * b</code> (先除后乘防溢出)。</li>
+<li><strong>判断素数</strong>：<code>for(int i=2; i*i&lt;=n; i++)</code>。</li>
+<li><strong>埃氏筛</strong>：<code>for(i=2...n) if(!vis[i]) for(j=i*i...n, j+=i) vis[j]=1;</code> (注意 j 从 i*i 开始)。</li>
+<li><strong>逆元(费马小定理)</strong>：当 mod 是质数，<code>inv(a) = pow(a, mod-2)</code>。</li>
+<li><strong>组合数公式</strong>：$C(n, m) &#x3D; \frac{n!}{m!(n-m)!}$。</li>
+<li><strong>递推组合数</strong>：<code>C[i][j] = (C[i-1][j] + C[i-1][j-1]) % mod;</code>。</li>
+<li><strong>杨辉三角</strong>：<code>C[n][k]</code> 对应杨辉三角第 n 行第 k 个 (0-indexed)。</li>
+<li><strong>卡特兰数</strong>：1, 1, 2, 5, 14, 42… (括号匹配、出栈次序、二叉树计数)。</li>
+<li><strong>唯一分解定理</strong>：$N &#x3D; p_1^{a_1} p_2^{a_2}…$。</li>
+<li><strong>约数个数</strong>：$(a_1+1)(a_2+1)…$。</li>
+<li><strong>ceil(向上取整)</strong>：<code>(a + b - 1) / b</code> (仅限正整数)。</li>
+<li><strong>atan2</strong>：<code>atan2(y, x)</code> 返回弧度 $(-\pi, \pi]$，算出极角。</li>
+<li><strong>PI</strong>：<code>const double PI = acos(-1.0);</code>。</li>
+<li><strong>两点距离</strong>：<code>hypot(x1-x2, y1-y2)</code> (返回double)。</li>
+<li><strong>叉积(Cross Product)</strong>：$x_1 y_2 - x_2 y_1$ (判断向量旋转关系，&gt;0逆时针，&lt;0顺时针)。</li>
+<li><strong>点积(Dot Product)</strong>：$x_1 x_2 + y_1 y_2$。</li>
+<li><strong>曼哈顿距离</strong>：<code>abs(x1-x2) + abs(y1-y2)</code>。</li>
+<li><strong>切比雪夫距离</strong>：<code>max(abs(x1-x2), abs(y1-y2))</code>。</li>
+<li><strong>等差数列求和</strong>：<code>n * (a1 + an) / 2</code>。</li>
+<li><strong>平方和公式</strong>：<code>n(n+1)(2n+1)/6</code>。</li>
+<li><strong>异或性质</strong>：<code>a ^ a = 0</code>, <code>a ^ 0 = a</code>。</li>
+<li><strong>异或交换</strong>：<code>a ^= b; b ^= a; a ^= b;</code> (不推荐，容易出bug，直接用 swap)。</li>
+<li><strong>判断奇偶</strong>：<code>if (x &amp; 1)</code> (真为奇)。</li>
+<li><strong>除以2</strong>：<code>x &gt;&gt; 1</code> (正数向下取整，负数可能有区别，建议直接 <code>/2</code>)。</li>
+<li><strong>乘以2</strong>：<code>x &lt;&lt; 1</code>。</li>
+<li><strong>第k位是否为1</strong>：<code>if ((x &gt;&gt; k) &amp; 1)</code>。</li>
+<li><strong>将第k位置1</strong>：<code>x | (1 &lt;&lt; k)</code>。</li>
+<li><strong>将第k位置0</strong>：<code>x &amp; ~(1 &lt;&lt; k)</code>。</li>
+<li><strong>前缀和</strong>：<code>sum[i] = sum[i-1] + a[i];</code> (下标从1开始)。</li>
+<li><strong>区间和</strong>：<code>sum[R] - sum[L-1]</code>。</li>
+<li><strong>差分数组</strong>：<code>diff[i] += c; diff[j+1] -= c;</code> (区间[i, j]加c)。</li>
+<li><strong>二维前缀和</strong>：<code>s[i][j] = s[i-1][j] + s[i][j-1] - s[i-1][j-1] + a[i][j]</code>。</li>
+<li><strong>二维子矩阵和</strong>：<code>s[x2][y2] - s[x1-1][y2] - s[x2][y1-1] + s[x1-1][y1-1]</code>。</li>
+<li><strong>容斥原理</strong>：$|A \cup B| &#x3D; |A| + |B| - |A \cap B|$。</li>
+<li><strong>抽屉原理</strong>：$n+1$ 个物品放入 $n$ 个抽屉，至少有一个抽屉有2个物品。</li>
+<li><strong>快速乘(防溢出)</strong>：<code>__int128</code> (非标准但GCC支持) 或龟速乘逻辑。</li>
+<li><strong>同余</strong>：<code>a == b (mod m)</code> 意味着 <code>(a - b) % m == 0</code>。</li>
+<li><strong>斐波那契</strong>：<code>1, 1, 2, 3, 5, 8, 13, 21...</code> (增长很快，第46项超过int)。</li>
+<li><strong>三角形不等式</strong>：<code>a + b &gt; c</code> (两条短边之和大于第三边)。</li>
+<li><strong>海伦公式</strong>：$S &#x3D; \sqrt{p(p-a)(p-b)(p-c)}$，其中 $p &#x3D; (a+b+c)&#x2F;2$。</li>
+<li><strong>直线方程</strong>：$Ax + By + C &#x3D; 0$。</li>
+<li><strong>浮点数比较</strong>：<code>const double EPS = 1e-8;</code>。</li>
+<li><strong>浮点零</strong>：<code>if (abs(x) &lt; EPS)</code>。</li>
+<li><strong>浮点相等</strong>：<code>if (abs(a - b) &lt; EPS)</code>。</li>
+<li><strong>随机数种子</strong>：<code>srand(time(0))</code> (老式) 或 <code>mt19937 rng(time(0))</code> (C++11推荐)。</li>
+<li><strong>生成范围随机数</strong>：<code>rand() % (b - a + 1) + a</code> (生成 [a, b])。</li>
+<li><strong>整除分块</strong>：<code>for(int l=1, r; l&lt;=n; l=r+1) { r=n/(n/l); ... }</code>。</li>
+</ol>
+<hr>
+<h3 id="第十章：动态规划-Dynamic-Programming"><a href="#第十章：动态规划-Dynamic-Programming" class="headerlink" title="第十章：动态规划 (Dynamic Programming)"></a>第十章：动态规划 (Dynamic Programming)</h3><ol>
+<li><strong>01背包(一维)</strong>：<code>for(i=1...n) for(j=V...w[i]) dp[j] = max(dp[j], dp[j-w[i]] + v[i]);</code>。</li>
+<li><strong>01背包关键</strong>：内层循环 <strong>从大到小</strong> (倒序)。</li>
+<li><strong>完全背包(一维)</strong>：内层循环 <strong>从小到大</strong> (正序)。</li>
+<li><strong>最长上升子序列(LIS)</strong>：<code>dp[i]</code> 表示以 <code>i</code> 结尾的 LIS 长度。O(N^2)。</li>
+<li><strong>LIS (贪心+二分)</strong>：维护一个 tails 数组，<code>lower_bound</code> 替换，<code>push_back</code> 扩展，O(NlogN)。</li>
+<li><strong>最长公共子序列(LCS)</strong>：<code>if(a[i]==b[j]) dp[i][j]=dp[i-1][j-1]+1; else dp[i][j]=max(dp[i-1][j], dp[i][j-1]);</code>。</li>
+<li><strong>区间DP枚举顺序</strong>：先枚举区间长度 <code>len</code>，再枚举左端点 <code>i</code>，算出右端点 <code>j</code>，最后枚举断点 <code>k</code>。</li>
+<li><strong>区间DP模板</strong>：<br><code>cpp for(int len=2; len&lt;=n; len++)     for(int i=1; i+len-1&lt;=n; i++) {    int j = i+len-1;    for(int k=i; k&lt;j; k++) dp[i][j] = ...    } </code></li>
+<li><strong>状压DP</strong>：<code>dp[1 &lt;&lt; N]</code>，用位掩码表示集合。</li>
+<li><strong>判断状态j包含i</strong>：<code>if ((state &gt;&gt; i) &amp; 1)</code>。</li>
+<li><strong>树形DP</strong>：通常在 DFS 的回溯阶段进行状态转移。</li>
+<li><strong>最大子段和</strong>：<code>dp[i] = max(nums[i], dp[i-1] + nums[i]);</code> (贪心法：<code>sum = max(0, sum) + x</code>)。</li>
+<li><strong>数字三角形</strong>：从下往上推 <code>dp[i][j] += max(dp[i+1][j], dp[i+1][j+1])</code> 不需要边界检查。</li>
+<li><strong>记忆化搜索</strong>：<br><code>cpp int solve(int x) {    if (memo[x] != -1) return memo[x];    // ... calculation ...    return memo[x] = ans; } </code></li>
+<li><strong>初始化DP数组</strong>：求最大值初始化为 0 或 -INF，求最小值初始化为 INF。</li>
+</ol>
+<hr>
+<h3 id="第十一章：字符串进阶与调试-String-Debug"><a href="#第十一章：字符串进阶与调试-String-Debug" class="headerlink" title="第十一章：字符串进阶与调试 (String &amp; Debug)"></a>第十一章：字符串进阶与调试 (String &amp; Debug)</h3><ol>
+<li><strong>stringstream</strong>：<code>stringstream ss(str); while(ss &gt;&gt; word) { ... }</code> (按空格分割字符串)。</li>
+<li><strong>ss清空</strong>：<code>ss.clear(); ss.str(&quot;&quot;);</code> (重复利用时必须这样)。</li>
+<li><strong>字符判断</strong>：<code>isdigit(c)</code>, <code>isalpha(c)</code>, <code>islower(c)</code>, <code>isupper(c)</code>。</li>
+<li><strong>大小写转换</strong>：<code>tolower(c)</code>, <code>toupper(c)</code>。</li>
+<li><strong>string::npos</strong>：通常值为 -1 (但它是 unsigned 类型)，最好直接用 <code>string::npos</code> 常量比较。</li>
+<li><strong>字符串字典序</strong>：<code>&quot;apple&quot; &lt; &quot;banana&quot;</code> 为 true。</li>
+<li><strong>字符串加法</strong>：<code>s = s + &#39;a&#39;;</code> (O(N) 较慢)。</li>
+<li><strong>字符串追加</strong>：<code>s += &#39;a&#39;;</code> (O(1) 均摊，推荐)。</li>
+<li><strong>KMP Next数组</strong>：<code>j=next[j]</code> 是回跳逻辑。</li>
+<li><strong>Manacher算法</strong>：处理回文串，记得先要在字符间插入 <code>#</code> 处理奇偶长度。</li>
+<li><strong>Debug输出</strong>：<code>cerr &lt;&lt; &quot;Value: &quot; &lt;&lt; x &lt;&lt; endl;</code> (cerr 不会被输出重定向捕获，适合本地调试，提交时最好注释掉，虽不影响AC但慢)。</li>
+<li><strong>断言</strong>：<code>assert(x &gt;= 0);</code> (如果条件为假，程序终止报错，用于查逻辑漏洞)。</li>
+<li><strong>本地文件输入</strong>：<br><code>cpp #ifndef ONLINE_JUDGE freopen(&quot;in.txt&quot;, &quot;r&quot;, stdin); freopen(&quot;out.txt&quot;, &quot;w&quot;, stdout); #endif </code></li>
+<li><strong>观察数据范围</strong>：<code>N &lt;= 10</code> -&gt; O(N!) (全排列)。</li>
+<li><strong>观察数据范围</strong>：<code>N &lt;= 20</code> -&gt; O(2^N) (状压&#x2F;DFS)。</li>
+<li><strong>观察数据范围</strong>：<code>N &lt;= 100</code> -&gt; O(N^3) (Floyd&#x2F;区间DP)。</li>
+<li><strong>观察数据范围</strong>：<code>N &lt;= 1000</code> -&gt; O(N^2)。</li>
+<li><strong>观察数据范围</strong>：<code>N &lt;= 10^5</code> -&gt; O(NlogN) (Sort&#x2F;Set&#x2F;二分)。</li>
+<li><strong>观察数据范围</strong>：<code>N &lt;= 10^7</code> -&gt; O(N) (线性筛&#x2F;双指针)。</li>
+<li><strong>对拍脚本</strong>：写个 <code>brute_force.cpp</code>, <code>solution.cpp</code>, <code>generator.cpp</code> 跑循环比对。</li>
+<li><strong>段错误(SIGSEGV)</strong>：数组越界、指针乱指、爆栈。</li>
+<li><strong>浮点错误(SIGFPE)</strong>：除以0、模0。</li>
+<li><strong>超时(SIGXCPU&#x2F;TLE)</strong>：死循环、算法复杂度过高。</li>
+<li><strong>输出超限(OLE)</strong>：输出大量调试信息忘删，或死循环输出。</li>
+<li><strong>编译错误(CE)</strong>：C++标准选错、头文件缺失、语法拼写错误。</li>
+</ol>
+<hr>
+<h3 id="第十二章：STL-高级技巧与补充-STL-Advanced"><a href="#第十二章：STL-高级技巧与补充-STL-Advanced" class="headerlink" title="第十二章：STL 高级技巧与补充 (STL Advanced)"></a>第十二章：STL 高级技巧与补充 (STL Advanced)</h3><ol>
+<li><strong>bitset 定义</strong>：<code>bitset&lt;1000&gt; b;</code> (1000个位，不是字节)。</li>
+<li><strong>bitset 操作</strong>：<code>b.set(i)</code> (置1), <code>b.reset(i)</code> (置0), <code>b.flip(i)</code> (取反)。</li>
+<li><strong>bitset 计数</strong>：<code>b.count()</code> (1的个数)。</li>
+<li><strong>bitset 转换</strong>：<code>b.to_ulong()</code> (转unsigned long)。</li>
+<li><strong>pair 排序</strong>：默认先比 first，再比 second。</li>
+<li><strong>tuple</strong>：<code>tuple&lt;int, int, double&gt; t;</code> (三元组)。</li>
+<li><strong>tuple 访问</strong>：<code>get&lt;0&gt;(t)</code>, <code>get&lt;1&gt;(t)</code>。</li>
+<li><strong>tie 解包</strong>：<code>int a, b; tie(a, b) = make_pair(1, 2);</code>。</li>
+<li><strong>auto 推导</strong>：<code>auto it = mp.begin();</code> (省去长类型名)。</li>
+<li><strong>范围For</strong>：<code>for(auto &amp;x : v) x++;</code> (加 <code>&amp;</code> 可以修改原数组值)。</li>
+<li><strong>multiset 删除</strong>：<code>st.erase(val)</code> 会删除<strong>所有</strong>等于 val 的元素。</li>
+<li><strong>multiset 删除单个</strong>：<code>st.erase(st.find(val))</code> 只删一个。</li>
+<li><strong>deque</strong>：双端队列，常数比 vector 大，但支持头插 <code>push_front</code>。</li>
+<li><strong>list</strong>：双向链表 (STL)，极少用，不支持随机访问 <code>[]</code>。</li>
+<li><strong>forward_list</strong>：单向链表。</li>
+<li><strong>unordered_map</strong>：哈希表，平均 O(1)，最坏 O(N) (会被精心构造的数据卡)。</li>
+<li><strong>unordered_map 坑</strong>：不能直接用 <code>pair</code> 或 <code>vector</code> 做 key (需自定义哈希)。</li>
+<li><strong>map vs unordered_map</strong>：校赛求稳建议用 <code>map</code> (红黑树 O(logN))，除非必然超时。</li>
+<li><strong>resize vs reserve</strong>：<code>resize</code> 改变大小并初始化；<code>reserve</code> 只预留内存，不改变 size (减少重分配次数，优化常数)。</li>
+<li><strong>lambda 捕获</strong>：<code>[&amp;](int a){...}</code> 引用捕获外部变量 (所有)。</li>
+<li><strong>lambda 捕获</strong>：<code>[=](int a){...}</code> 值捕获外部变量 (拷贝，不可改)。</li>
+<li><strong>rotate 函数</strong>：<code>rotate(beg, new_beg, end)</code> 将 <code>new_beg</code> 旋转到 <code>beg</code> 位置。</li>
+<li><strong>nth_element</strong>：<code>nth_element(a, a+k, a+n)</code> 将第 k 小的数放到 <code>a[k]</code>，且左边都比它小，右边都比它大 (O(N))。</li>
+<li><strong>prev&#x2F;next</strong>：<code>prev(it)</code> (前一个迭代器), <code>next(it)</code> (后一个)。</li>
+<li><strong>distance</strong>：<code>distance(it1, it2)</code> 计算两个迭代器距离 (O(N) 或 O(1))。</li>
+<li><strong>accumulate</strong>：<code>accumulate(v.begin(), v.end(), 0)</code> 求和 (注意初始值类型，决定结果类型，0为int，0LL为long long)。</li>
+<li><strong>iota</strong>：<code>iota(v.begin(), v.end(), 1)</code> 生成 1, 2, 3… 序列。</li>
+<li><strong>min_element&#x2F;max_element</strong>：返回的是<strong>迭代器</strong>，需 <code>*</code> 解引用或减 <code>begin()</code> 得下标。</li>
+<li><strong>is_sorted</strong>：判断是否序列已排序。</li>
+<li><strong>function</strong>：<code>function&lt;int(int, int)&gt; func;</code> (存储函数)。</li>
+</ol>
+<hr>
+<h3 id="第十三章：其他杂项与心态"><a href="#第十三章：其他杂项与心态" class="headerlink" title="第十三章：其他杂项与心态"></a>第十三章：其他杂项与心态</h3><blockquote>
+<p>AI建议：</p>
+</blockquote>
+<ol>
+<li><strong>万能头副作用</strong>：编译时间稍长，命名冲突风险 (如 <code>y1</code>)。</li>
+<li><strong>命名冲突</strong>：尽量不要用全局变量 <code>left</code>, <code>right</code>, <code>count</code>, <code>hash</code> (C++11后 risk 增加)。</li>
+<li><strong>递归层数</strong>：默认大概支持 4w-10w 层，超深需手工扩栈。</li>
+<li><strong>扩栈指令</strong>：<code>#pragma comment(linker, &quot;/STACK:102400000,102400000&quot;)</code> (Visual C++, G++通常不支持)。</li>
+<li><strong>位域</strong>：<code>struct { int x:1; }</code> (一般不用，除非压内存)。</li>
+<li><strong>大端小端</strong>：网络流&#x2F;二进制文件处理涉及，普通算法题不涉及。</li>
+<li><strong>快读模板</strong>：<br><code>cpp inline int read() {    int x=0,f=1;char ch=getchar();    while(ch&lt;&#39;0&#39;||ch&gt;&#39;9&#39;){if(ch==&#39;-&#39;)f=-1;ch=getchar();}    while(ch&gt;=&#39;0&#39;&amp;&amp;ch&lt;=&#39;9&#39;){x=x*10+ch-&#39;0&#39;;ch=getchar();}    return x*f; } </code></li>
+<li><strong>快写模板</strong>：递归 <code>%10</code> 输出字符 <code>putchar</code>。</li>
+<li><strong>Codeforces&#x2F;AtCoder</strong>：通常开 O2 优化，STL 极快。</li>
+<li><strong>国内OJ</strong>：POJ 等老OJ 可能不支持 C++11，注意 <code>unordered</code> 和 <code>auto</code> 不能用。</li>
+<li><strong>long double</strong>：精度比 double 高，但慢。</li>
+<li><strong>比较函数 strict weak ordering</strong>：<code>cmp(a,b)</code> 必须保证 <code>cmp(a,a)</code> 为 false。</li>
+<li><strong>结构体构造列表</strong>：<code>Node(int x): x(x) {}</code> 比 <code>Node(int x) { this-&gt;x = x; }</code> 略快。</li>
+<li><strong>引用传参</strong>：<code>void dfs(vector&lt;int&gt; &amp;v)</code> (<strong>一定要加&amp;</strong>，否则每次递归拷贝数组，直接TLE)。</li>
+<li><strong>常量引用</strong>：<code>const vector&lt;int&gt; &amp;v</code> (只读不改，安全且快)。</li>
+<li><strong>内联函数</strong>：<code>inline</code> (建议编译器展开，减少函数调用开销)。</li>
+<li><strong>register</strong>：<code>register int i</code> (C++17已弃用，现代编译器会自动优化，不用写)。</li>
+<li><strong>循环展开</strong>：手动写 4 次操作代替循环，现代编译器通常能自动做。</li>
+<li><strong>打表</strong>：对于很难推导的题，本地跑出前 100 个结果存数组提交。</li>
+<li><strong>模拟退火</strong>：玄学算法，用于求最优解，非初赛重点。</li>
+<li><strong>对顶堆</strong>：维护动态中位数 (一个大根堆，一个小根堆)。</li>
+<li><strong>单调队列</strong>：滑动窗口最大值 (deque 维护下标)。</li>
+<li><strong>单调栈</strong>：找左右第一个比自己大的数。</li>
+<li><strong>差分约束</strong>：转化为最短路&#x2F;最长路问题。</li>
+<li><strong>背包空间优化</strong>：滚动数组，从 <code>dp[i][j]</code> 变成 <code>dp[j]</code>。</li>
+<li><strong>位运算优先级</strong>：<code>==</code> 优先级高于 <code>&amp;</code>。</li>
+<li><strong>逻辑短路</strong>：<code>if (x &gt;= 0 &amp;&amp; a[x] == 1)</code> (如果 x&lt;0，后面不会执行，安全)。</li>
+<li><strong>空指针</strong>：<code>nullptr</code> (C++11) 优于 <code>NULL</code>。</li>
+<li><strong>复数类</strong>：<code>complex&lt;double&gt;</code> (自带加减乘除，计算几何可用)。</li>
+<li><strong>1e9+7</strong>：质数。</li>
+<li><strong>998244353</strong>：质数 (NTT常用)。</li>
+<li><strong>19260817</strong>：也是个质数 (哈希常用)。</li>
+<li><strong>memset 0x7f</strong>：<code>0x7f7f7f7f</code> (比 0x3f 大，约为 2e9，两个相加会溢出 int)。建议用 <code>0x3f</code>。</li>
+<li><strong>ios::binary</strong>：文件读写模式。</li>
+<li><strong>cin.peek()</strong>：看一眼下一个字符但不取走。</li>
+<li><strong>cin.putback(c)</strong>：把字符放回流。</li>
+<li><strong>exit(0)</strong>：强制结束程序 (但在递归中慎用，可能析构函数不执行)。</li>
+<li><strong>return 0</strong>：main 函数必须返回 0，否则 RE。</li>
+<li><strong>代码规范</strong>：缩进对齐，大括号换行风格统一，方便查错。</li>
+<li><strong>心态</strong>：卡题超过 20 分钟换题。</li>
+<li><strong>心态</strong>：有人 AC 了不要慌，可能是水题，跟榜做。</li>
+<li><strong>心态</strong>：罚时很贵，提交前自己测一下 edge cases (0, 1, n, max_n, -1)。</li>
+<li><strong>读题</strong>：注意时间限制 (1s通常算 $10^8$ 次运算)。</li>
+<li><strong>读题</strong>：注意空间限制 (256MB 很大，但 32MB 就要小心开大数组)。</li>
+<li><strong>读题</strong>：再次确认是“子串(substring)”还是“子序列(subsequence)”。</li>
+<li><strong>读题</strong>：再次确认是有向图还是无向图。</li>
+</ol>
 
       
     </div>
@@ -669,7 +2160,7 @@ def scaled_dot_product_attention(Q, K, V, mask=None):
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:22:20" itemprop="dateModified" datetime="2026-03-02T23:22:20+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:02:57" itemprop="dateModified" datetime="2026-03-03T13:02:57+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -814,7 +2305,7 @@ git worktree remove ../hotfix
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:22:34" itemprop="dateModified" datetime="2026-03-02T23:22:34+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:02:57" itemprop="dateModified" datetime="2026-03-03T13:02:57+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">

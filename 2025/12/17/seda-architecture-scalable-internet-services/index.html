@@ -19,15 +19,15 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"kevin589981.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInDown"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/local-search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="互联网访问量的极端波动性，使得传统线程模型和事件驱动模型均难以在高并发场景下实现优雅降级。SEDA（Staged Event-Driven Architecture，阶段式事件驱动架构）通过将服务拆分为以事件队列隔开的阶段网络，并引入动态资源控制器，在不牺牲可编程性的前提下，实现了对负载的自适应管理。本文对该论文的核心思想、架构设计与实验评估进行系统梳理。  1. 背景：传统并发模型的根本局限互">
+    <meta name="description" content="原始论文：https:&#x2F;&#x2F;dl.acm.org&#x2F;doi&#x2F;10.1145&#x2F;502059.502057  互联网访问量的极端波动性，使得传统线程模型和事件驱动模型均难以在高并发场景下实现优雅降级。SEDA（Staged Event-Driven Architecture，阶段式事件驱动架构）通过将服务拆分为以事件队列隔开的阶段网络，并引入动态资源控制器，在不牺牲可编程性的前提下，实现了对负载的自适应管">
 <meta property="og:type" content="article">
-<meta property="og:title" content="SEDA：面向高并发互联网服务的阶段式事件驱动架构">
+<meta property="og:title" content="SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构">
 <meta property="og:url" content="https://kevin589981.github.io/2025/12/17/seda-architecture-scalable-internet-services/index.html">
 <meta property="og:site_name" content="Kevin&#39;s Tech Blog">
-<meta property="og:description" content="互联网访问量的极端波动性，使得传统线程模型和事件驱动模型均难以在高并发场景下实现优雅降级。SEDA（Staged Event-Driven Architecture，阶段式事件驱动架构）通过将服务拆分为以事件队列隔开的阶段网络，并引入动态资源控制器，在不牺牲可编程性的前提下，实现了对负载的自适应管理。本文对该论文的核心思想、架构设计与实验评估进行系统梳理。  1. 背景：传统并发模型的根本局限互">
+<meta property="og:description" content="原始论文：https:&#x2F;&#x2F;dl.acm.org&#x2F;doi&#x2F;10.1145&#x2F;502059.502057  互联网访问量的极端波动性，使得传统线程模型和事件驱动模型均难以在高并发场景下实现优雅降级。SEDA（Staged Event-Driven Architecture，阶段式事件驱动架构）通过将服务拆分为以事件队列隔开的阶段网络，并引入动态资源控制器，在不牺牲可编程性的前提下，实现了对负载的自适应管">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-12-16T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-02T15:25:38.363Z">
+<meta property="article:modified_time" content="2026-03-03T05:03:37.758Z">
 <meta property="article:author" content="Kevin">
 <meta property="article:tag" content="事件驱动">
 <meta property="article:tag" content="并发">
@@ -40,10 +40,10 @@
 <link rel="canonical" href="https://kevin589981.github.io/2025/12/17/seda-architecture-scalable-internet-services/">
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://kevin589981.github.io/2025/12/17/seda-architecture-scalable-internet-services/","path":"2025/12/17/seda-architecture-scalable-internet-services/","title":"SEDA：面向高并发互联网服务的阶段式事件驱动架构"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://kevin589981.github.io/2025/12/17/seda-architecture-scalable-internet-services/","path":"2025/12/17/seda-architecture-scalable-internet-services/","title":"SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>SEDA：面向高并发互联网服务的阶段式事件驱动架构 | Kevin's Tech Blog</title>
+<title>SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构 | Kevin's Tech Blog</title>
   
 
 
@@ -73,9 +73,8 @@
 
   
 
-  <script class="next-config" data-name="enableMath" type="application/json">false</script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha256-UF1fgpAiu3tPJN/uCqEUHNe7pnr+QR0SQDNfgglgtcM=" crossorigin="anonymous">
-  <script class="next-config" data-name="katex" type="application/json">{"copy_tex_js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/copy-tex.min.js","integrity":"sha256-Us54+rSGDSTvIhKKUs4kygE2ipA0RXpWWh0/zLqw3bs="}}</script>
-  <script src="/js/third-party/math/katex.js" defer></script>
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -118,7 +117,7 @@
 
 
 <nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">15</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">4</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">59</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">18</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">71</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
       <li class="menu-item menu-item-search">
         <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
         </a>
@@ -184,18 +183,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-count">18</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">5</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">59</span>
+        <span class="site-state-item-count">71</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -240,12 +239,12 @@
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="SEDA：面向高并发互联网服务的阶段式事件驱动架构 | Kevin's Tech Blog">
+      <meta itemprop="name" content="SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构 | Kevin's Tech Blog">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          SEDA：面向高并发互联网服务的阶段式事件驱动架构
+          SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构
         </h1>
 
         <div class="post-meta-container">
@@ -263,7 +262,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:25:38" itemprop="dateModified" datetime="2026-03-02T23:25:38+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:03:37" itemprop="dateModified" datetime="2026-03-03T13:03:37+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -272,6 +271,10 @@
       <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
           <a href="/categories/Systems-HPC/" itemprop="url" rel="index"><span itemprop="name">Systems-HPC</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper-Reading</span></a>
         </span>
     </span>
 
@@ -284,7 +287,8 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><blockquote>
+    <div class="post-body" itemprop="articleBody"><p>原始论文：<a target="_blank" rel="noopener" href="https://dl.acm.org/doi/10.1145/502059.502057">https://dl.acm.org/doi/10.1145/502059.502057</a></p>
+<blockquote>
 <p>互联网访问量的极端波动性，使得传统线程模型和事件驱动模型均难以在高并发场景下实现优雅降级。SEDA（Staged Event-Driven Architecture，阶段式事件驱动架构）通过将服务拆分为以事件队列隔开的阶段网络，并引入动态资源控制器，在不牺牲可编程性的前提下，实现了对负载的自适应管理。本文对该论文的核心思想、架构设计与实验评估进行系统梳理。</p>
 </blockquote>
 <h2 id="1-背景：传统并发模型的根本局限"><a href="#1-背景：传统并发模型的根本局限" class="headerlink" title="1. 背景：传统并发模型的根本局限"></a>1. 背景：传统并发模型的根本局限</h2><p>互联网服务的负载特征极不均匀——峰值与低谷的访问量可能相差数个数量级。理想的服务器架构应当在高负载下优雅降级而非崩溃，在低负载下节约资源而非空转。</p>
@@ -357,7 +361,7 @@
   </li>
   <li class="post-copyright-link">
       <strong>本文链接：</strong>
-      <a href="https://kevin589981.github.io/2025/12/17/seda-architecture-scalable-internet-services/" title="SEDA：面向高并发互联网服务的阶段式事件驱动架构">https://kevin589981.github.io/2025/12/17/seda-architecture-scalable-internet-services/</a>
+      <a href="https://kevin589981.github.io/2025/12/17/seda-architecture-scalable-internet-services/" title="SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构">https://kevin589981.github.io/2025/12/17/seda-architecture-scalable-internet-services/</a>
   </li>
   <li class="post-copyright-license">
       <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -382,8 +386,8 @@
                 </a>
             </div>
             <div class="post-nav-item">
-                <a href="/2025/12/20/memos-llm-memory-system-evaluation/" rel="next" title="MemOS 记忆操作系统：LLM 长程记忆工程实践">
-                  MemOS 记忆操作系统：LLM 长程记忆工程实践 <i class="fa fa-angle-right"></i>
+                <a href="/2025/12/20/memos-llm-memory-system-evaluation/" rel="next" title="改进 MemOS 记忆操作系统：LLM 长程记忆工程实践">
+                  改进 MemOS 记忆操作系统：LLM 长程记忆工程实践 <i class="fa fa-angle-right"></i>
                 </a>
             </div>
           </div>

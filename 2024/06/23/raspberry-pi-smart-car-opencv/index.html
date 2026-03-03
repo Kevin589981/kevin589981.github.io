@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kevin589981.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInDown"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/local-search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="本文记录了一个基于树莓派的智能小车项目：通过 OpenCV 识别不同颜色的魔方，根据颜色规则从左侧或右侧绕行，并在遇到双魔方时从中间穿越。系统采用多线程架构，将颜色检测、距离测量、PWM 更新三条流水线并行化；电机控制使用 PID 闭环，编码器反馈速度；整体逻辑由有限状态机驱动。文章重点分析了 PID 在电压不稳定供电下的局限性，以及 HSV 颜色空间的实战调参经验。  1. 任务描述与规则场地">
+<meta property="og:type" content="article">
+<meta property="og:title" content="树莓派智能小车：PID 电机控制与 OpenCV 颜色识别实践">
+<meta property="og:url" content="https://kevin589981.github.io/2024/06/23/raspberry-pi-smart-car-opencv/index.html">
+<meta property="og:site_name" content="Kevin&#39;s Tech Blog">
+<meta property="og:description" content="本文记录了一个基于树莓派的智能小车项目：通过 OpenCV 识别不同颜色的魔方，根据颜色规则从左侧或右侧绕行，并在遇到双魔方时从中间穿越。系统采用多线程架构，将颜色检测、距离测量、PWM 更新三条流水线并行化；电机控制使用 PID 闭环，编码器反馈速度；整体逻辑由有限状态机驱动。文章重点分析了 PID 在电压不稳定供电下的局限性，以及 HSV 颜色空间的实战调参经验。  1. 任务描述与规则场地">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-06-22T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-03T05:50:47.873Z">
+<meta property="article:author" content="Kevin">
+<meta property="article:tag" content="OpenCV">
+<meta property="article:tag" content="PID控制">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="嵌入式系统">
+<meta property="article:tag" content="树莓派">
+<meta property="article:tag" content="项目实战">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://kevin589981.github.io/2024/06/23/raspberry-pi-smart-car-opencv/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://kevin589981.github.io/2024/06/23/raspberry-pi-smart-car-opencv/","path":"2024/06/23/raspberry-pi-smart-car-opencv/","title":"树莓派智能小车：PID 电机控制与 OpenCV 颜色识别实践"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>树莓派智能小车：PID 电机控制与 OpenCV 颜色识别实践 | Kevin's Tech Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Kevin's Tech Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Systems | AI | Research</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">18</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">71</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BB%BB%E5%8A%A1%E6%8F%8F%E8%BF%B0%E4%B8%8E%E8%A7%84%E5%88%99"><span class="nav-number">1.</span> <span class="nav-text">1. 任务描述与规则</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E7%B3%BB%E7%BB%9F%E7%A1%AC%E4%BB%B6%E6%9E%B6%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">2. 系统硬件架构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E7%94%B5%E6%9C%BA%E6%8E%A7%E5%88%B6%EF%BC%9APID-%E9%97%AD%E7%8E%AF-%E5%AE%88%E6%8A%A4%E7%BA%BF%E7%A8%8B%E5%88%86%E7%A6%BB"><span class="nav-number">3.</span> <span class="nav-text">3. 电机控制：PID 闭环 + 守护线程分离</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-PID-%E6%8E%A7%E5%88%B6%E5%8E%9F%E7%90%86"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 PID 控制原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E4%B8%89%E7%BA%BF%E7%A8%8B%E8%A7%A3%E8%80%A6%E6%9E%B6%E6%9E%84"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 三线程解耦架构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E9%A2%9C%E8%89%B2%E8%AF%86%E5%88%AB%EF%BC%9AHSV-%E7%A9%BA%E9%97%B4%E4%B8%8E%E5%8C%BA%E5%9F%9F%E9%87%87%E6%A0%B7"><span class="nav-number">4.</span> <span class="nav-text">4. 颜色识别：HSV 空间与区域采样</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%80%89-HSV-%E8%80%8C%E9%9D%9E-RGB"><span class="nav-number">4.1.</span> <span class="nav-text">4.1 为什么选 HSV 而非 RGB</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E8%A1%8C%E9%87%87%E6%A0%B7%E4%BC%98%E5%8C%96"><span class="nav-number">4.2.</span> <span class="nav-text">4.2 行采样优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E9%A2%9C%E8%89%B2%E5%8C%BA%E5%9F%9F%E5%AE%9A%E4%BD%8D"><span class="nav-number">4.3.</span> <span class="nav-text">4.3 颜色区域定位</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E8%B7%9D%E7%A6%BB%E6%B5%8B%E9%87%8F%EF%BC%9AKS103-%E8%B6%85%E5%A3%B0%E6%B3%A2%E4%BC%A0%E6%84%9F%E5%99%A8%EF%BC%88I2C%EF%BC%89"><span class="nav-number">5.</span> <span class="nav-text">5. 距离测量：KS103 超声波传感器（I2C）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E7%8A%B6%E6%80%81%E6%9C%BA%EF%BC%9A%E4%B8%89%E9%98%B6%E6%AE%B5%E9%A1%BA%E5%BA%8F%E6%89%A7%E8%A1%8C"><span class="nav-number">6.</span> <span class="nav-text">6. 状态机：三阶段顺序执行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E5%AE%9E%E9%AA%8C%E5%88%86%E6%9E%90%EF%BC%9A%E9%97%AE%E9%A2%98%E4%B8%8E%E5%B1%80%E9%99%90"><span class="nav-number">7.</span> <span class="nav-text">7. 实验分析：问题与局限</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-%E7%9B%B4%E8%A1%8C%E5%81%8F%E5%B7%AE%E4%B8%A5%E9%87%8D"><span class="nav-number">7.1.</span> <span class="nav-text">7.1 直行偏差严重</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-2-%E8%BD%AC%E8%A7%92%E4%B8%8D%E5%87%86%EF%BC%9A%E6%97%B6%E9%97%B4%E6%8E%A7%E5%88%B6%E8%BD%AC%E5%90%91%E7%9A%84%E7%BC%BA%E9%99%B7"><span class="nav-number">7.2.</span> <span class="nav-text">7.2 转角不准：时间控制转向的缺陷</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-3-%E5%85%89%E7%85%A7%E5%AF%B9-HSV-%E9%98%88%E5%80%BC%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">7.3.</span> <span class="nav-text">7.3 光照对 HSV 阈值的影响</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E4%BA%AE%E7%82%B9"><span class="nav-number">8.</span> <span class="nav-text">8. 系统设计亮点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%B6%E4%BC%B8%E9%98%85%E8%AF%BB"><span class="nav-number">9.</span> <span class="nav-text">延伸阅读</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Kevin"
+      src="https://avatars.githubusercontent.com/u/188462396?v=4">
+  <p class="site-author-name" itemprop="name">Kevin</p>
+  <div class="site-description" itemprop="description">探索系统编程、高性能计算、AI 研究与软件工程</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">18</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Kevin589981" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Kevin589981" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2024/06/23/raspberry-pi-smart-car-opencv/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
+      <meta itemprop="name" content="Kevin">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin's Tech Blog">
+      <meta itemprop="description" content="探索系统编程、高性能计算、AI 研究与软件工程">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="树莓派智能小车：PID 电机控制与 OpenCV 颜色识别实践 | Kevin's Tech Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          树莓派智能小车：PID 电机控制与 OpenCV 颜色识别实践
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-06-23 00:00:00" itemprop="dateCreated datePublished" datetime="2024-06-23T00:00:00+08:00">2024-06-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-03 13:50:47" itemprop="dateModified" datetime="2026-03-03T13:50:47+08:00">2026-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Projects/" itemprop="url" rel="index"><span itemprop="name">Projects</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>本文记录了一个基于树莓派的智能小车项目：通过 OpenCV 识别不同颜色的魔方，根据颜色规则从左侧或右侧绕行，并在遇到双魔方时从中间穿越。系统采用多线程架构，将颜色检测、距离测量、PWM 更新三条流水线并行化；电机控制使用 PID 闭环，编码器反馈速度；整体逻辑由有限状态机驱动。文章重点分析了 PID 在电压不稳定供电下的局限性，以及 HSV 颜色空间的实战调参经验。</p>
+</blockquote>
+<h2 id="1-任务描述与规则"><a href="#1-任务描述与规则" class="headerlink" title="1. 任务描述与规则"></a>1. 任务描述与规则</h2><p>场地上设有三个里程碑，每个里程碑放置 1 到 2 个魔方（颜色从红&#x2F;黄&#x2F;蓝&#x2F;绿中选取）：</p>
+<ul>
+<li><strong>里程碑 1</strong>：1 个魔方</li>
+<li><strong>里程碑 2</strong>：2 个<strong>同色</strong>魔方，间距 ≥ 2 个车身宽度</li>
+<li><strong>里程碑 3</strong>：1 个魔方</li>
+</ul>
+<p>绕行规则：</p>
+<table>
+<thead>
+<tr>
+<th>魔方颜色</th>
+<th>绕行方向</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>红色 &#x2F; 黄色</td>
+<td>从<strong>左侧</strong>绕过</td>
+</tr>
+<tr>
+<td>蓝色 &#x2F; 绿色</td>
+<td>从<strong>右侧</strong>绕过</td>
+</tr>
+<tr>
+<td>双魔方（同色）</td>
+<td>从<strong>两者中间</strong>穿越</td>
+</tr>
+</tbody></table>
+<p>小车需要在正式测试前不知道具体颜色和位置的情况下，靠实时视觉完成全程。</p>
+<hr>
+<h2 id="2-系统硬件架构"><a href="#2-系统硬件架构" class="headerlink" title="2. 系统硬件架构"></a>2. 系统硬件架构</h2><table>
+<thead>
+<tr>
+<th>硬件模块</th>
+<th>型号&#x2F;说明</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>主控</td>
+<td>树莓派</td>
+<td>运行所有控制逻辑</td>
+</tr>
+<tr>
+<td>直流电机 + 驱动板</td>
+<td>L298N 类驱动</td>
+<td>四轮驱动，PWM 调速</td>
+</tr>
+<tr>
+<td>摄像头</td>
+<td>USB 摄像头</td>
+<td>捕获图像，颜色识别</td>
+</tr>
+<tr>
+<td>超声波传感器</td>
+<td>KS103（I2C）</td>
+<td>测量与前方障碍物距离</td>
+</tr>
+<tr>
+<td>编码器</td>
+<td>Hall 效应编码器，白入 585 脉冲&#x2F;圈</td>
+<td>测量轮速，PID 反馈</td>
+</tr>
+</tbody></table>
+<p>引脚分配（BCM 编号）：</p>
+<pre><code class="language-python">EA, I2, I1 = 13, 19, 26   # 右电机：PWM + 方向
+EB, I3, I4 = 16, 20, 21   # 左电机：PWM + 方向
+LS, RS = 6, 12             # 左/右编码器输入
+</code></pre>
+<p>PWM 频率设为 100 Hz，相比更低频率可以使电机转动更平滑（减少转矩脉动）。</p>
+<hr>
+<h2 id="3-电机控制：PID-闭环-守护线程分离"><a href="#3-电机控制：PID-闭环-守护线程分离" class="headerlink" title="3. 电机控制：PID 闭环 + 守护线程分离"></a>3. 电机控制：PID 闭环 + 守护线程分离</h2><h3 id="3-1-PID-控制原理"><a href="#3-1-PID-控制原理" class="headerlink" title="3.1 PID 控制原理"></a>3.1 PID 控制原理</h3><p>控制目标是让电机实际转速（由编码器采样）跟随设定转速。PID 控制器的离散化形式：</p>
+<p>$$u_k &#x3D; K_p \cdot e_k + K_i \sum_{i&#x3D;0}^{k} e_i + K_d \cdot (e_k - e_{k-1})$$</p>
+<p>其中 $e_k &#x3D; v_{\text{target}} - v_{\text{actual}}$，$u_k$ 直接映射为 PWM 占空比（限幅在 [0, 100]）。</p>
+<pre><code class="language-python">class PID:
+    def __init__(self, P=38.57, I=0.1, D=70, speed=0.5):
+        self.Kp, self.Ki, self.Kd = P, I, D
+        self.ideal_speed = speed
+        self.integral = 0
+        self.err_last = 0
+
+    def update(self, feedback_value):
+        err = self.ideal_speed - feedback_value
+        self.integral += err
+        u = self.Kp * err + self.Ki * self.integral + self.Kd * (err - self.err_last)
+        self.err_last = err
+        return max(0, min(100, u))   # PWM 占空比限幅
+</code></pre>
+<p>最终调定的参数为左轮 $K_p&#x3D;45, K_i&#x3D;0.1, K_d&#x3D;70$，右轮 $K_p&#x3D;40, K_i&#x3D;0.1, K_d&#x3D;70$（两轮略有差异是因为电机特性不完全一致）。</p>
+<h3 id="3-2-三线程解耦架构"><a href="#3-2-三线程解耦架构" class="headerlink" title="3.2 三线程解耦架构"></a>3.2 三线程解耦架构</h3><p>直接将 PID 计算和 GPIO 写入放在主控制循环里会导致采样不均匀、响应延迟，系统采用三线程分离：</p>
+<table>
+<thead>
+<tr>
+<th>线程</th>
+<th>职责</th>
+<th>周期</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>speed_monitor</code></td>
+<td>编码器脉冲计数 → 转速（圈&#x2F;秒）</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td><code>pwm_update_daemon</code></td>
+<td>读取全局转速 → PID 计算 → 写 PWM</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>主线程</td>
+<td>状态机决策：设置目标速度 <code>left_target_speed / right_target_speed</code></td>
+<td>事件驱动</td>
+</tr>
+</tbody></table>
+<pre><code class="language-python">def speed_monitor(interval=0.1):
+    GPIO.add_event_detect(LS, GPIO.RISING, callback=encoder_callback)
+    GPIO.add_event_detect(RS, GPIO.RISING, callback=encoder_callback)
+    while running:
+        rspeed = rcounter / 585.0   # 脉冲数 → 圈/秒（每圈 585 脉冲）
+        lspeed = lcounter / 585.0
+        rcounter = lcounter = 0
+        time.sleep(interval)
+
+def pwm_update_daemon(interval=0.1):
+    while running:
+        if left_pid_global and right_pid_global:
+            _set_motor_pwm(left_pid_global.update(lspeed),
+                           right_pid_global.update(rspeed))
+        time.sleep(interval)
+</code></pre>
+<p>主线程只需调用 <code>set_motor_speed(left, right)</code> 设定目标速度，PID 计算完全异步完成，主控逻辑得以保持简洁。</p>
+<hr>
+<h2 id="4-颜色识别：HSV-空间与区域采样"><a href="#4-颜色识别：HSV-空间与区域采样" class="headerlink" title="4. 颜色识别：HSV 空间与区域采样"></a>4. 颜色识别：HSV 空间与区域采样</h2><h3 id="4-1-为什么选-HSV-而非-RGB"><a href="#4-1-为什么选-HSV-而非-RGB" class="headerlink" title="4.1 为什么选 HSV 而非 RGB"></a>4.1 为什么选 HSV 而非 RGB</h3><p>RGB 颜色通道与亮度强耦合：同一块红色魔方在强光下 RGB 值显著不同，难以用固定阈值分割。HSV（Hue-Saturation-Value）将色调（H）与亮度（V）解耦，只需为每种颜色定义 H 通道的区间，S&#x2F;V 可设较宽范围，对光照变化鲁棒得多。</p>
+<p>四种颜色的典型 HSV 范围（OpenCV 中 H 取值范围 [0, 179]）：</p>
+<table>
+<thead>
+<tr>
+<th>颜色</th>
+<th>H 范围</th>
+<th>S 范围</th>
+<th>V 范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>红色</td>
+<td>[0,10] ∪ [170,179]</td>
+<td>[100,255]</td>
+<td>[80,255]</td>
+</tr>
+<tr>
+<td>黄色</td>
+<td>[20,35]</td>
+<td>[100,255]</td>
+<td>[80,255]</td>
+</tr>
+<tr>
+<td>蓝色</td>
+<td>[100,130]</td>
+<td>[80,255]</td>
+<td>[60,255]</td>
+</tr>
+<tr>
+<td>绿色</td>
+<td>[40,80]</td>
+<td>[60,255]</td>
+<td>[60,255]</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>注意</strong>：红色的 H 值跨越 0°（红色在色环两端），需要取两段范围做并集，再用 <code>cv2.bitwise_or</code> 合并掩码。</p>
+</blockquote>
+<h3 id="4-2-行采样优化"><a href="#4-2-行采样优化" class="headerlink" title="4.2 行采样优化"></a>4.2 行采样优化</h3><p>全帧处理（640×480）在树莓派上帧率很低。系统在图像高度 25% 处取 50 像素高度的横带进行处理：</p>
+<pre><code class="language-python">DEFAULT_ROW_PERCENT = 0.25   # 采样行位置（图像 25% 高度处）
+DEFAULT_ROW_HEIGHT  = 50     # 采样区域高度
+</code></pre>
+<p>这样每帧只需处理 640×50 &#x3D; 32000 像素，计算量降低约 94%，同时该高度对应小车前方地面上的魔方区域，有效减少背景干扰。</p>
+<h3 id="4-3-颜色区域定位"><a href="#4-3-颜色区域定位" class="headerlink" title="4.3 颜色区域定位"></a>4.3 颜色区域定位</h3><p>对二值化掩码做高斯模糊去噪后，通过 <code>cv2.findNonZero</code> 找到非零像素，计算连续色块的横坐标范围 $[x_{\text{start}}, x_{\text{end}}]$ 和中心 $x_{\text{center}}$，返回给状态机：</p>
+<pre><code class="language-python">def detect_color(frame):
+    roi = frame[row_start:row_end, :]
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    results = {}
+    for color_name, (lower, upper) in COLOR_RANGES.items():
+        mask = cv2.inRange(hsv, lower, upper)
+        mask = cv2.GaussianBlur(mask, (5,5), 0)
+        # 提取横向色块段落，返回 (x_start, x_end, x_center) 列表
+        results[color_name] = extract_segments(mask)
+    return results
+</code></pre>
+<hr>
+<h2 id="5-距离测量：KS103-超声波传感器（I2C）"><a href="#5-距离测量：KS103-超声波传感器（I2C）" class="headerlink" title="5. 距离测量：KS103 超声波传感器（I2C）"></a>5. 距离测量：KS103 超声波传感器（I2C）</h2><p>KS103 通过 I2C 总线通信，触发测量与读取结果的时序：</p>
+<pre><code class="language-python">def measure_distance():
+    bus.write_byte_data(KS103_ADDR, REG_TRIGGER, 0x01)  # 发送触发指令
+    time.sleep(0.06)                                       # 等待测量完成（约 60ms）
+    data = bus.read_i2c_block_data(KS103_ADDR, REG_RESULT, 2)
+    distance_cm = (data[0] &lt;&lt; 8 | data[1]) / 10.0        # 合并高低字节，单位 mm → cm
+    return distance_cm
+</code></pre>
+<p>系统对距离数据做滑动窗口中值滤波（窗口大小 5），剔除超声波在近距离或倾斜表面的反射异常值，并在距离小于阈值时触发”即将碰撞”警告信号给状态机。</p>
+<hr>
+<h2 id="6-状态机：三阶段顺序执行"><a href="#6-状态机：三阶段顺序执行" class="headerlink" title="6. 状态机：三阶段顺序执行"></a>6. 状态机：三阶段顺序执行</h2><p>主控逻辑由 <code>StateManager</code> 类管理，顺序执行三个阶段，每个阶段对应一个里程碑：</p>
+<pre><code class="language-python">class StateManager:
+    def __init__(self):
+        self.current_state = 0         # 当前所处里程碑阶段（1/2/3）
+        self.detected_color = None     # 当前识别到的魔方颜色
+        self.color_confirm_counter = {} # 颜色稳定确认计数器
+        self.last_bypass_direction = None
+
+    def determine_bypass_direction(self):
+        if self.current_state in (1, 3):
+            # 单魔方：由颜色决定方向
+            return &#39;left&#39; if self.detected_color in LEFT_TURN_COLORS else &#39;right&#39;
+        else:  # 状态 2：双魔方，从中间穿越
+            # 基于上一次绕行方向的对称策略
+            return &#39;right&#39; if self.last_bypass_direction == &#39;left&#39; else &#39;left&#39;
+</code></pre>
+<p><strong>颜色确认机制</strong>：避免单帧误识别，要求同一颜色连续出现 <code>N</code> 帧才确认。通过 <code>color_confirm_counter</code> 对每种颜色计数，达到阈值后方触发绕行动作。</p>
+<p><strong>顺序执行主循环</strong>：</p>
+<pre><code class="language-python">def main_control_sequential():
+    init_gpio(); start_speed_monitor(); start_pwm_update_daemon()
+    init_i2c();  start_distance_measurement()
+    camera = init_camera(); start_color_detection()
+    time.sleep(2)   # 等待所有线程稳定
+
+    for state in (1, 2, 3):
+        state_manager.current_state = state
+        handle_state_sequential(state)   # 靠近→识别→绕行→恢复直行
+
+    final_sprint_sequential()           # 全速冲向终点
+</code></pre>
+<p>绕行策略采用<strong>矩形绕行</strong>而非圆弧：先原地转向，直行绕过，再原地转回，优点是实现简单、调试方便、不依赖精确的弧度控制。</p>
+<hr>
+<h2 id="7-实验分析：问题与局限"><a href="#7-实验分析：问题与局限" class="headerlink" title="7. 实验分析：问题与局限"></a>7. 实验分析：问题与局限</h2><h3 id="7-1-直行偏差严重"><a href="#7-1-直行偏差严重" class="headerlink" title="7.1 直行偏差严重"></a>7.1 直行偏差严重</h3><p><strong>根本原因</strong>：电池输出电压不稳定，随放电程度持续下降。PID 控制器虽然理论上能通过积分项补偿稳态误差，但电压变化导致<strong>电机特性曲线本身在漂移</strong>，PID 参数无法通用于整场测试。</p>
+<p>即便引入了基于颜色中心偏移量的方向修正（<code>drive_with_color</code>），实际效果也表现出明显的摆动——修正增益大了蛇行，小了又偏。</p>
+<pre><code class="language-python">def drive_with_color(color_offset, speed=0.5, offset_factor=0.2):
+    normalized = min(1.0, abs(color_offset) / 200.0)
+    if color_offset &gt; 0:
+        right_speed = speed * (1 - offset_factor * normalized)  # 向右偏：压右轮
+    else:
+        left_speed  = speed * (1 - offset_factor * normalized)  # 向左偏：压左轮
+</code></pre>
+<p><strong>更好的方案</strong>：使用<strong>自适应 PID</strong>，周期性重新标定电机特性（如每次起步前做短暂标定行驶），或改用步进电机消除速度控制对电压的依赖。</p>
+<h3 id="7-2-转角不准：时间控制转向的缺陷"><a href="#7-2-转角不准：时间控制转向的缺陷" class="headerlink" title="7.2 转角不准：时间控制转向的缺陷"></a>7.2 转角不准：时间控制转向的缺陷</h3><p>系统用”旋转固定时间”来实现 90° 转向：</p>
+<pre><code class="language-python">rotate_in_place(&#39;clockwise&#39;, speed=0.5)
+time.sleep(t_90_deg)   # 经验值，与电压强相关
+stop_motor()
+</code></pre>
+<p>电压不稳 → PID 漂移 → 实际转速与设计转速不符 → 旋转角度近似随机。导致绕行两阶段无法正确衔接，出现找不到下一个魔方、撞墙等问题。</p>
+<p><strong>更好的方案</strong>：用编码器积分计算转过的圆弧长度（轮距 × 转角），闭环控制旋转角度，而非依赖时间。</p>
+<h3 id="7-3-光照对-HSV-阈值的影响"><a href="#7-3-光照对-HSV-阈值的影响" class="headerlink" title="7.3 光照对 HSV 阈值的影响"></a>7.3 光照对 HSV 阈值的影响</h3><p>即使使用了 HSV 空间，在极暗或极亮的测试环境中，S&#x2F;V 的阈值边界仍需现场微调。建议在系统启动时加入<strong>自动白平衡校正</strong>步骤，或对 V 通道做直方图均衡化后再分割。</p>
+<hr>
+<h2 id="8-系统设计亮点"><a href="#8-系统设计亮点" class="headerlink" title="8. 系统设计亮点"></a>8. 系统设计亮点</h2><ol>
+<li><p><strong>完全守护线程化</strong>：编码器采样、PWM 更新、颜色检测、距离测量全部运行在守护线程中（<code>thread.daemon = True</code>），主线程退出时自动回收，无需手动管理线程生命周期；</p>
+</li>
+<li><p><strong>颜色确认防抖</strong>：多帧确认机制将单帧噪声的影响降到最低，代价是引入了固定延迟（约 <code>N × 100ms</code>），在实际调试中需要在检测速度和稳定性之间权衡；</p>
+</li>
+<li><p><strong>模块化代码结构</strong>：<code>motor_controller.py / detect_color.py / detect_distance.py / main_controller.py</code> 四模块解耦，每个模块可独立测试，最终在 <code>main_controller.py</code> 中聚合。</p>
+</li>
+</ol>
+<hr>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><strong>[PID 自整定]</strong>：Ziegler-Nichols 方法——在没有精确数学模型的情况下系统化调定 PID 参数</li>
+<li><strong>[卡尔曼滤波]</strong>：比简单中值滤波更优的传感器融合方法，适用于距离与速度的联合估计</li>
+<li>下一篇预告：在树莓派上用 YOLOv8 替代 HSV 阈值分割——目标检测的实时性与精度权衡</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Kevin
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://kevin589981.github.io/2024/06/23/raspberry-pi-smart-car-opencv/" title="树莓派智能小车：PID 电机控制与 OpenCV 颜色识别实践">https://kevin589981.github.io/2024/06/23/raspberry-pi-smart-car-opencv/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Python/" rel="tag"># Python</a>
+              <a href="/tags/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/" rel="tag"># 项目实战</a>
+              <a href="/tags/%E6%A0%91%E8%8E%93%E6%B4%BE/" rel="tag"># 树莓派</a>
+              <a href="/tags/OpenCV/" rel="tag"># OpenCV</a>
+              <a href="/tags/PID%E6%8E%A7%E5%88%B6/" rel="tag"># PID控制</a>
+              <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 嵌入式系统</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/01/17/Cplusplus-and-data-structure/" rel="prev" title="C++与数据结构">
+                  <i class="fa fa-angle-left"></i> C++与数据结构
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/11/14/rudp-reliable-transport-over-udp/" rel="next" title="基于 UDP 在应用层实现可靠传输：Go-Back-N 与 SACK 的工程实践">
+                  基于 UDP 在应用层实现可靠传输：Go-Back-N 与 SACK 的工程实践 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2025 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Kevin</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/Kevin589981" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>

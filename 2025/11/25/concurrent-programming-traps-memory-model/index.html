@@ -19,15 +19,15 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"kevin589981.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInDown"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/local-search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="现代多核处理器为了追求极致性能，在编译器、CPU 微架构和缓存层次三个维度上对指令执行顺序进行了激进的重排优化。这些优化在单线程程序中不可见，却在并发场景下引发了难以复现的正确性问题。本文从系统程序员视角出发，系统梳理这些陷阱的根源，以及 C++11 内存模型如何在不牺牲性能的前提下给出精确的解决方案。  1. 并发正确性的三大破坏者并发程序的正确性依赖于一个朴素假设：代码按书写顺序执行，写入立">
+    <meta name="description" content="原始论文：https:&#x2F;&#x2F;github.com&#x2F;mrkline&#x2F;concurrency-primer  现代多核处理器为了追求极致性能，在编译器、CPU 微架构和缓存层次三个维度上对指令执行顺序进行了激进的重排优化。这些优化在单线程程序中不可见，却在并发场景下引发了难以复现的正确性问题。本文从系统程序员视角出发，系统梳理这些陷阱的根源，以及 C++11 内存模型如何在不牺牲性能的前提下给出精确的解">
 <meta property="og:type" content="article">
 <meta property="og:title" content="系统程序员视角：并发陷阱与内存模型精析">
 <meta property="og:url" content="https://kevin589981.github.io/2025/11/25/concurrent-programming-traps-memory-model/index.html">
 <meta property="og:site_name" content="Kevin&#39;s Tech Blog">
-<meta property="og:description" content="现代多核处理器为了追求极致性能，在编译器、CPU 微架构和缓存层次三个维度上对指令执行顺序进行了激进的重排优化。这些优化在单线程程序中不可见，却在并发场景下引发了难以复现的正确性问题。本文从系统程序员视角出发，系统梳理这些陷阱的根源，以及 C++11 内存模型如何在不牺牲性能的前提下给出精确的解决方案。  1. 并发正确性的三大破坏者并发程序的正确性依赖于一个朴素假设：代码按书写顺序执行，写入立">
+<meta property="og:description" content="原始论文：https:&#x2F;&#x2F;github.com&#x2F;mrkline&#x2F;concurrency-primer  现代多核处理器为了追求极致性能，在编译器、CPU 微架构和缓存层次三个维度上对指令执行顺序进行了激进的重排优化。这些优化在单线程程序中不可见，却在并发场景下引发了难以复现的正确性问题。本文从系统程序员视角出发，系统梳理这些陷阱的根源，以及 C++11 内存模型如何在不牺牲性能的前提下给出精确的解">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-11-24T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-02T15:21:59.499Z">
+<meta property="article:modified_time" content="2026-03-03T05:03:37.755Z">
 <meta property="article:author" content="Kevin">
 <meta property="article:tag" content="ARM">
 <meta property="article:tag" content="C++">
@@ -74,9 +74,8 @@
 
   
 
-  <script class="next-config" data-name="enableMath" type="application/json">false</script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha256-UF1fgpAiu3tPJN/uCqEUHNe7pnr+QR0SQDNfgglgtcM=" crossorigin="anonymous">
-  <script class="next-config" data-name="katex" type="application/json">{"copy_tex_js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/copy-tex.min.js","integrity":"sha256-Us54+rSGDSTvIhKKUs4kygE2ipA0RXpWWh0/zLqw3bs="}}</script>
-  <script src="/js/third-party/math/katex.js" defer></script>
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -119,7 +118,7 @@
 
 
 <nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">15</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">4</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">59</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">18</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">71</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
       <li class="menu-item menu-item-search">
         <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
         </a>
@@ -185,18 +184,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-count">18</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">5</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">59</span>
+        <span class="site-state-item-count">71</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -264,7 +263,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:21:59" itemprop="dateModified" datetime="2026-03-02T23:21:59+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:03:37" itemprop="dateModified" datetime="2026-03-03T13:03:37+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -273,6 +272,10 @@
       <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
           <a href="/categories/Systems-HPC/" itemprop="url" rel="index"><span itemprop="name">Systems-HPC</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper-Reading</span></a>
         </span>
     </span>
 
@@ -285,7 +288,8 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><blockquote>
+    <div class="post-body" itemprop="articleBody"><p>原始论文：<br><a target="_blank" rel="noopener" href="https://github.com/mrkline/concurrency-primer">https://github.com/mrkline/concurrency-primer</a></p>
+<blockquote>
 <p>现代多核处理器为了追求极致性能，在编译器、CPU 微架构和缓存层次三个维度上对指令执行顺序进行了激进的重排优化。这些优化在单线程程序中不可见，却在并发场景下引发了难以复现的正确性问题。本文从系统程序员视角出发，系统梳理这些陷阱的根源，以及 C++11 内存模型如何在不牺牲性能的前提下给出精确的解决方案。</p>
 </blockquote>
 <h2 id="1-并发正确性的三大破坏者"><a href="#1-并发正确性的三大破坏者" class="headerlink" title="1. 并发正确性的三大破坏者"></a>1. 并发正确性的三大破坏者</h2><p>并发程序的正确性依赖于一个朴素假设：代码按书写顺序执行，写入立即对所有核心可见。然而现代计算机体系结构在三个层面上系统性地打破了这一假设。</p>
@@ -537,13 +541,13 @@ while (flag.load(std::memory_order_relaxed) == 0) {
 
           <div class="post-nav">
             <div class="post-nav-item">
-                <a href="/2025/11/14/rudp-reliable-transport-over-udp/" rel="prev" title="基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践">
-                  <i class="fa fa-angle-left"></i> 基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践
+                <a href="/2025/10/11/locality-principle-in-os-and-computer-systems/" rel="prev" title="局部性原理：计算机系统资源管理的底层逻辑">
+                  <i class="fa fa-angle-left"></i> 局部性原理：计算机系统资源管理的底层逻辑
                 </a>
             </div>
             <div class="post-nav-item">
-                <a href="/2025/12/17/seda-architecture-scalable-internet-services/" rel="next" title="SEDA：面向高并发互联网服务的阶段式事件驱动架构">
-                  SEDA：面向高并发互联网服务的阶段式事件驱动架构 <i class="fa fa-angle-right"></i>
+                <a href="/2025/12/17/seda-architecture-scalable-internet-services/" rel="next" title="SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构">
+                  SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构 <i class="fa fa-angle-right"></i>
                 </a>
             </div>
           </div>

@@ -67,9 +67,8 @@
 
   
 
-  <script class="next-config" data-name="enableMath" type="application/json">false</script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha256-UF1fgpAiu3tPJN/uCqEUHNe7pnr+QR0SQDNfgglgtcM=" crossorigin="anonymous">
-  <script class="next-config" data-name="katex" type="application/json">{"copy_tex_js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/copy-tex.min.js","integrity":"sha256-Us54+rSGDSTvIhKKUs4kygE2ipA0RXpWWh0/zLqw3bs="}}</script>
-  <script src="/js/third-party/math/katex.js" defer></script>
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 
@@ -112,7 +111,7 @@
 
 
 <nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">15</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">4</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">59</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">18</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">71</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
       <li class="menu-item menu-item-search">
         <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
         </a>
@@ -177,18 +176,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-count">18</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">5</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">59</span>
+        <span class="site-state-item-count">71</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -219,144 +218,6 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2026/03/02/build-os-kernel-01/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
-      <meta itemprop="name" content="Kevin">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Kevin's Tech Blog">
-      <meta itemprop="description" content="探索系统编程、高性能计算、AI 研究与软件工程">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | Kevin's Tech Blog">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/03/02/build-os-kernel-01/" class="post-title-link" itemprop="url">从零实现一个简易操作系统内核（一）：启动与保护模式</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-      
-
-      <time title="创建时间：2026-03-02 00:00:00 / 修改时间：21:53:51" itemprop="dateCreated datePublished" datetime="2026-03-02T00:00:00+08:00">2026-03-02</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Projects/" itemprop="url" rel="index"><span itemprop="name">Projects</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <blockquote>
-<p>本系列记录从零搭建一个 x86 教学 OS 的完整过程，涵盖 Bootloader、保护模式切换、中断处理、内存分页和进程调度。</p>
-</blockquote>
-<h2 id="项目目标"><a href="#项目目标" class="headerlink" title="项目目标"></a>项目目标</h2><p>实现一个能够：</p>
-<ul>
-<li>从 BIOS 引导启动</li>
-<li>切换到 32 位保护模式</li>
-<li>处理键盘中断</li>
-<li>支持基本的进程调度</li>
-<li>提供简单的系统调用接口</li>
-</ul>
-<p>的教学操作系统内核。</p>
-<h2 id="第一阶段：Bootloader"><a href="#第一阶段：Bootloader" class="headerlink" title="第一阶段：Bootloader"></a>第一阶段：Bootloader</h2><p>BIOS 将 MBR（主引导记录，512 字节）加载到 <code>0x7C00</code> 并跳转执行。</p>
-<pre><code class="language-nasm">; boot.asm - 16位实模式 Bootloader
-[BITS 16]
-[ORG 0x7C00]
-
-start:
-    ; 清屏
-    mov ax, 0x03
-    int 0x10
-
-    ; 打印启动信息
-    mov si, msg_boot
-    call print_string
-
-    ; 加载内核到内存 0x10000
-    mov ah, 0x02        ; BIOS 读取扇区
-    mov al, 10          ; 读 10 个扇区
-    mov ch, 0           ; 柱面 0
-    mov cl, 2           ; 从第 2 扇区开始
-    mov dh, 0           ; 磁头 0
-    mov bx, 0x1000
-    mov es, bx
-    mov bx, 0           ; 目标地址 ES:BX = 0x10000
-    int 0x13
-    jc disk_error
-
-    jmp enter_protected_mode
-
-msg_boot db &#39;Loading Kevin OS...&#39;, 0x0D, 0x0A, 0
-
-times 510 - ($ - $$) db 0
-dw 0xAA55               ; 引导扇区魔数
-</code></pre>
-<h2 id="切换保护模式"><a href="#切换保护模式" class="headerlink" title="切换保护模式"></a>切换保护模式</h2><pre><code class="language-nasm">enter_protected_mode:
-    cli                     ; 关中断
-    lgdt [gdt_descriptor]   ; 加载 GDT
-
-    mov eax, cr0
-    or eax, 1
-    mov cr0, eax            ; 置 PE 位
-
-    jmp 0x08:protected_mode_start  ; 远跳刷新流水线
-</code></pre>
-<h2 id="下一篇预告"><a href="#下一篇预告" class="headerlink" title="下一篇预告"></a>下一篇预告</h2><ul>
-<li>GDT 与段描述符详解</li>
-<li>IDT 配置与 IRQ 中断处理</li>
-<li>进入 C 语言内核环境</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
     <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2026/01/26/rust-shyper-embedded-hypervisor-analysis/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -375,7 +236,7 @@ dw 0xAA55               ; 引导扇区魔数
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/01/26/rust-shyper-embedded-hypervisor-analysis/" class="post-title-link" itemprop="url">Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践</a>
+          <a href="/2026/01/26/rust-shyper-embedded-hypervisor-analysis/" class="post-title-link" itemprop="url">Rust-Shyper论文研读：嵌入式Hypervisor分层隔离与安全实践</a>
         </h2>
 
         <div class="post-meta-container">
@@ -393,7 +254,7 @@ dw 0xAA55               ; 引导扇区魔数
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-03 00:17:51" itemprop="dateModified" datetime="2026-03-03T00:17:51+08:00">2026-03-03</time>
+      <time title="修改时间：2026-03-03 13:03:37" itemprop="dateModified" datetime="2026-03-03T13:03:37+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -402,6 +263,10 @@ dw 0xAA55               ; 引导扇区魔数
       <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
           <a href="/categories/Systems-HPC/" itemprop="url" rel="index"><span itemprop="name">Systems-HPC</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper-Reading</span></a>
         </span>
     </span>
 
@@ -415,7 +280,8 @@ dw 0xAA55               ; 引导扇区魔数
     
     
     <div class="post-body" itemprop="articleBody">
-          <blockquote>
+          <p>原始代码及论文仓库：<br><a target="_blank" rel="noopener" href="https://atomgit.com/openeuler/rust_shyper">https://atomgit.com/openeuler/rust_shyper</a></p>
+<blockquote>
 <p>随着嵌入式设备演化为混合关键性系统（Mixed-Criticality System），如何在同一块 SoC 上同时支撑硬实时控制任务与通用 Linux 工作负载，同时保证它们之间的强隔离，成为嵌入式虚拟化的核心挑战。服务器级 Hypervisor（KVM&#x2F;Xen）因调度抖动难以满足实时约束；静态分区方案（Jailhouse&#x2F;Bao）则牺牲了资源利用率与灵活性。本文围绕 Shyper 系列论文及其 Rust 重实现 Rust-Shyper，从架构设计、关键优化机制、可靠性工程，以及 Rust 语言安全实践四个维度展开深度分析，并结合 <code>rust_shyper</code> 仓库源码进行印证。</p>
 </blockquote>
 <h2 id="1-背景：嵌入式虚拟化的设计困境"><a href="#1-背景：嵌入式虚拟化的设计困境" class="headerlink" title="1. 背景：嵌入式虚拟化的设计困境"></a>1. 背景：嵌入式虚拟化的设计困境</h2><p>现代嵌入式设备（汽车 ECU、工业控制器、无人机飞控）正面临一个典型的二元悖论：</p>
@@ -658,7 +524,7 @@ impl Drop for Vm {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:21:06" itemprop="dateModified" datetime="2026-03-02T23:21:06+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:03:50" itemprop="dateModified" datetime="2026-03-03T13:03:50+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1002,7 +868,7 @@ impl Drop for Vm {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:22:03" itemprop="dateModified" datetime="2026-03-02T23:22:03+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:02:57" itemprop="dateModified" datetime="2026-03-03T13:02:57+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1224,7 +1090,7 @@ impl Drop for Vm {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:24:50" itemprop="dateModified" datetime="2026-03-02T23:24:50+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:03:37" itemprop="dateModified" datetime="2026-03-03T13:03:37+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1233,6 +1099,10 @@ impl Drop for Vm {
       <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
           <a href="/categories/Systems-HPC/" itemprop="url" rel="index"><span itemprop="name">Systems-HPC</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper-Reading</span></a>
         </span>
     </span>
 
@@ -1346,7 +1216,7 @@ void consumer() {
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/12/20/memos-llm-memory-system-evaluation/" class="post-title-link" itemprop="url">MemOS 记忆操作系统：LLM 长程记忆工程实践</a>
+          <a href="/2025/12/20/memos-llm-memory-system-evaluation/" class="post-title-link" itemprop="url">改进 MemOS 记忆操作系统：LLM 长程记忆工程实践</a>
         </h2>
 
         <div class="post-meta-container">
@@ -1364,13 +1234,17 @@ void consumer() {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:21:29" itemprop="dateModified" datetime="2026-03-02T23:21:29+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:03:50" itemprop="dateModified" datetime="2026-03-03T13:03:50+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
         <i class="far fa-folder"></i>
       </span>
       <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Projects/" itemprop="url" rel="index"><span itemprop="name">Projects</span></a>
+        </span>
+          ，
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
           <a href="/categories/AI-Research/" itemprop="url" rel="index"><span itemprop="name">AI-Research</span></a>
         </span>
@@ -1386,7 +1260,8 @@ void consumer() {
     
     
     <div class="post-body" itemprop="articleBody">
-          <blockquote>
+          <p>原始代码:<br><a target="_blank" rel="noopener" href="https://github.com/MemTensor/MemOS">https://github.com/MemTensor/MemOS</a><br>改进代码：<br><a target="_blank" rel="noopener" href="https://github.com/Kevin589981/MemOS/tree/main/code">https://github.com/Kevin589981/MemOS/tree/main/code</a></p>
+<blockquote>
 <p>LLM 的”遗忘”不只是上下文窗口的技术限制，更是系统设计层面的架构问题。MemOS（Memory OS）将记忆视为可管理的系统资源，提出了一套类比操作系统的记忆治理框架。本文结合在 LoCoMo 对话数据集上的工程实践，系统梳理 MemOS 的核心设计理念，以及如何通过数据增强、提示词工程和窗口策略将评测 F1 从 0.25 推进到 0.57 以上。</p>
 </blockquote>
 <h2 id="一、背景：为什么-LLM-需要”记忆操作系统”"><a href="#一、背景：为什么-LLM-需要”记忆操作系统”" class="headerlink" title="一、背景：为什么 LLM 需要”记忆操作系统”"></a>一、背景：为什么 LLM 需要”记忆操作系统”</h2><p>当前主流 LLM 交互模式本质上是<strong>无状态的（Stateless）</strong>：每次对话独立发生，模型不保留历史。这在四个维度上造成了根本性局限：</p>
@@ -1609,7 +1484,7 @@ void consumer() {
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/12/17/seda-architecture-scalable-internet-services/" class="post-title-link" itemprop="url">SEDA：面向高并发互联网服务的阶段式事件驱动架构</a>
+          <a href="/2025/12/17/seda-architecture-scalable-internet-services/" class="post-title-link" itemprop="url">SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构</a>
         </h2>
 
         <div class="post-meta-container">
@@ -1627,7 +1502,7 @@ void consumer() {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:25:38" itemprop="dateModified" datetime="2026-03-02T23:25:38+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:03:37" itemprop="dateModified" datetime="2026-03-03T13:03:37+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1636,6 +1511,10 @@ void consumer() {
       <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
           <a href="/categories/Systems-HPC/" itemprop="url" rel="index"><span itemprop="name">Systems-HPC</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper-Reading</span></a>
         </span>
     </span>
 
@@ -1649,7 +1528,8 @@ void consumer() {
     
     
     <div class="post-body" itemprop="articleBody">
-          <blockquote>
+          <p>原始论文：<a target="_blank" rel="noopener" href="https://dl.acm.org/doi/10.1145/502059.502057">https://dl.acm.org/doi/10.1145/502059.502057</a></p>
+<blockquote>
 <p>互联网访问量的极端波动性，使得传统线程模型和事件驱动模型均难以在高并发场景下实现优雅降级。SEDA（Staged Event-Driven Architecture，阶段式事件驱动架构）通过将服务拆分为以事件队列隔开的阶段网络，并引入动态资源控制器，在不牺牲可编程性的前提下，实现了对负载的自适应管理。本文对该论文的核心思想、架构设计与实验评估进行系统梳理。</p>
 </blockquote>
 <h2 id="1-背景：传统并发模型的根本局限"><a href="#1-背景：传统并发模型的根本局限" class="headerlink" title="1. 背景：传统并发模型的根本局限"></a>1. 背景：传统并发模型的根本局限</h2><p>互联网服务的负载特征极不均匀——峰值与低谷的访问量可能相差数个数量级。理想的服务器架构应当在高负载下优雅降级而非崩溃，在低负载下节约资源而非空转。</p>
@@ -1767,7 +1647,7 @@ void consumer() {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:21:59" itemprop="dateModified" datetime="2026-03-02T23:21:59+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:03:37" itemprop="dateModified" datetime="2026-03-03T13:03:37+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1776,6 +1656,10 @@ void consumer() {
       <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
           <a href="/categories/Systems-HPC/" itemprop="url" rel="index"><span itemprop="name">Systems-HPC</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper-Reading</span></a>
         </span>
     </span>
 
@@ -1789,7 +1673,8 @@ void consumer() {
     
     
     <div class="post-body" itemprop="articleBody">
-          <blockquote>
+          <p>原始论文：<br><a target="_blank" rel="noopener" href="https://github.com/mrkline/concurrency-primer">https://github.com/mrkline/concurrency-primer</a></p>
+<blockquote>
 <p>现代多核处理器为了追求极致性能，在编译器、CPU 微架构和缓存层次三个维度上对指令执行顺序进行了激进的重排优化。这些优化在单线程程序中不可见，却在并发场景下引发了难以复现的正确性问题。本文从系统程序员视角出发，系统梳理这些陷阱的根源，以及 C++11 内存模型如何在不牺牲性能的前提下给出精确的解决方案。</p>
 </blockquote>
 <h2 id="1-并发正确性的三大破坏者"><a href="#1-并发正确性的三大破坏者" class="headerlink" title="1. 并发正确性的三大破坏者"></a>1. 并发正确性的三大破坏者</h2><p>并发程序的正确性依赖于一个朴素假设：代码按书写顺序执行，写入立即对所有核心可见。然而现代计算机体系结构在三个层面上系统性地打破了这一假设。</p>
@@ -2029,227 +1914,6 @@ while (flag.load(std::memory_order_relaxed) == 0) {
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2025/11/14/rudp-reliable-transport-over-udp/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
-      <meta itemprop="name" content="Kevin">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Kevin's Tech Blog">
-      <meta itemprop="description" content="探索系统编程、高性能计算、AI 研究与软件工程">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | Kevin's Tech Blog">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2025/11/14/rudp-reliable-transport-over-udp/" class="post-title-link" itemprop="url">基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-11-14 00:00:00" itemprop="dateCreated datePublished" datetime="2025-11-14T00:00:00+08:00">2025-11-14</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:28:58" itemprop="dateModified" datetime="2026-03-02T23:28:58+08:00">2026-03-02</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Projects/" itemprop="url" rel="index"><span itemprop="name">Projects</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <blockquote>
-<p>TCP 的可靠性来自精心设计的重传机制，但其内部细节对上层应用透明。如果要在 UDP 这张”白纸”上手工绘制可靠传输，需要多少工程量？本文复盘了一次 RUDP（Reliable UDP）的完整实现，包括 Go-Back-N 与选择重传（SACK），以及针对各类异常场景的健壮性测试。</p>
-</blockquote>
-<h2 id="一、问题背景与协议设计"><a href="#一、问题背景与协议设计" class="headerlink" title="一、问题背景与协议设计"></a>一、问题背景与协议设计</h2><p>UDP 是面向无连接的无状态协议：快，但不可靠。数据包可能丢失、乱序、重复或损坏。在 UDP 之上实现可靠传输（RUDP），本质上是在应用层重新实现 TCP 的核心语义，但可以选择性地裁剪开销。</p>
-<h3 id="1-1-消息类型定义"><a href="#1-1-消息类型定义" class="headerlink" title="1.1 消息类型定义"></a>1.1 消息类型定义</h3><p>RUDP 协议定义四种消息类型：<code>start</code>、<code>data</code>、<code>end</code>、<code>ack</code>（及 <code>sack</code>）。每个数据包格式如下：</p>
-<pre><code>&lt;type&gt;|&lt;sequence number&gt;|&lt;data&gt;|&lt;checksum&gt;
-</code></pre>
-<p><code>checksum</code> 用于检测传输过程中的数据损坏，接收方在序列号确认前首先验证校验和。</p>
-<h3 id="1-2-核心发送策略"><a href="#1-2-核心发送策略" class="headerlink" title="1.2 核心发送策略"></a>1.2 核心发送策略</h3><p>发送端需要满足以下约束：</p>
-<ul>
-<li>数据包按序、可靠送达，支持丢包、乱序、重复等异常场景；</li>
-<li>支持 <strong>Go-Back-N</strong>（GBN）与<strong>选择重传</strong>（Selective ACK, SACK）两种模式；</li>
-<li>发送窗口大小为 5，超时时间 500ms。</li>
-</ul>
-<hr>
-<h2 id="二、发送端实现（Sender-py）"><a href="#二、发送端实现（Sender-py）" class="headerlink" title="二、发送端实现（Sender.py）"></a>二、发送端实现（Sender.py）</h2><h3 id="2-1-数据分片与窗口管理"><a href="#2-1-数据分片与窗口管理" class="headerlink" title="2.1 数据分片与窗口管理"></a>2.1 数据分片与窗口管理</h3><p>文件内容按最大 1472 字节分片，加上 <code>start</code> 和 <code>end</code> 包，构成完整报文序列。核心状态变量包括：</p>
-<ul>
-<li><code>base</code>：窗口左边界，指向最早未确认的包；</li>
-<li><code>next_seq_num</code>：下一个待发送包的序号；</li>
-<li><code>timer</code>：用于超时重传的时间戳。</li>
-</ul>
-<pre><code class="language-python"># 分片与打包
-chunks = [content[i:i+MAX_DATA_SIZE] for i in range(0, len(content), MAX_DATA_SIZE)]
-self.packets.append(self.make_packet(&#39;start&#39;, self.isn, &quot;&quot;))
-for i, chunk in enumerate(chunks[:-1]):
-    seq = self.isn + 1 + i
-    self.packets.append(self.make_packet(&#39;data&#39;, seq, chunk))
-self.packets.append(self.make_packet(&#39;end&#39;, self.isn + len(self.packets), chunks[-1]))
-</code></pre>
-<h3 id="2-2-主循环：滑动窗口-超时重传"><a href="#2-2-主循环：滑动窗口-超时重传" class="headerlink" title="2.2 主循环：滑动窗口 + 超时重传"></a>2.2 主循环：滑动窗口 + 超时重传</h3><pre><code class="language-python">while self.base &lt; len(self.packets):
-    # 填满发送窗口
-    while (self.next_seq_num &lt; self.base + self.window_size
-           and self.next_seq_num &lt; len(self.packets)):
-        self.send(self.packets[self.next_seq_num])
-        if self.base == self.next_seq_num:
-            self.timer = time.time()    # 仅当新窗口打开时启动计时器
-        self.next_seq_num += 1
-
-    # 超时检测：重传窗口内所有未确认包
-    if (self.base &lt; self.next_seq_num
-            and time.time() - self.timer &gt; self.timeout):
-        self.handle_timeout()
-</code></pre>
-<p>窗口语义的关键设计点：计时器仅在窗口从空变非空时启动，窗口滑动时重置，窗口归零时停止。这一逻辑若出现偏差，轻则包未及时重传，重则触发死锁。</p>
-<h3 id="2-3-ACK-SACK-处理：快速重传"><a href="#2-3-ACK-SACK-处理：快速重传" class="headerlink" title="2.3 ACK&#x2F;SACK 处理：快速重传"></a>2.3 ACK&#x2F;SACK 处理：快速重传</h3><pre><code class="language-python">def handle_new_ack(self, ack):
-    self.dup_ack_count = 0
-    cum_idx, sack_indices = self._parse_ack_string(ack)
-    if cum_idx &gt; self.base:
-        self.base = cum_idx    # 滑动窗口左边界
-    if self.base &lt; self.next_seq_num:
-        self.timer = time.time()    # 仍有未确认包，重启计时器
-    else:
-        self.timer = None           # 所有包已确认，停止计时器
-    if self.sackMode:
-        self._update_sack_bitmap(sack_indices)    # 标记已选择确认的包
-</code></pre>
-<p><strong>三次重复 ACK</strong> 触发快速重传（不等待超时），这是对 TCP Fast Retransmit 的直接移植，可在高丢包场景下显著缩短恢复延迟。</p>
-<p><strong>SACK 位图</strong>的核心价值在于：GBN 模式下一旦发生丢包，窗口内所有后续包必须全部重传；而 SACK 允许接收方精确告知哪些包已到达，发送端只需重传真正缺失的包，大幅降低重传放大倍数。</p>
-<hr>
-<h2 id="三、测试设计：覆盖各类异常场景"><a href="#三、测试设计：覆盖各类异常场景" class="headerlink" title="三、测试设计：覆盖各类异常场景"></a>三、测试设计：覆盖各类异常场景</h2><p>除了基础功能测试，以下健壮性测试用例专门针对不同类型的网络异常：</p>
-<table>
-<thead>
-<tr>
-<th>测试用例</th>
-<th>模拟场景</th>
-<th>验证目标</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>AckCorruptionTest</code></td>
-<td>ACK&#x2F;SACK 包内容损坏</td>
-<td>发送端对无效确认的处理</td>
-</tr>
-<tr>
-<td><code>AckDuplicationTest</code></td>
-<td>ACK&#x2F;SACK 包重复</td>
-<td>防止重复确认触发不必要的重传</td>
-</tr>
-<tr>
-<td><code>AckLossTest</code></td>
-<td>ACK&#x2F;SACK 包丢失</td>
-<td>超时重传与窗口滑动正确性</td>
-</tr>
-<tr>
-<td><code>AckReorderTest</code></td>
-<td>ACK&#x2F;SACK 包乱序</td>
-<td>对乱序确认的兼容性</td>
-</tr>
-<tr>
-<td><code>DataCorruptionTest</code></td>
-<td>数据包内容损坏</td>
-<td>接收端丢弃损坏包并正确反馈</td>
-</tr>
-<tr>
-<td><code>DataDuplicationTest</code></td>
-<td>数据包重复</td>
-<td>接收端去重能力</td>
-</tr>
-<tr>
-<td><code>DataReorderTest</code></td>
-<td>数据包乱序</td>
-<td>接收端乱序缓存与窗口滑动</td>
-</tr>
-<tr>
-<td><code>GBNTests / SackTests</code></td>
-<td>上述场景分别用于两种模式</td>
-<td>双模式的全覆盖验证</td>
-</tr>
-<tr>
-<td><code>RandomDropTest</code></td>
-<td>随机丢包</td>
-<td>高丢包环境下的整体可靠性</td>
-</tr>
-</tbody></table>
-<h3 id="3-1-测试结果分析"><a href="#3-1-测试结果分析" class="headerlink" title="3.1 测试结果分析"></a>3.1 测试结果分析</h3><ul>
-<li><strong>GBN 模式</strong>：所有测试（含高丢包、乱序、重复）均通过，数据可靠送达，未出现死锁或永久丢包。</li>
-<li><strong>SACK 模式</strong>：选择重传有效减少重传量，在高丢包环境下吞吐量明显优于 GBN。</li>
-<li><strong>大文件 &#x2F; 二进制文件传输</strong>：均通过，无数据错误，证明校验与分片逻辑正确。</li>
-</ul>
-<hr>
-<h2 id="四、遇到的问题与解决策略"><a href="#四、遇到的问题与解决策略" class="headerlink" title="四、遇到的问题与解决策略"></a>四、遇到的问题与解决策略</h2><h3 id="4-1-窗口滑动与定时器同步"><a href="#4-1-窗口滑动与定时器同步" class="headerlink" title="4.1 窗口滑动与定时器同步"></a>4.1 窗口滑动与定时器同步</h3><p>初始实现中，定时器更新时机与窗口滑动逻辑耦合不紧，导致部分已发包在某些状态下既不在定时器覆盖范围内、也未收到确认，形成”灰色包”，最终被遗忘。</p>
-<p><strong>解决方案</strong>：明确定义”计时器生命周期”为”窗口非空→停机”，窗口任何变动（发包、收 ACK）都触发相应的计时器操作，消除中间状态。</p>
-<h3 id="4-2-SACK-位图的双计数问题"><a href="#4-2-SACK-位图的双计数问题" class="headerlink" title="4.2 SACK 位图的双计数问题"></a>4.2 SACK 位图的双计数问题</h3><p>SACK 模式下，如果位图更新逻辑与累计 ACK 解析之间存在重叠，可能对同一帧计数两次，导致提前重传或错误统计。通过将 <code>cum_idx</code> 推进逻辑与 <code>sack_indices</code> 位图更新逻辑严格串行化来消除此问题。</p>
-<h3 id="4-3-测试框架适配"><a href="#4-3-测试框架适配" class="headerlink" title="4.3 测试框架适配"></a>4.3 测试框架适配</h3><p>实验框架对命令行参数格式和包格式有严格要求，手动测试时通过的逻辑在自动化测试中可能因格式错误失败。应在开发阶段就对齐框架期望的格式，避免后期大量调试。</p>
-<hr>
-<h2 id="五、设计权衡总结"><a href="#五、设计权衡总结" class="headerlink" title="五、设计权衡总结"></a>五、设计权衡总结</h2><p>RUDP 的实现让两个关键权衡变得清晰：</p>
-<ol>
-<li><strong>窗口大小 vs 延迟</strong>：窗口越大，吞吐量越高，但重传代价（GBN 模式）也越大。SACK 通过精确重传打破了这一耦合。</li>
-<li><strong>超时值 vs 响应速度</strong>：超时过短导致误重传（假阳性），过长则恢复延迟高。三次重复 ACK 触发的快速重传是应对突发丢包的低延迟补偿机制，无需等待超时周期。</li>
-</ol>
-<p>从系统设计角度看，Go-Back-N 与 SACK 的选择实质上是”实现复杂度”与”网络效率”之间的权衡——在今天高丢包的无线网络环境中，SACK 早已是默认选择。</p>
-<hr>
-<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
-<li><strong>[RFC 2018 TCP SACK 选项规范]</strong>：选择重传的标准定义，值得对照实现细节阅读。</li>
-<li><strong>[QUIC 协议设计]</strong>：Google 在 UDP 之上重新设计的可靠传输协议，融合了多路复用、0-RTT 握手等现代设计，是 RUDP 思想的工业级延伸。</li>
-<li>下一篇预告：从传输层向上走——应用层的长程记忆问题：MemOS 记忆操作系统的工程实践。</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
     <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2025/10/11/locality-principle-in-os-and-computer-systems/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2286,7 +1950,7 @@ self.packets.append(self.make_packet(&#39;end&#39;, self.isn + len(self.packets)
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-02 23:24:16" itemprop="dateModified" datetime="2026-03-02T23:24:16+08:00">2026-03-02</time>
+      <time title="修改时间：2026-03-03 13:03:37" itemprop="dateModified" datetime="2026-03-03T13:03:37+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -2295,6 +1959,10 @@ self.packets.append(self.make_packet(&#39;end&#39;, self.isn + len(self.packets)
       <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
           <a href="/categories/CS-Fundamentals/" itemprop="url" rel="index"><span itemprop="name">CS-Fundamentals</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper-Reading</span></a>
         </span>
     </span>
 
@@ -2308,7 +1976,8 @@ self.packets.append(self.make_packet(&#39;end&#39;, self.isn + len(self.packets)
     
     
     <div class="post-body" itemprop="articleBody">
-          <blockquote>
+          <p>原始论文链接：<a target="_blank" rel="noopener" href="https://onlinelibrary.wiley.com/doi/abs/10.1002/9780470050118.ecse960">https://onlinelibrary.wiley.com/doi/abs/10.1002/9780470050118.ecse960</a></p>
+<blockquote>
 <p>局部性原理（Locality Principle）是计算机系统设计中最具普适性的基础理论之一。它揭示了计算过程中资源引用的聚集性规律，为虚拟内存、CPU 缓存、数据库索引乃至推荐系统提供了统一的理论基础。本文以 Denning（2008）的综述论文为线索，系统梳理局部性原理的数学建模、历史渊源与跨领域应用。</p>
 </blockquote>
 <h2 id="1-局部性的核心定义"><a href="#1-局部性的核心定义" class="headerlink" title="1. 局部性的核心定义"></a>1. 局部性的核心定义</h2><p>在几乎所有计算过程中，程序在<strong>长时间尺度内只会反复使用资源全集的某个子集</strong>，这一普遍规律被称为局部性。</p>
@@ -2389,6 +2058,298 @@ self.packets.append(self.make_packet(&#39;end&#39;, self.isn + len(self.packets)
 <li><strong>[缓存替换算法]</strong>：从 OPT、LRU 到 ARC（Adaptive Replacement Cache）的演进，以及在 NVM 存储层次下替换策略的新挑战。</li>
 <li><strong>[NUMA 与局部性]</strong>：非均匀内存访问架构（NUMA）中，远程内存访问如何打破经典局部性假设，以及 <code>numactl</code> 等工具的使用实践。</li>
 <li>下一篇预告：日志结构文件系统（LFS）——顺序写如何将磁盘带宽利用率推向极限。</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2025/09/23/log-structured-filesystem-design/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
+      <meta itemprop="name" content="Kevin">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin's Tech Blog">
+      <meta itemprop="description" content="探索系统编程、高性能计算、AI 研究与软件工程">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Kevin's Tech Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/09/23/log-structured-filesystem-design/" class="post-title-link" itemprop="url">日志结构文件系统：磁盘带宽利用的极致追求</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-09-23 00:00:00" itemprop="dateCreated datePublished" datetime="2025-09-23T00:00:00+08:00">2025-09-23</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-03 13:03:37" itemprop="dateModified" datetime="2026-03-03T13:03:37+08:00">2026-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Systems-HPC/" itemprop="url" rel="index"><span itemprop="name">Systems-HPC</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper-Reading</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>原始论文：<a target="_blank" rel="noopener" href="https://dl.acm.org/doi/10.1145/146941.146943">https://dl.acm.org/doi/10.1145/146941.146943</a></p>
+<blockquote>
+<p>传统文件系统将磁盘视为可随机寻址的块设备，大量小文件操作导致磁盘带宽利用率不足 5%。Rosenblum 与 Ousterhout 在 1992 年发表的论文《The Design and Implementation of a Log-Structured File System》，从硬件发展趋势的不平衡性出发，提出了一种颠覆性方案：将整个磁盘视为一个顺序追加的日志，在极大提升写性能的同时，兼顾了崩溃恢复的高效性。</p>
+</blockquote>
+<h2 id="1-问题的根源：硬件发展的不平衡"><a href="#1-问题的根源：硬件发展的不平衡" class="headerlink" title="1. 问题的根源：硬件发展的不平衡"></a>1. 问题的根源：硬件发展的不平衡</h2><p>文件系统性能由三个核心硬件组件共同决定，而它们的发展速度存在根本性的不对称：</p>
+<ul>
+<li><strong>处理器</strong>：性能呈指数级增长，形成巨大的 I&#x2F;O 压力；</li>
+<li><strong>主内存</strong>：容量持续扩大，能够缓存大量读请求，使磁盘的<strong>读负载大幅降低</strong>，工作负载逐渐以<strong>写操作为主</strong>；</li>
+<li><strong>机械磁盘</strong>：传输带宽提升有限，而<strong>寻道时间几乎没有改善</strong>。</li>
+</ul>
+<p>这一趋势意味着：磁盘的主要瓶颈不在于数据传输速率，而在于<strong>随机寻道的机械延迟</strong>。</p>
+<p>传统文件系统（如 Unix FFS）对写操作的实现与此趋势严重背离。以创建一个小文件为例，该操作会被分解为多次独立的磁盘写入（目录数据、目录 inode、文件数据、文件 inode、位图等），<strong>每次写入均可能触发一次独立寻道</strong>，导致磁盘大部分时间耗费在机械臂移动上，<strong>实际带宽利用率甚至低于 5%</strong>。</p>
+<h2 id="2-LFS-的核心思想：顺序写日志"><a href="#2-LFS-的核心思想：顺序写日志" class="headerlink" title="2. LFS 的核心思想：顺序写日志"></a>2. LFS 的核心思想：顺序写日志</h2><p>LFS（Log-Structured File System）的设计哲学是：<strong>将文件系统的接口实现与底层磁盘布局彻底解耦</strong>。</p>
+<h3 id="2-1-写入策略"><a href="#2-1-写入策略" class="headerlink" title="2.1 写入策略"></a>2.1 写入策略</h3><p>无论上层发起多少次零散的写操作，LFS 在内存中维护一个<strong>写缓冲区</strong>，将所有脏数据（包括文件数据、inode、目录块等）集中缓存，待积累到足够大（通常为若干 MB）时，以一次大的<strong>顺序磁盘写入</strong>将所有变更追加到磁盘日志的末尾，<strong>丢弃原始位置的旧数据块</strong>，不执行原地更新（in-place update）。</p>
+<pre><code>传统 FFS 写 N 个小文件：N 次随机写 → 带宽 &lt; 5%
+LFS 写 N 个小文件：1 次顺序追加写 → 带宽接近 100%
+</code></pre>
+<p>这一设计将大量随机写操作转化为单次大型顺序写，<strong>从根本上规避了寻道延迟</strong>。</p>
+<h3 id="2-2-崩溃恢复的简化"><a href="#2-2-崩溃恢复的简化" class="headerlink" title="2.2 崩溃恢复的简化"></a>2.2 崩溃恢复的简化</h3><p>由于最新的所有修改都集中在日志末尾，崩溃恢复无需像 <code>fsck</code> 那样扫描整个磁盘寻找不一致。LFS 只需检查日志的最新部分，将恢复时间从数十分钟缩短到数十秒。</p>
+<h2 id="3-高效读取：inode-Map-机制"><a href="#3-高效读取：inode-Map-机制" class="headerlink" title="3. 高效读取：inode Map 机制"></a>3. 高效读取：inode Map 机制</h2><h3 id="3-1-传统文件系统的定位优势"><a href="#3-1-传统文件系统的定位优势" class="headerlink" title="3.1 传统文件系统的定位优势"></a>3.1 传统文件系统的定位优势</h3><p>在 FFS 中，inode 的磁盘位置由文件编号直接计算得出，定位开销为零。LFS 每次修改文件都会将 inode 写入新位置，<strong>inode 的磁盘地址不再固定</strong>，若不加处理，读取性能将急剧退化。</p>
+<h3 id="3-2-inode-Map：解耦接口与实现"><a href="#3-2-inode-Map：解耦接口与实现" class="headerlink" title="3.2 inode Map：解耦接口与实现"></a>3.2 inode Map：解耦接口与实现</h3><p>LFS 引入了 <strong>inode Map</strong>（inode 映射表）来解决这一问题：</p>
+<pre><code>文件编号 → inode Map → inode 在日志中的当前物理地址 → 文件数据
+</code></pre>
+<p>inode Map 的元数据本身也以顺序方式写入日志，其当前位置由磁盘<strong>固定区域</strong>（检查点区域，Checkpoint Region）记录。</p>
+<p>由于 inode Map 所占空间相对于总磁盘空间极小，其<strong>活跃部分可完整缓存在主内存中</strong>。因此，绝大多数文件定位操作不需要额外的磁盘访问，读取性能可与 Unix FFS 相媲美。</p>
+<p>这正是”<strong>接口与实现解耦</strong>“思想的体现：上层看到的仍是”通过文件编号访问文件”的稳定抽象，底层实现则通过 inode Map 透明地处理了日志化带来的地址不固定问题。</p>
+<h2 id="4-空间回收：段清理的成本-收益策略"><a href="#4-空间回收：段清理的成本-收益策略" class="headerlink" title="4. 空间回收：段清理的成本-收益策略"></a>4. 空间回收：段清理的成本-收益策略</h2><h3 id="4-1-碎片化问题的必然性"><a href="#4-1-碎片化问题的必然性" class="headerlink" title="4.1 碎片化问题的必然性"></a>4.1 碎片化问题的必然性</h3><p>由于 LFS 不执行原地更新，旧数据块持续积累，必须有机制回收这些<strong>已失效的磁盘空间</strong>。LFS 将磁盘组织为固定大小的<strong>段（Segment）</strong>，段是日志追加和垃圾回收的基本单位。</p>
+<h3 id="4-2-贪心策略的失败"><a href="#4-2-贪心策略的失败" class="headerlink" title="4.2 贪心策略的失败"></a>4.2 贪心策略的失败</h3><p>直觉上，应优先清理有效数据比例最低的段（即”最空段优先”策略）。然而仿真实验证明，贪心策略在稳态下会导致：</p>
+<ul>
+<li>所有段的有效数据比例趋向同一阈值，磁盘利用率被人为压低；</li>
+<li>包含”冷数据”（访问频率极低）的段，因数据失效缓慢，会在略高于清理阈值的位置<strong>长期占用磁盘空间，难以被回收</strong>。</li>
+</ul>
+<h3 id="4-3-成本-收益分析的引入"><a href="#4-3-成本-收益分析的引入" class="headerlink" title="4.3 成本-收益分析的引入"></a>4.3 成本-收益分析的引入</h3><p>LFS 论文设计了基于<strong>清理收益与清理成本比值</strong>的评分函数来选择待清理段：</p>
+<p>$$\text{score}(s) &#x3D; \frac{\text{收益}}{\text{成本}} &#x3D; \frac{(1 - u) \cdot \text{age}}{1 + u}$$</p>
+<p>其中 $u$ 为段的有效数据比例，$\text{age}$ 为段中最年轻数据的”年龄”（衡量数据保持稳定的时间）。</p>
+<ul>
+<li><strong>热段</strong>（有效数据快速失效）：代入公式，只有当 $u$ 极低时得分才足够高，<strong>约在 15% 有效数据比例时被清理</strong>；</li>
+<li><strong>冷段</strong>（有效数据长期稳定）：age 值高，即便 $u$ 较大（约 75%）也能获得高分，<strong>会被提前主动清理</strong>。</li>
+</ul>
+<p>这一策略自然促成了理想的 <strong>双峰段分布（Bimodal Segment Distribution）</strong>：磁盘上的段要么几乎全满（冷数据稳定占用），要么几乎全空（可快速分配）。超过一半被清理的段完全为空，此时总体写入放大系数仅为 <strong>1.2–1.6</strong>，意味着 LFS 能将超过 <strong>70% 的磁盘原始带宽</strong>用于写入新数据。</p>
+<h2 id="5-崩溃恢复：检查点与前滚"><a href="#5-崩溃恢复：检查点与前滚" class="headerlink" title="5. 崩溃恢复：检查点与前滚"></a>5. 崩溃恢复：检查点与前滚</h2><p>LFS 的崩溃恢复机制极其简洁：</p>
+<ol>
+<li><strong>检查点（Checkpoint）</strong>：系统周期性地将当前一致状态的所有元数据（包括 inode Map 的完整快照）写入磁盘固定区域，固化一个”已知良好”的文件系统状态；</li>
+<li><strong>前滚（Roll-Forward）</strong>：崩溃后，系统从最新检查点恢复，再向前扫描日志尾部，重放检查点之后的操作，尽可能恢复更多数据。</li>
+</ol>
+<p>所有待恢复信息集中于日志末尾，完全无需对整个磁盘进行 <code>fsck</code> 式的全量扫描。</p>
+<h2 id="6-与相关工作的对比"><a href="#6-与相关工作的对比" class="headerlink" title="6. 与相关工作的对比"></a>6. 与相关工作的对比</h2><p>LFS 的设计广泛借鉴并改造了已有系统思想：</p>
+<table>
+<thead>
+<tr>
+<th>参考来源</th>
+<th>借鉴点</th>
+<th>LFS 的改进&#x2F;区别</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一次性写入介质文件系统</td>
+<td>追加写模式</td>
+<td>LFS 额外实现了日志空间回收</td>
+</tr>
+<tr>
+<td>分代垃圾回收器</td>
+<td>成本-收益选择回收对象</td>
+<td>LFS 必须顺序访问，利用”块最多属于一个文件”简化垃圾识别</td>
+</tr>
+<tr>
+<td>数据库日志</td>
+<td>日志作为持久化手段</td>
+<td>LFS 需写完整数据块（非字节级差分），并设计了段清理来压缩日志</td>
+</tr>
+<tr>
+<td>数据库组提交（Group Commit）</td>
+<td>批量合并写入</td>
+<td>LFS 将这一思想应用于文件系统层</td>
+</tr>
+</tbody></table>
+<h2 id="7-总结"><a href="#7-总结" class="headerlink" title="7. 总结"></a>7. 总结</h2><p>LFS 的核心贡献在于：<strong>从硬件趋势的不平衡性出发，以”顺序追加写”重构了文件系统的底层存储模型</strong>，并通过 inode Map 保证读取性能不退化，通过成本-收益段清理解决了空间回收的复杂性，最终在一个真实系统（Sprite LFS）上验证了设计的可行性与优越性。</p>
+<p>LFS 的思想对后续存储系统产生了深远影响：现代 SSD 的 FTL（Flash Translation Layer）、数据库的 LSM-Tree（LevelDB、RocksDB）均采用了类似的”追加写+后台整理”策略，可以说 LFS 是这一设计范式的奠基性工作。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><strong>[LSM-Tree]</strong>：LevelDB&#x2F;RocksDB 中的 Log-Structured Merge-Tree 与 LFS 的段清理机制有何异同，以及写放大的量化分析。</li>
+<li><strong>[F2FS]</strong>：专为闪存设计的 F2FS（Flash-Friendly File System），如何将 LFS 的思想适配到 SSD 的页擦除粒度限制。</li>
+<li>下一篇预告：系统程序员视角下的并发陷阱——内存模型、内存屏障与无锁编程的权衡取舍。</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2025/09/02/os-evolution-and-future/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
+      <meta itemprop="name" content="Kevin">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin's Tech Blog">
+      <meta itemprop="description" content="探索系统编程、高性能计算、AI 研究与软件工程">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Kevin's Tech Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2025/09/02/os-evolution-and-future/" class="post-title-link" itemprop="url">操作系统的演进：从批处理到万物互联的架构变革</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-09-02 00:00:00" itemprop="dateCreated datePublished" datetime="2025-09-02T00:00:00+08:00">2025-09-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-03 13:03:37" itemprop="dateModified" datetime="2026-03-03T13:03:37+08:00">2026-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/CS-Fundamentals/" itemprop="url" rel="index"><span itemprop="name">CS-Fundamentals</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper-Reading</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>原始论文：<br><a target="_blank" rel="noopener" href="https://dl.acm.org/doi/10.1145/2880150">https://dl.acm.org/doi/10.1145/2880150</a><br><a target="_blank" rel="noopener" href="https://dl.ccf.org.cn/article/articleDetail.html?type=xhtx_thesis&_ack=1&id=6262501625219072">https://dl.ccf.org.cn/article/articleDetail.html?type=xhtx_thesis&amp;_ack=1&amp;id=6262501625219072</a></p>
+<blockquote>
+<p>操作系统（OS）是计算机系统中最具历史厚度的软件层。它的每一次范式转移，都深刻地折射出硬件能力的跃升与应用需求的演变。本文尝试梳理操作系统半个世纪以来的发展脉络，并对其未来走向作出前瞻性思考。</p>
+</blockquote>
+<h2 id="1-两大阶段：从”操作自动化”到”资源管理者”"><a href="#1-两大阶段：从”操作自动化”到”资源管理者”" class="headerlink" title="1. 两大阶段：从”操作自动化”到”资源管理者”"></a>1. 两大阶段：从”操作自动化”到”资源管理者”</h2><p>操作系统的历史可以划分为两个性质截然不同的大阶段。</p>
+<p><strong>第一阶段（1950s）：批处理操作系统</strong>。彼时的操作系统是对”操作员”角色的自动化替代，其核心功能是将人工的磁带换装、卡片递交等流程自动化，以批处理方式串行执行用户作业。系统对资源没有动态调度，程序员需手动规划所有资源使用。</p>
+<p><strong>第二阶段（1965 年后）：多道程序与资源管理框架</strong>。随着计算机开始服务于多个用户和多个并发任务，一个根本性的矛盾浮现：<strong>程序员对资源的手动控制既不充分（无法感知冲突），也不全面（无法充分利用空闲资源）</strong>。操作系统因此从”自动化批处理程序”升级为一个具备<strong>控制权和调度权</strong>的资源管理框架，以供其他程序在其上受控地运行。</p>
+<p>这一阶段的标志性成果是”计算机系统工程师”总结出的八条操作系统基本原则：<strong>交互式计算、分层文件系统、容错结构、中断系统、虚拟内存、多道程序设计、模块化设计</strong>。此后几乎所有主流操作系统都是在这八条原则的基础上构建的。</p>
+<h2 id="2-三次关键转型"><a href="#2-三次关键转型" class="headerlink" title="2. 三次关键转型"></a>2. 三次关键转型</h2><h3 id="2-1-从汇编语言到高级语言"><a href="#2-1-从汇编语言到高级语言" class="headerlink" title="2.1 从汇编语言到高级语言"></a>2.1 从汇编语言到高级语言</h3><p>早期操作系统以汇编语言编写，与特定硬件强绑定，不同架构的机器需要独立开发操作系统。<strong>Multics</strong> 的出现打破了这一局面：它证明了用高级语言（PL&#x2F;I）编写的操作系统不仅可行，而且在可维护性和可移植性上具有显著优势。此后，以 C 语言编写 Unix 成为里程碑式的实践，将”操作系统用高级语言实现”确立为行业共识。</p>
+<h3 id="2-2-从通用主义到精简内核"><a href="#2-2-从通用主义到精简内核" class="headerlink" title="2.2 从通用主义到精简内核"></a>2.2 从通用主义到精简内核</h3><p>Multics 的设计哲学是<strong>最大通用性</strong>——尽可能解决一切问题，导致系统庞大、运行成本高昂。这一经验教训推动了反向思考：操作系统应当尽可能<strong>精简（Minimal）</strong>，只提供最核心的机制，其余由用户空间程序实现。</p>
+<p>这一思想的产物正是 <strong>Unix</strong>，以及后来的 <strong>Linux</strong>。微内核（Microkernel）架构将内核功能精简至线程调度、基本 IPC 和最小内存管理，其他服务以独立进程形式运行于用户空间，实现了出色的模块化与可移植性。</p>
+<h3 id="2-3-不同设计目标催生多元内核形态"><a href="#2-3-不同设计目标催生多元内核形态" class="headerlink" title="2.3 不同设计目标催生多元内核形态"></a>2.3 不同设计目标催生多元内核形态</h3><p>微内核并非唯一正确答案。<strong>Windows</strong> 将图形子系统（GUI）集成进内核，以牺牲部分安全隔离性为代价，换取了极低的用户态-内核态切换开销，满足了消费级用户对交互响应速度的需求。<strong>实时操作系统（RTOS）</strong> 则为了保证极低且可预测的调度延迟，甚至省去了内核态&#x2F;用户态的权限分离。</p>
+<p>这说明操作系统的架构选择本质上是<strong>设计目标之间的权衡</strong>，不存在普适的最优方案，只有在特定约束下的最优解。</p>
+<h2 id="3-未来操作系统的演进方向"><a href="#3-未来操作系统的演进方向" class="headerlink" title="3. 未来操作系统的演进方向"></a>3. 未来操作系统的演进方向</h2><h3 id="3-1-从”人机交互接口”到”世界连接层”"><a href="#3-1-从”人机交互接口”到”世界连接层”" class="headerlink" title="3.1 从”人机交互接口”到”世界连接层”"></a>3.1 从”人机交互接口”到”世界连接层”</h3><p>当下的操作系统概念正在经历一次深刻的语义扩展。传统意义上的操作系统是”设备硬件资源的管理者”，但当数十亿设备接入物联网（IoT），当数字与物理世界的边界消融，<strong>操作系统开始被抽象为连接数字世界与物理世界的数字纽带</strong>。</p>
+<p>在这一框架下，一套分布于医疗设备、工厂机器人和家庭电器的协同调度层，在逻辑上构成了一个超宏观的”操作系统”，尽管不再与任何单一设备绑定。</p>
+<h3 id="3-2-自然人机交互的新形态"><a href="#3-2-自然人机交互的新形态" class="headerlink" title="3.2 自然人机交互的新形态"></a>3.2 自然人机交互的新形态</h3><p>当前人与操作系统的交互仍以”硬交互”为主——键盘、触摸屏。然而新兴的交互技术正在重塑这一范式：Apple Vision Pro 通过眼动追踪实现光标定位，脑机接口尝试建立意图与指令之间的直接通道。这些方向预示着操作系统的<strong>输入层将向感知融合（Perceptual Integration）演进</strong>，要求 OS 能够处理高维、低延迟的感知数据流。</p>
+<h3 id="3-3-元-OS-Kit：面向多样设备的组件化架构"><a href="#3-3-元-OS-Kit：面向多样设备的组件化架构" class="headerlink" title="3.3 元 OS Kit：面向多样设备的组件化架构"></a>3.3 元 OS Kit：面向多样设备的组件化架构</h3><p>面对从微控制器到超级计算机的巨大设备异质性，未来可能出现一种<strong>元 OS（Meta-OS）<strong>思路：操作系统不再是针对特定设备类型的固定实现，而是一套</strong>可按需组装的组件库（Kit）</strong>——不同场景选取不同组件子集，通过标准化接口实现跨设备互操作，让物理设备在操作系统层面实现原生协同，而非依赖复杂的软件适配层。</p>
+<h3 id="3-4-异构计算与-CPU-XPU-融合"><a href="#3-4-异构计算与-CPU-XPU-融合" class="headerlink" title="3.4 异构计算与 CPU&#x2F;XPU 融合"></a>3.4 异构计算与 CPU&#x2F;XPU 融合</h3><p>高性能计算（HPC）与人工智能对计算精度和并行度的要求迥异，二者长期处于不同的硬件生态。随着 AI 工作负载向 HPC 基础设施融合，操作系统需要统一调度 CPU（通用标量计算）与各类 XPU（GPU、TPU、NPU 等专用加速器），实现<strong>异构计算资源的透明化调度</strong>，降低数据在不同计算单元间迁移带来的能效损耗。</p>
+<h3 id="3-5-机密计算：不可信基础设施下的安全保障"><a href="#3-5-机密计算：不可信基础设施下的安全保障" class="headerlink" title="3.5 机密计算：不可信基础设施下的安全保障"></a>3.5 机密计算：不可信基础设施下的安全保障</h3><p>传统操作系统的安全模型建立在”信任硬件”的前提下：只要物理设备不被篡改，数据即可视为安全。然而在云计算模式下，<strong>基础设施提供商对底层硬件具有完全控制权，应用数据面临来自”受信任但不透明”的基础设施的威胁</strong>。</p>
+<p>**机密计算（Confidential Computing）**架构（如 Intel SGX、AMD SEV、ARM TrustZone）通过硬件隔离的可信执行环境（TEE），使应用数据即便在不可信的基础设施上运行，也能维持端到端的隐私保护，实现”信任自己的应用，而无需信任基础设施提供商”的新安全模式。</p>
+<h3 id="3-6-垂直整合：消除抽象层的冗余开销"><a href="#3-6-垂直整合：消除抽象层的冗余开销" class="headerlink" title="3.6 垂直整合：消除抽象层的冗余开销"></a>3.6 垂直整合：消除抽象层的冗余开销</h3><p>传统的”硬件 → 操作系统 → 运行时 → 应用”分层抽象带来了大量通用化开销。**垂直整合（Vertical Integration）**通过针对特定业务场景对各层进行协同设计，消除不必要的通用抽象，实现”短链条”协同：</p>
+<ul>
+<li>苹果 M 系列芯片与 macOS&#x2F;iOS 的深度协同；</li>
+<li>谷歌 TPU 与 TensorFlow&#x2F;XLA 编译器栈的联合优化；</li>
+<li>量化交易系统为极致低延迟而省去内核态&#x2F;用户态切换的 kernel bypass 方案（如 DPDK、RDMA）。</li>
+</ul>
+<h2 id="4-结语"><a href="#4-结语" class="headerlink" title="4. 结语"></a>4. 结语</h2><p>操作系统的演进史，是一部在<strong>硬件能力</strong>、<strong>应用需求</strong>和<strong>工程复杂性</strong>之间反复寻找平衡的历史。从批处理自动化到多道程序，从汇编单机到高级语言可移植，从通用主义到精简微内核，每一次转型背后都有明确的技术驱动力和工程权衡逻辑。</p>
+<p>未来，随着异构计算、物联网协同、机密计算和自然人机交互的深入，操作系统的边界将持续扩展，从管理单一设备的软件层，逐渐演化为协调数字-物理融合世界的智能基础设施。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><strong>[Exokernel 架构]</strong>：MIT 提出的”将资源分配权下放给应用”的极简内核设计，以及它对 OS 抽象哲学的根本性挑战。</li>
+<li><strong>[Unikernel]</strong>：将应用与 OS 内核编译为单一镜像的 Library OS 思路，在云原生场景下的安全性与性能优势。</li>
+<li>下一篇预告：SEDA 阶段式事件驱动架构——互联网服务如何在极端负载波动下优雅降级。</li>
 </ul>
 
       

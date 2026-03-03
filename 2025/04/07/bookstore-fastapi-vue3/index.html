@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kevin589981.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInDown"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/local-search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI、从 pytest 转向 Postman 调试的全过程思考，以及那个调了三天的”200 OK 但前">
+<meta property="og:type" content="article">
+<meta property="og:title" content="全栈图书管理系统：FastAPI + Vue3 工程实践">
+<meta property="og:url" content="https://kevin589981.github.io/2025/04/07/bookstore-fastapi-vue3/index.html">
+<meta property="og:site_name" content="Kevin&#39;s Tech Blog">
+<meta property="og:description" content="一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI、从 pytest 转向 Postman 调试的全过程思考，以及那个调了三天的”200 OK 但前">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-1.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-2.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-3.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-12.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-13.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-14.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-18.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-24.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-22.png">
+<meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-25.png">
+<meta property="article:published_time" content="2025-04-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-03T05:50:22.575Z">
+<meta property="article:author" content="Kevin">
+<meta property="article:tag" content="FastAPI">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="SQLAlchemy">
+<meta property="article:tag" content="Vue3">
+<meta property="article:tag" content="全栈开发">
+<meta property="article:tag" content="项目实战">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-1.png">
+
+
+<link rel="canonical" href="https://kevin589981.github.io/2025/04/07/bookstore-fastapi-vue3/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://kevin589981.github.io/2025/04/07/bookstore-fastapi-vue3/","path":"2025/04/07/bookstore-fastapi-vue3/","title":"全栈图书管理系统：FastAPI + Vue3 工程实践"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>全栈图书管理系统：FastAPI + Vue3 工程实践 | Kevin's Tech Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Kevin's Tech Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Systems | AI | Research</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">18</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">71</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%A1%B9%E7%9B%AE%E6%A6%82%E8%BF%B0%E4%B8%8E%E6%8A%80%E6%9C%AF%E9%80%89%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">1. 项目概述与技术选型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%9A%E5%8A%A1%E8%BE%B9%E7%95%8C"><span class="nav-number">1.1.</span> <span class="nav-text">业务边界</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E6%A0%88%E9%80%89%E5%9E%8B%E8%BF%87%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">技术栈选型过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.</span> <span class="nav-text">2. 数据库设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E7%94%A8%E6%88%B7%E4%BD%93%E7%B3%BB%EF%BC%9A%E5%8F%8C%E8%A1%A8%E5%88%86%E7%A6%BB%E7%9A%84%E7%99%BB%E5%BD%95%E6%80%81%E7%AE%A1%E7%90%86"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 用户体系：双表分离的登录态管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E8%BF%9B%E8%B4%A7%E6%B5%81%E7%A8%8B%EF%BC%9A%E7%8A%B6%E6%80%81%E6%9C%BA%E7%BA%A6%E6%9D%9F%E5%9C%A8%E6%95%B0%E6%8D%AE%E5%BA%93%E5%B1%82%E7%9A%84%E8%90%BD%E5%9C%B0"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 进货流程：状态机约束在数据库层的落地</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E9%94%80%E5%94%AE%E4%BD%93%E7%B3%BB%EF%BC%9A%E4%B8%80%E5%AF%B9%E5%A4%9A%E8%AE%A2%E5%8D%95%E6%98%8E%E7%BB%86"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 销售体系：一对多订单明细</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E8%B4%A2%E5%8A%A1%E8%B4%A6%E5%8D%95%EF%BC%9A%E5%8A%A8%E6%80%81%E5%A4%96%E9%94%AE%E5%85%B3%E8%81%94"><span class="nav-number">2.4.</span> <span class="nav-text">2.4 财务账单：动态外键关联</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-5-%E5%85%B3%E4%BA%8E-ISBN-%E7%9A%84%E5%AD%98%E5%82%A8%E7%B1%BB%E5%9E%8B%E9%80%89%E6%8B%A9"><span class="nav-number">2.5.</span> <span class="nav-text">2.5 关于 ISBN 的存储类型选择</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-6-%E5%85%B3%E4%BA%8E-Numeric-10-2-%E5%AD%98%E5%82%A8%E9%87%91%E9%A2%9D"><span class="nav-number">2.6.</span> <span class="nav-text">2.6 关于 Numeric(10, 2) 存储金额</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E8%AE%A4%E8%AF%81%E4%B8%8E%E6%9D%83%E9%99%90%E7%B3%BB%E7%BB%9F"><span class="nav-number">3.</span> <span class="nav-text">3. 认证与权限系统</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-Token-%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 Token 生命周期</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-FastAPI-%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E5%AE%9E%E7%8E%B0%E6%9D%83%E9%99%90%E5%88%86%E5%B1%82"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 FastAPI 依赖注入实现权限分层</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E5%89%8D%E7%AB%AF%E7%9A%84%E5%8F%8C%E6%8B%A6%E6%88%AA%E5%99%A8%E8%AE%BE%E8%AE%A1"><span class="nav-number">3.3.</span> <span class="nav-text">3.3 前端的双拦截器设计</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%89%8D%E7%AB%AF%E7%95%8C%E9%9D%A2%E5%B1%95%E7%A4%BA"><span class="nav-number">4.</span> <span class="nav-text">4. 前端界面展示</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95"><span class="nav-number">5.</span> <span class="nav-text">5. 踩坑记录</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%91-1%EF%BC%9A200-OK-%E4%BD%86%E5%89%8D%E7%AB%AF%E9%A1%B5%E9%9D%A2%E4%B8%8D%E6%98%BE%E7%A4%BA%E2%80%94%E2%80%94%E8%B0%83%E4%BA%86%E4%B8%89%E5%A4%A9%E7%9A%84%E9%87%8D%E5%AE%9A%E5%90%91-bug"><span class="nav-number">5.1.</span> <span class="nav-text">坑 1：200 OK 但前端页面不显示——调了三天的重定向 bug</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%91-2%EF%BC%9A%E5%85%A8%E5%B1%80%E5%8F%98%E9%87%8F%E6%97%A0%E6%B3%95%E6%94%AF%E6%92%91%E5%A4%9A%E7%94%A8%E6%88%B7%E5%B9%B6%E5%8F%91%E7%99%BB%E5%BD%95"><span class="nav-number">5.2.</span> <span class="nav-text">坑 2：全局变量无法支撑多用户并发登录</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%91-3%EF%BC%9Apytest-%E6%97%A0%E6%B3%95%E4%BF%9D%E5%AD%98%E5%8A%A8%E6%80%81-Token"><span class="nav-number">5.3.</span> <span class="nav-text">坑 3：pytest 无法保存动态 Token</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%91-4%EF%BC%9AGET-%E8%AF%B7%E6%B1%82-URL-%E4%B8%AD%E7%9A%84%E5%8F%AF%E9%80%89%E5%8F%82%E6%95%B0%E4%B8%BA%E7%A9%BA"><span class="nav-number">5.4.</span> <span class="nav-text">坑 4：GET 请求 URL 中的可选参数为空</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%91-5%EF%BC%9A%E5%A4%96%E9%94%AE%E5%85%B3%E8%81%94%E7%A6%81%E6%AD%A2%E5%88%A0%E9%99%A4%E4%B9%A6%E7%B1%8D"><span class="nav-number">5.5.</span> <span class="nav-text">坑 5：外键关联禁止删除书籍</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%8A%9F%E8%83%BD%E5%AE%8C%E6%88%90%E6%83%85%E5%86%B5"><span class="nav-number">6.</span> <span class="nav-text">6. 功能完成情况</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E8%AE%BE%E8%AE%A1%E5%8F%8D%E6%80%9D"><span class="nav-number">7.</span> <span class="nav-text">7. 设计反思</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%B6%E4%BC%B8%E9%98%85%E8%AF%BB"><span class="nav-number">8.</span> <span class="nav-text">延伸阅读</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Kevin"
+      src="https://avatars.githubusercontent.com/u/188462396?v=4">
+  <p class="site-author-name" itemprop="name">Kevin</p>
+  <div class="site-description" itemprop="description">探索系统编程、高性能计算、AI 研究与软件工程</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">18</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Kevin589981" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Kevin589981" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2025/04/07/bookstore-fastapi-vue3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
+      <meta itemprop="name" content="Kevin">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin's Tech Blog">
+      <meta itemprop="description" content="探索系统编程、高性能计算、AI 研究与软件工程">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="全栈图书管理系统：FastAPI + Vue3 工程实践 | Kevin's Tech Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          全栈图书管理系统：FastAPI + Vue3 工程实践
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2025-04-07 00:00:00" itemprop="dateCreated datePublished" datetime="2025-04-07T00:00:00+08:00">2025-04-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-03 13:50:22" itemprop="dateModified" datetime="2026-03-03T13:50:22+08:00">2026-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Projects/" itemprop="url" rel="index"><span itemprop="name">Projects</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI、从 pytest 转向 Postman 调试的全过程思考，以及那个调了三天的”200 OK 但前端不显示”的神奇 bug。</p>
+</blockquote>
+<h2 id="1-项目概述与技术选型"><a href="#1-项目概述与技术选型" class="headerlink" title="1. 项目概述与技术选型"></a>1. 项目概述与技术选型</h2><h3 id="业务边界"><a href="#业务边界" class="headerlink" title="业务边界"></a>业务边界</h3><p>系统覆盖一个书城的核心管理流程：</p>
+<ul>
+<li><strong>用户管理</strong>：超级管理员 &#x2F; 普通管理员双角色，基于 Token 的会话管理，单设备登录限制；</li>
+<li><strong>库存管理</strong>：书籍 CRUD，支持 ISBN 精确&#x2F;模糊查询；</li>
+<li><strong>进货流程</strong>：创建进货单 → 付款 → 到货确认，全流程状态机，操作员留痕；</li>
+<li><strong>零售流程</strong>：多品类购物车 → 创建销售单 → 自动扣减库存；</li>
+<li><strong>财务管理</strong>：进货&#x2F;零售双向账单，支持日期&#x2F;金额范围查询及趋势图。</li>
+</ul>
+<h3 id="技术栈选型过程"><a href="#技术栈选型过程" class="headerlink" title="技术栈选型过程"></a>技术栈选型过程</h3><p>最初计划使用 Django，研究 6 小时后因上手成本过高放弃。最终选型方案：</p>
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th>选择</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>后端框架</td>
+<td>FastAPI</td>
+<td>自动生成 OpenAPI 文档，类型注解友好，异步支持</td>
+</tr>
+<tr>
+<td>ORM</td>
+<td>SQLAlchemy</td>
+<td>数据库无关，防 SQL 注入，Python 生态成熟</td>
+</tr>
+<tr>
+<td>数据库</td>
+<td>SQLite</td>
+<td>部署简单，满足课程项目规模</td>
+</tr>
+<tr>
+<td>前端框架</td>
+<td>Vue3 + Vite</td>
+<td>中文文档丰富，响应式系统直观</td>
+</tr>
+<tr>
+<td>接口调试</td>
+<td>Postman</td>
+<td>可持久化保存 Token，比 FastAPI 内置 Swagger 更灵活</td>
+</tr>
+</tbody></table>
+<p>架构图如下：</p>
+<p><img src="/images/bookstore-fastapi-vue3/image-1.png" alt="后端架构"></p>
+<p><img src="/images/bookstore-fastapi-vue3/image.png" alt="前端架构"></p>
+<hr>
+<h2 id="2-数据库设计"><a href="#2-数据库设计" class="headerlink" title="2. 数据库设计"></a>2. 数据库设计</h2><h3 id="2-1-用户体系：双表分离的登录态管理"><a href="#2-1-用户体系：双表分离的登录态管理" class="headerlink" title="2.1 用户体系：双表分离的登录态管理"></a>2.1 用户体系：双表分离的登录态管理</h3><p>用户信息存储在两张表中——这是整个系统最重要的设计决策之一。</p>
+<p><strong><code>User</code> 表</strong>（持久化用户信息）：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>username</code></td>
+<td>String(50) PK</td>
+<td>用户名作为主键</td>
+</tr>
+<tr>
+<td><code>employee_id</code></td>
+<td>String(20) UNIQUE</td>
+<td>工号</td>
+</tr>
+<tr>
+<td><code>true_name</code></td>
+<td>String(50)</td>
+<td>真实姓名</td>
+</tr>
+<tr>
+<td><code>gender</code></td>
+<td>Enum(‘male’,’female’)</td>
+<td>性别枚举</td>
+</tr>
+<tr>
+<td><code>isSuperAdmin</code></td>
+<td>Boolean</td>
+<td>超级管理员标识</td>
+</tr>
+<tr>
+<td><code>password_hash</code></td>
+<td>String(128)</td>
+<td>MD5 加密密码</td>
+</tr>
+</tbody></table>
+<p><img src="/images/bookstore-fastapi-vue3/image-2.png" alt="User 表结构"></p>
+<p><strong><code>LoginedUser</code> 表</strong>（活跃会话表）：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>username</code></td>
+<td>String(50) PK</td>
+<td>登录用户名</td>
+</tr>
+<tr>
+<td><code>employee_id</code></td>
+<td>String(20) UNIQUE</td>
+<td>工号（冗余字段）</td>
+</tr>
+<tr>
+<td><code>isSuperAdmin</code></td>
+<td>Boolean</td>
+<td>权限标识（冗余字段）</td>
+</tr>
+<tr>
+<td><code>token</code></td>
+<td>String(256)</td>
+<td>HS256 加密的 JWT Token</td>
+</tr>
+<tr>
+<td><code>expiration_time</code></td>
+<td>DateTime</td>
+<td>Token 过期时间戳</td>
+</tr>
+</tbody></table>
+<p><img src="/images/bookstore-fastapi-vue3/image-3.png" alt="LoginedUser 表结构"></p>
+<p><strong>为什么要将 <code>employee_id</code> 和 <code>isSuperAdmin</code> 冗余到 <code>LoginedUser</code> 表？</strong></p>
+<p>这是一个典型的<strong>以空间换时间</strong>的设计：认证中间件在每次请求时都需要验证权限，如果每次都要联表查询 <code>User</code>，N 个并发请求就是 N 次额外的 JOIN。将这两个高频读字段冗余到会话表后，权限验证退化为单表查询。</p>
+<p><strong>单设备登录限制的实现</strong>：每次新登录前，先删除该用户的已有会话记录，再插入新记录。这样旧设备的 Token 在下次请求时会因找不到对应会话而失效，被响应拦截器自动踢出并跳转登录页。</p>
+<h3 id="2-2-进货流程：状态机约束在数据库层的落地"><a href="#2-2-进货流程：状态机约束在数据库层的落地" class="headerlink" title="2.2 进货流程：状态机约束在数据库层的落地"></a>2.2 进货流程：状态机约束在数据库层的落地</h3><p>进货订单有四个状态：<code>未付款 → 已付款 → 已到货</code>，或 <code>未付款 → 已退货</code>。系统用三个操作员字段 <code>operator_id / operator_id2 / operator_id3</code> 记录每个环节的责任人，并通过 <code>CheckConstraint</code> 在数据库层强制执行状态-字段联动规则：</p>
+<pre><code class="language-sql">-- 规则：未付款状态时 operator_id2 必须为空，其他状态时必须存在
+(operator_id2 IS NULL AND payment_status == &#39;未付款&#39;) OR 
+(operator_id2 IS NOT NULL AND payment_status != &#39;未付款&#39;)
+
+-- 规则：operator_id3 仅在&quot;已到货&quot;状态时存在
+(operator_id3 IS NULL AND payment_status != &#39;已到货&#39;) OR 
+(operator_id3 IS NOT NULL AND payment_status == &#39;已到货&#39;)
+</code></pre>
+<p>将业务规则下推到数据库约束层，而不是只在应用层检查，是一种防御性设计——即使绕过 API 直接写数据库也无法破坏数据完整性。</p>
+<p>状态流转图：</p>
+<pre><code>[*] ──&gt; 未付款 ──&gt; 已付款 ──&gt; 已到货
+              └──&gt; 已退货
+</code></pre>
+<h3 id="2-3-销售体系：一对多订单明细"><a href="#2-3-销售体系：一对多订单明细" class="headerlink" title="2.3 销售体系：一对多订单明细"></a>2.3 销售体系：一对多订单明细</h3><p>一笔销售单可能包含多种书籍，采用经典的订单头（<code>SaleOrder</code>）+ 明细行（<code>SaleItem</code>）拆分：</p>
+<ul>
+<li><code>SaleOrder.transaction_no</code>：后端自动生成，格式为 <code>SO + 年月日时分秒 + 随机数</code>；</li>
+<li><code>SaleItem.sold_price</code>：独立于 <code>Book.retail_price</code>，支持折扣后价格；</li>
+<li>级联删除：<code>SaleItem</code> 设置 <code>ondelete=&quot;CASCADE&quot;</code>，删除订单时自动清理明细。</li>
+</ul>
+<h3 id="2-4-财务账单：动态外键关联"><a href="#2-4-财务账单：动态外键关联" class="headerlink" title="2.4 财务账单：动态外键关联"></a>2.4 财务账单：动态外键关联</h3><p><code>Bill</code> 表通过 <code>bill_type</code>（进货&#x2F;零售）+ <code>related_order</code> 组合实现”动态外键”：当 <code>bill_type = &quot;进货&quot;</code> 时，<code>related_order</code> 指向 <code>purchase_orders.id</code>；当 <code>bill_type = &quot;零售&quot;</code> 时，指向 <code>sale_orders.id</code>。SQLAlchemy 并不直接支持动态外键约束，这里在应用层保证一致性，数据库层用 <code>CHECK</code> 确保两字段同时存在或同时为空。</p>
+<h3 id="2-5-关于-ISBN-的存储类型选择"><a href="#2-5-关于-ISBN-的存储类型选择" class="headerlink" title="2.5 关于 ISBN 的存储类型选择"></a>2.5 关于 ISBN 的存储类型选择</h3><p>ISBN 选择 <code>String(13)</code> 而非 <code>Integer</code>：</p>
+<ol>
+<li>整数存储可能丢失前导零，造成格式错误；</li>
+<li>字符串支持 <code>LIKE</code> 模糊搜索（<code>contains</code> 函数），整数无法模糊查询；</li>
+<li>通过 <code>CheckConstraint</code> 验证 <code>LENGTH(isbn) = 13 AND isbn GLOB &#39;[0-9]*&#39;</code> 保证格式正确性。</li>
+</ol>
+<h3 id="2-6-关于-Numeric-10-2-存储金额"><a href="#2-6-关于-Numeric-10-2-存储金额" class="headerlink" title="2.6 关于 Numeric(10, 2) 存储金额"></a>2.6 关于 <code>Numeric(10, 2)</code> 存储金额</h3><p>金额字段全部使用 <code>Numeric(10, 2)</code> 而非 <code>Float</code>。原因：<code>Float</code> 是近似浮点数，在涉及财务精度的场景下 <code>0.1 + 0.2 ≠ 0.3</code> 的问题不可接受；<code>Numeric</code> 是精确小数类型，确保分位精确到两位。</p>
+<hr>
+<h2 id="3-认证与权限系统"><a href="#3-认证与权限系统" class="headerlink" title="3. 认证与权限系统"></a>3. 认证与权限系统</h2><h3 id="3-1-Token-生命周期"><a href="#3-1-Token-生命周期" class="headerlink" title="3.1 Token 生命周期"></a>3.1 Token 生命周期</h3><p>登录成功后，后端：</p>
+<ol>
+<li>生成 <code>expiration_time = 当前时间戳 + 8小时</code>；</li>
+<li>用 HS256 算法将 <code>{username, expiration_time}</code> 签名为 JWT Token；</li>
+<li>将 Token 及 <code>expiration_time</code> 写入 <code>LoginedUser</code> 表（同时踢出旧会话）；</li>
+<li>将 <code>expiration_time</code> 也单独存一列——验证时直接比较时间戳，无需解码 Token，减少计算量。</li>
+</ol>
+<p>前端将 Token 存入 <code>localStorage</code>，实现”8 小时免登录”。</p>
+<h3 id="3-2-FastAPI-依赖注入实现权限分层"><a href="#3-2-FastAPI-依赖注入实现权限分层" class="headerlink" title="3.2 FastAPI 依赖注入实现权限分层"></a>3.2 FastAPI 依赖注入实现权限分层</h3><pre><code class="language-python"># 普通认证：验证 Token 有效性
+router = APIRouter(dependencies=[Depends(auth.Auth.get_current_user)])
+
+# 超管认证：额外检查 isSuperAdmin
+router_admin = APIRouter(dependencies=[Depends(auth.Auth.admin_required)])
+</code></pre>
+<p><code>admin_required</code> 在查询 <code>LoginedUser</code> 表时检查 <code>isSuperAdmin</code> 字段，若为 False 则返回 403。</p>
+<h3 id="3-3-前端的双拦截器设计"><a href="#3-3-前端的双拦截器设计" class="headerlink" title="3.3 前端的双拦截器设计"></a>3.3 前端的双拦截器设计</h3><pre><code class="language-javascript">// 请求拦截器：自动注入 Authorization 头
+axios.interceptors.request.use(config =&gt; {
+    const token = localStorage.getItem(&#39;token&#39;)
+    if (token) config.headers[&#39;Authorization&#39;] = `Bearer ${token}`
+    return config
+})
+
+// 响应拦截器：拦截 401，清除登录状态并跳转
+axios.interceptors.response.use(null, error =&gt; {
+    if (error.response?.status === 401) {
+        localStorage.clear()
+        router.push(&#39;/login&#39;)
+    }
+    return Promise.reject(error)
+})
+</code></pre>
+<p>即使恶意用户修改前端页面绕过权限校验，后端 403&#x2F;401 响应也会触发响应拦截器强制登出，防止进一步的非授权操作。</p>
+<hr>
+<h2 id="4-前端界面展示"><a href="#4-前端界面展示" class="headerlink" title="4. 前端界面展示"></a>4. 前端界面展示</h2><p>登录页与主仪表盘：</p>
+<p><img src="/images/bookstore-fastapi-vue3/image-12.png" alt="主页"></p>
+<p><img src="/images/bookstore-fastapi-vue3/image-13.png" alt="登录页"></p>
+<p><img src="/images/bookstore-fastapi-vue3/image-14.png" alt="仪表盘"></p>
+<p>进货管理与账单流水趋势图：</p>
+<p><img src="/images/bookstore-fastapi-vue3/image-18.png" alt="进货管理"></p>
+<p><img src="/images/bookstore-fastapi-vue3/image-24.png" alt="账单流水趋势图"></p>
+<hr>
+<h2 id="5-踩坑记录"><a href="#5-踩坑记录" class="headerlink" title="5. 踩坑记录"></a>5. 踩坑记录</h2><h3 id="坑-1：200-OK-但前端页面不显示——调了三天的重定向-bug"><a href="#坑-1：200-OK-但前端页面不显示——调了三天的重定向-bug" class="headerlink" title="坑 1：200 OK 但前端页面不显示——调了三天的重定向 bug"></a>坑 1：200 OK 但前端页面不显示——调了三天的重定向 bug</h3><p>这是本项目最匪夷所思的 bug。<code>GET /book</code>（注意：没有尾部斜杠）接口返回 200 但前端完全不更新。</p>
+<p>根因链：</p>
+<ol>
+<li>前端代码写的是 <code>/book</code>，FastAPI 路由注册的是 <code>/book/</code>；</li>
+<li>FastAPI&#x2F;Starlette 对不匹配的路径执行 <strong>301 重定向</strong>：<code>/book → /book/</code>；</li>
+<li>浏览器遵守安全规范：<strong>重定向时会剥离 <code>Authorization</code> 请求头</strong>；</li>
+<li>后端收到的第二次请求（<code>/book/</code>）没有 Token，但因为代码中漏掉了认证依赖，直接查询并返回了结果；</li>
+<li>FastAPI 响应里没有 CORS <code>Access-Control-Allow-Credentials</code> 等字段，浏览器<strong>自动丢弃</strong>了这个响应。</li>
+</ol>
+<p><img src="/images/bookstore-fastapi-vue3/image-22.png" alt="请求重定向导致 Authorization 头丢失"></p>
+<p>修复方式：统一在路由中加尾部斜杠，并修复漏掉认证依赖的接口。</p>
+<p><strong>教训</strong>：状态码 200 ≠ 前端收到了正确响应，浏览器安全机制会在多个环节静默丢弃跨源或认证异常的响应。</p>
+<h3 id="坑-2：全局变量无法支撑多用户并发登录"><a href="#坑-2：全局变量无法支撑多用户并发登录" class="headerlink" title="坑 2：全局变量无法支撑多用户并发登录"></a>坑 2：全局变量无法支撑多用户并发登录</h3><p>最初用一个全局 <code>dict</code> 存储登录状态，后来发现：</p>
+<ol>
+<li>服务器重启后登录状态丢失；</li>
+<li>多用户同时登录时，全局变量存在读写竞争。</li>
+</ol>
+<p>改为数据库表 <code>LoginedUser</code> 存储，所有问题一并解决——数据库本身提供了持久化和事务隔离。</p>
+<h3 id="坑-3：pytest-无法保存动态-Token"><a href="#坑-3：pytest-无法保存动态-Token" class="headerlink" title="坑 3：pytest 无法保存动态 Token"></a>坑 3：pytest 无法保存动态 Token</h3><p>API 测试最初尝试用 pytest 编写，但 JWT Token 每次登录都会重新生成，无法在测试用例间共享。解决方案：改用 Postman，可在 Collection Variables 中持久化保存 Token，并通过 Pre-request Script 自动刷新。</p>
+<h3 id="坑-4：GET-请求-URL-中的可选参数为空"><a href="#坑-4：GET-请求-URL-中的可选参数为空" class="headerlink" title="坑 4：GET 请求 URL 中的可选参数为空"></a>坑 4：GET 请求 URL 中的可选参数为空</h3><p>当前端查询参数某个字段为空字符串时，URL 变为 <code>/books/?title=&amp;author=</code>，后端 SQLAlchemy 会将 <code>title = &quot;&quot;</code> 理解为”查 title 等于空字符串的记录”而非”不过滤”。</p>
+<p>修复：</p>
+<ul>
+<li>前端：传参前检查，空值则不加入 URL；</li>
+<li>后端：查询构建时 <code>if param and param.strip()</code> 双重判断。</li>
+</ul>
+<h3 id="坑-5：外键关联禁止删除书籍"><a href="#坑-5：外键关联禁止删除书籍" class="headerlink" title="坑 5：外键关联禁止删除书籍"></a>坑 5：外键关联禁止删除书籍</h3><p>书籍被进货单或销售单引用后，直接删除会触发外键约束错误（SQLite 默认启用外键约束需要 <code>PRAGMA foreign_keys = ON</code>）。在书籍删除接口中，检测 <code>PurchaseOrder</code> 和 <code>SaleItem</code> 两张表是否存在关联记录，若存在则返回 409 并提示原因。</p>
+<hr>
+<h2 id="6-功能完成情况"><a href="#6-功能完成情况" class="headerlink" title="6. 功能完成情况"></a>6. 功能完成情况</h2><p>所有要求的功能均已实现并测试通过：</p>
+<ul>
+<li>用户管理（登录&#x2F;注销&#x2F;权限&#x2F;CRUD）</li>
+<li>书籍管理（精确&#x2F;模糊查询，外键安全删除）</li>
+<li>进货管理（完整状态机流转，操作员留痕）</li>
+<li>零售管理（实时 ISBN&#x2F;书名模糊搜索，消抖处理）</li>
+<li>账单管理（多条件过滤，流水趋势图）</li>
+</ul>
+<p><img src="/images/bookstore-fastapi-vue3/image-25.png" alt="账单管理"></p>
+<p>项目最终代码量超过 10000 行（前后端合计）。</p>
+<hr>
+<h2 id="7-设计反思"><a href="#7-设计反思" class="headerlink" title="7. 设计反思"></a>7. 设计反思</h2><p><strong>什么没做但后来觉得应该做的</strong>：BCNF 范式分解。当前设计中有意保留了一定冗余（如 <code>LoginedUser</code> 中的 <code>employee_id</code>），这是在查询效率和规范化之间的主动权衡，并非疏忽。</p>
+<p><strong>什么设计了但没用上的</strong>：销售单价打折字段（<code>discount_price</code>）。涉及 <code>Bill</code> 外键关联和前后端所有接口变更，改动链过长，最终舍弃。这提醒我在项目初期应当更审慎地确认需求边界。</p>
+<p><strong>关于 ORM 的选择</strong>：SQLAlchemy 不仅提供了数据库无关的抽象层，其 Core 层的参数化查询机制从底层防止了 SQL 注入——这在直接拼接 SQL 字符串的方案中是需要额外处理的。</p>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><strong>[BCNF 范式]</strong>：数据库规范化的理论边界——何时应当分解，何时冗余是合理的工程权衡</li>
+<li><strong>[JWT 的安全边界]</strong>：HS256 签名而非加密意味着 payload 可以被解码——哪些数据应该放进 Token</li>
+<li>下一篇预告：SQLAlchemy ORM 性能陷阱——N+1 查询问题与 <code>selectinload</code> &#x2F; <code>joinedload</code> 的正确用法</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Kevin
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://kevin589981.github.io/2025/04/07/bookstore-fastapi-vue3/" title="全栈图书管理系统：FastAPI + Vue3 工程实践">https://kevin589981.github.io/2025/04/07/bookstore-fastapi-vue3/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/FastAPI/" rel="tag"># FastAPI</a>
+              <a href="/tags/Vue3/" rel="tag"># Vue3</a>
+              <a href="/tags/SQLAlchemy/" rel="tag"># SQLAlchemy</a>
+              <a href="/tags/Python/" rel="tag"># Python</a>
+              <a href="/tags/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/" rel="tag"># 项目实战</a>
+              <a href="/tags/%E5%85%A8%E6%A0%88%E5%BC%80%E5%8F%91/" rel="tag"># 全栈开发</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2025/03/02/transformer-deep-dive/" rel="prev" title="Transformer 架构精读：从 Self-Attention 的物理意义到 Multi-Head 的并行之美">
+                  <i class="fa fa-angle-left"></i> Transformer 架构精读：从 Self-Attention 的物理意义到 Multi-Head 的并行之美
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2025/06/05/postgresql-bnlj-implementation/" rel="next" title="深入 PostgreSQL 内核：实现块嵌套循环连接优化">
+                  深入 PostgreSQL 内核：实现块嵌套循环连接优化 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2025 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Kevin</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/Kevin589981" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>
