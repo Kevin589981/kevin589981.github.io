@@ -1,4 +1,5 @@
 ---
 title: 分类
-layout: page
+type: categories
+layout: categories
 ---

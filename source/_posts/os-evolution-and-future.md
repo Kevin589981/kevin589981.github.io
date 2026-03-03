@@ -3,6 +3,7 @@ title: 操作系统的演进：从批处理到万物互联的架构变革
 date: 2025-09-02
 categories:
   - CS-Fundamentals
+  - Paper Reading
 tags:
   - 操作系统
   - 系统架构
@@ -10,6 +11,10 @@ tags:
   - 异构计算
   - 云计算
 ---
+
+原始论文：
+https://dl.acm.org/doi/10.1145/2880150
+https://dl.ccf.org.cn/article/articleDetail.html?type=xhtx_thesis&_ack=1&id=6262501625219072
 
 > 操作系统（OS）是计算机系统中最具历史厚度的软件层。它的每一次范式转移，都深刻地折射出硬件能力的跃升与应用需求的演变。本文尝试梳理操作系统半个世纪以来的发展脉络，并对其未来走向作出前瞻性思考。
 

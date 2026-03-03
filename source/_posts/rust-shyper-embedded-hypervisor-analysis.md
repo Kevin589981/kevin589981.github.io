@@ -1,8 +1,9 @@
 ---
-title: Rust-Shyper：嵌入式Hypervisor分层隔离与安全实践
+title: Rust-Shyper论文研读：嵌入式Hypervisor分层隔离与安全实践
 date: 2026-01-26
 categories:
   - Systems-HPC
+  - Paper Reading
 tags:
   - 微内核
   - 操作系统
@@ -11,6 +12,9 @@ tags:
   - Rust
   - 虚拟化
 ---
+
+原始代码及论文仓库：
+https://atomgit.com/openeuler/rust_shyper
 
 > 随着嵌入式设备演化为混合关键性系统（Mixed-Criticality System），如何在同一块 SoC 上同时支撑硬实时控制任务与通用 Linux 工作负载，同时保证它们之间的强隔离，成为嵌入式虚拟化的核心挑战。服务器级 Hypervisor（KVM/Xen）因调度抖动难以满足实时约束；静态分区方案（Jailhouse/Bao）则牺牲了资源利用率与灵活性。本文围绕 Shyper 系列论文及其 Rust 重实现 Rust-Shyper，从架构设计、关键优化机制、可靠性工程，以及 Rust 语言安全实践四个维度展开深度分析，并结合 `rust_shyper` 仓库源码进行印证。
 

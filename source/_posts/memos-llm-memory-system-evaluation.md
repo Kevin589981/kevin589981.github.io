@@ -1,8 +1,9 @@
 ---
-title: MemOS 记忆操作系统：LLM 长程记忆工程实践
+title: 改进 MemOS 记忆操作系统：LLM 长程记忆工程实践
 date: 2025-12-20
 categories:
   - AI-Research
+  - Projects
 tags:
   - LLM记忆
   - RAG
@@ -12,7 +13,10 @@ tags:
   - LoCoMo
 ---
 
-
+原始代码:
+https://github.com/MemTensor/MemOS
+改进代码：
+https://github.com/Kevin589981/MemOS/tree/main/code
 
 > LLM 的"遗忘"不只是上下文窗口的技术限制，更是系统设计层面的架构问题。MemOS（Memory OS）将记忆视为可管理的系统资源，提出了一套类比操作系统的记忆治理框架。本文结合在 LoCoMo 对话数据集上的工程实践，系统梳理 MemOS 的核心设计理念，以及如何通过数据增强、提示词工程和窗口策略将评测 F1 从 0.25 推进到 0.57 以上。
 

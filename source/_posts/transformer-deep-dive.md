@@ -2,7 +2,7 @@
 title: Transformer 架构精读：从 Self-Attention 到 Multi-Head Attention
 date: 2025-03-02
 categories:
-  - AI-Research
+  - CS-Fundamentals
 tags:
   - Transformer
   - 深度学习

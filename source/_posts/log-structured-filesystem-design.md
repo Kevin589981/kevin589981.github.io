@@ -3,6 +3,7 @@ title: 日志结构文件系统：磁盘带宽利用的极致追求
 date: 2025-09-23
 categories:
   - Systems-HPC
+  - Paper Reading
 tags:
   - 文件系统
   - LFS
@@ -10,6 +11,8 @@ tags:
   - 操作系统
   - 性能优化
 ---
+
+原始论文：https://dl.acm.org/doi/10.1145/146941.146943
 
 > 传统文件系统将磁盘视为可随机寻址的块设备，大量小文件操作导致磁盘带宽利用率不足 5%。Rosenblum 与 Ousterhout 在 1992 年发表的论文《The Design and Implementation of a Log-Structured File System》，从硬件发展趋势的不平衡性出发，提出了一种颠覆性方案：将整个磁盘视为一个顺序追加的日志，在极大提升写性能的同时，兼顾了崩溃恢复的高效性。
 

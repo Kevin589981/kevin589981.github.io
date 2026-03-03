@@ -2,7 +2,8 @@
 title: 局部性原理：计算机系统资源管理的底层逻辑
 date: 2025-10-11
 categories:
-  - CS-Fundamentals
+  - CS-FundSmFntmls
+  - Paper Reading
 tags:
   - 局部性原理
   - 操作系统
@@ -10,6 +11,8 @@ tags:
   - 缓存
   - 工作集模型
 ---
+
+原始论文链接：https://onlinelibrary.wiley.com/doi/abs/10.1002/9780470050118.ecse960
 
 > 局部性原理（Locality Principle）是计算机系统设计中最具普适性的基础理论之一。它揭示了计算过程中资源引用的聚集性规律，为虚拟内存、CPU 缓存、数据库索引乃至推荐系统提供了统一的理论基础。本文以 Denning（2008）的综述论文为线索，系统梳理局部性原理的数学建模、历史渊源与跨领域应用。
 

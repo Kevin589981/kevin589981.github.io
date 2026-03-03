@@ -1,5 +1,5 @@
 ---
-title: 基于 UDP 实现可靠传输：Go-Back-N 与 SACK 的工程实践
+title: 基于 UDP 在应用层实现可靠传输：Go-Back-N 与 SACK 的工程实践
 date: 2025-11-14
 categories:
   - Projects
@@ -11,6 +11,9 @@ tags:
   - SACK
   - Python
 ---
+
+link to source code:
+https://github.com/Kevin589981/RUDP_python3
 
 > TCP 的可靠性来自精心设计的重传机制，但其内部细节对上层应用透明。如果要在 UDP 这张"白纸"上手工绘制可靠传输，需要多少工程量？本文复盘了一次 RUDP（Reliable UDP）的完整实现，包括 Go-Back-N 与选择重传（SACK），以及针对各类异常场景的健壮性测试。
 
