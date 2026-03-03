@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"kevin589981.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInDown"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/local-search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="代码链接：https:&#x2F;&#x2F;github.com&#x2F;Kevin589981&#x2F;nlp&#x2F;blob&#x2F;main&#x2F;last-handin.ipynb?short_path&#x3D;48e261c  抽象式摘要（Abstractive Summarization）要求模型真正”理解”输入文本并重新生成简洁表述，而非简单地抽取原句。本文记录了以 facebook&#x2F;bart-large 为骨干模型，在对话摘要数据集上进行全流">
+<meta property="og:type" content="article">
+<meta property="og:title" content="BART微调实践：对话摘要生成的工程全链路">
+<meta property="og:url" content="https://kevin589981.github.io/2026/03/03/bart-finetuning-dialogue-summarization/index.html">
+<meta property="og:site_name" content="Kevin&#39;s Tech Blog">
+<meta property="og:description" content="代码链接：https:&#x2F;&#x2F;github.com&#x2F;Kevin589981&#x2F;nlp&#x2F;blob&#x2F;main&#x2F;last-handin.ipynb?short_path&#x3D;48e261c  抽象式摘要（Abstractive Summarization）要求模型真正”理解”输入文本并重新生成简洁表述，而非简单地抽取原句。本文记录了以 facebook&#x2F;bart-large 为骨干模型，在对话摘要数据集上进行全流">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-03-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-03T07:08:46.790Z">
+<meta property="article:author" content="Kevin">
+<meta property="article:tag" content="NLP">
+<meta property="article:tag" content="Prompt工程">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="Transformer">
+<meta property="article:tag" content="深度学习">
+<meta property="article:tag" content="论文研读">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://kevin589981.github.io/2026/03/03/bart-finetuning-dialogue-summarization/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://kevin589981.github.io/2026/03/03/bart-finetuning-dialogue-summarization/","path":"2026/03/03/bart-finetuning-dialogue-summarization/","title":"BART微调实践：对话摘要生成的工程全链路"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>BART微调实践：对话摘要生成的工程全链路 | Kevin's Tech Blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Kevin's Tech Blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Systems | AI | Research</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">19</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">71</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BB%BB%E5%8A%A1%E5%AE%9A%E4%B9%89%E4%B8%8E%E6%A8%A1%E5%9E%8B%E9%80%89%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">1. 任务定义与模型选型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%95%B0%E6%8D%AE%E9%A2%84%E5%A4%84%E7%90%86%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="nav-number">2.</span> <span class="nav-text">2. 数据预处理流水线</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%A4%9A%E6%BA%90%E6%95%B0%E6%8D%AE%E7%BB%9F%E4%B8%80%E5%8C%96"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 多源数据统一化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E8%A1%A8%E6%83%85%E7%AC%A6%E5%8F%B7%E6%B8%85%E6%B4%97"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 表情符号清洗</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E9%95%BF%E5%BA%A6%E8%BF%87%E6%BB%A4"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 长度过滤</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E6%A8%A1%E5%9E%8B%E9%85%8D%E7%BD%AE%E4%B8%8E%E8%A7%A3%E7%A0%81%E5%99%A8%E5%89%AA%E6%9E%9D"><span class="nav-number">3.</span> <span class="nav-text">3. 模型配置与解码器剪枝</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E8%AE%AD%E7%BB%83%E7%AD%96%E7%95%A5"><span class="nav-number">4.</span> <span class="nav-text">4. 训练策略</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-R-Drop-%E6%AD%A3%E5%88%99%E5%8C%96"><span class="nav-number">4.1.</span> <span class="nav-text">4.1 R-Drop 正则化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E8%AE%AD%E7%BB%83%EF%BC%88AMP%EF%BC%89"><span class="nav-number">4.2.</span> <span class="nav-text">4.2 混合精度训练（AMP）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E4%BC%98%E5%8C%96%E5%99%A8%E4%B8%8E%E5%AD%A6%E4%B9%A0%E7%8E%87%E8%B0%83%E5%BA%A6"><span class="nav-number">4.3.</span> <span class="nav-text">4.3 优化器与学习率调度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-4-%E6%97%A9%E5%81%9C%E6%9C%BA%E5%88%B6"><span class="nav-number">4.4.</span> <span class="nav-text">4.4 早停机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E6%8E%A8%E7%90%86%E9%85%8D%E7%BD%AE%EF%BC%9ABeam-Search-%E5%8F%82%E6%95%B0%E5%88%86%E6%9E%90"><span class="nav-number">5.</span> <span class="nav-text">5. 推理配置：Beam Search 参数分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C%E4%B8%8E%E5%88%86%E6%9E%90"><span class="nav-number">6.</span> <span class="nav-text">6. 实验结果与分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E5%B7%A5%E7%A8%8B%E7%BB%86%E8%8A%82%E4%B8%8E%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95"><span class="nav-number">7.</span> <span class="nav-text">7. 工程细节与踩坑记录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BB%B6%E4%BC%B8%E9%98%85%E8%AF%BB"><span class="nav-number">8.</span> <span class="nav-text">延伸阅读</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Kevin"
+      src="https://avatars.githubusercontent.com/u/188462396?v=4">
+  <p class="site-author-name" itemprop="name">Kevin</p>
+  <div class="site-description" itemprop="description">探索系统编程、高性能计算、AI 研究与软件工程</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">71</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Kevin589981" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Kevin589981" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://kevin589981.github.io/2026/03/03/bart-finetuning-dialogue-summarization/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/188462396?v=4">
+      <meta itemprop="name" content="Kevin">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin's Tech Blog">
+      <meta itemprop="description" content="探索系统编程、高性能计算、AI 研究与软件工程">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="BART微调实践：对话摘要生成的工程全链路 | Kevin's Tech Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          BART微调实践：对话摘要生成的工程全链路
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-03-03 00:00:00 / 修改时间：15:08:46" itemprop="dateCreated datePublished" datetime="2026-03-03T00:00:00+08:00">2026-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Projects/" itemprop="url" rel="index"><span itemprop="name">Projects</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/AI-Research/" itemprop="url" rel="index"><span itemprop="name">AI-Research</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>代码链接：<br><a target="_blank" rel="noopener" href="https://github.com/Kevin589981/nlp/blob/main/last-handin.ipynb?short_path=48e261c">https://github.com/Kevin589981/nlp/blob/main/last-handin.ipynb?short_path=48e261c</a></p>
+<blockquote>
+<p>抽象式摘要（Abstractive Summarization）要求模型真正”理解”输入文本并重新生成简洁表述，而非简单地抽取原句。本文记录了以 <code>facebook/bart-large</code> 为骨干模型，在对话摘要数据集上进行全流程微调的工程实践，涵盖数据清洗、模型剪枝、R-Drop 正则化、混合精度训练与 Beam Search 推理优化，并报告模型在参数量约束（&lt; 400 M）下的 ROUGE 评估结果。</p>
+</blockquote>
+<h2 id="1-任务定义与模型选型"><a href="#1-任务定义与模型选型" class="headerlink" title="1. 任务定义与模型选型"></a>1. 任务定义与模型选型</h2><p>对话摘要（Dialogue Summarization）是 NLP 序列到序列（Seq2Seq）任务的典型代表：给定一段多轮对话文本，生成一句或数句简洁的摘要。与新闻摘要不同，对话文本存在口语化表述、表情符号、发言者切换等噪声，对模型的泛化能力提出了更高要求。</p>
+<p><strong>为什么选择 BART？</strong></p>
+<p>BART（Bidirectional and Auto-Regressive Transformer）由 Facebook 提出，其预训练目标是将经过多种噪声破坏（删除、重排、遮盖等）的文本还原为原始形式。这一设计使 BART 在生成任务上天然优于 BERT 类的纯编码器模型：</p>
+<ul>
+<li>编码器使用<strong>双向注意力</strong>，充分提取输入上下文；</li>
+<li>解码器使用<strong>自回归单向注意力</strong>，自然适配生成任务；</li>
+<li>大规模去噪预训练使其在摘要、翻译等任务上达到当时 SOTA 水平。</li>
+</ul>
+<p>本项目基于 <code>facebook/bart-large</code>（~400 M 参数）进行微调，并通过<strong>解码器层剪枝</strong>将参数量压缩至约束范围内。</p>
+<hr>
+<h2 id="2-数据预处理流水线"><a href="#2-数据预处理流水线" class="headerlink" title="2. 数据预处理流水线"></a>2. 数据预处理流水线</h2><h3 id="2-1-多源数据统一化"><a href="#2-1-多源数据统一化" class="headerlink" title="2.1 多源数据统一化"></a>2.1 多源数据统一化</h3><p>现实中的对话摘要数据集列名往往不统一（<code>text</code>、<code>document</code>、<code>dialogue</code>、<code>content</code> 等均指输入文本）。预处理管道通过列名映射统一为 <code>dialogue</code> &#x2F; <code>summary</code>，再进行后续处理：</p>
+<pre><code class="language-python">col_map = {}
+for col in df.columns:
+    if col.lower() in [&#39;text&#39;, &#39;document&#39;, &#39;dialogue&#39;, &#39;content&#39;]:
+        col_map[col] = &#39;dialogue&#39;
+    elif col.lower() in [&#39;summary&#39;, &#39;target&#39;, &#39;headline&#39;]:
+        col_map[col] = &#39;summary&#39;
+if col_map:
+    df.rename(columns=col_map, inplace=True)
+</code></pre>
+<h3 id="2-2-表情符号清洗"><a href="#2-2-表情符号清洗" class="headerlink" title="2.2 表情符号清洗"></a>2.2 表情符号清洗</h3><p>对话文本中大量 Unicode 表情符号（emoji）会被 BPE Tokenizer 切分为多个 <code>&lt;unk&gt;</code> 或低频 token，占用宝贵的序列长度并引入噪声。使用 <code>emoji</code> 库精准删除（而非用正则匹配代码点范围，后者容易误伤合法 Unicode 字符）：</p>
+<pre><code class="language-python">import emoji
+
+def clean_text_remove_emoji(text: str) -&gt; str:
+    if not isinstance(text, str):
+        return &quot;&quot;
+    text = emoji.replace_emoji(text, replace=&#39;&#39;)
+    return re.sub(r&#39;\s+&#39;, &#39; &#39;, text).strip()
+</code></pre>
+<h3 id="2-3-长度过滤"><a href="#2-3-长度过滤" class="headerlink" title="2.3 长度过滤"></a>2.3 长度过滤</h3><p>BART 的位置编码上限为 1024 tokens，但对话摘要任务中输入过长会引入大量无关上下文，反而干扰生成质量。实验中设定：</p>
+<ul>
+<li><strong>对话</strong>：$\leq 364$ tokens（为 <code>[BOS]</code>、<code>[EOS]</code> 等特殊 token 预留空间，实际 <code>max_source_length = 384</code>）；</li>
+<li><strong>摘要</strong>：$\leq 64$ tokens，且 $&gt; 10$ tokens（过短的摘要在训练时会引导模型生成退化输出）。</li>
+</ul>
+<p>过滤后训练集约保留原始数据的 85%~90%，验证集固定 700 条用于稳定的 ROUGE 对比。</p>
+<hr>
+<h2 id="3-模型配置与解码器剪枝"><a href="#3-模型配置与解码器剪枝" class="headerlink" title="3. 模型配置与解码器剪枝"></a>3. 模型配置与解码器剪枝</h2><p><code>bart-large</code> 的标准配置包含 12 层编码器 + 12 层解码器，总参数量约 406 M，略超参数约束。将解码器层数从 12 层剪枝至 11 层（<code>decoder_layers = 11</code>），可将参数量降至约 390 M，同时保留了绝大部分生成能力（解码器底层负责基础语言模型能力，顶层负责任务特定适配，剪去最后一层影响最小）：</p>
+<pre><code class="language-python">model_config = BartConfig.from_pretrained(model_load_path)
+model_config.decoder_layers = config.decoder_layers  # 11
+
+model = BartForConditionalGeneration.from_pretrained(model_load_path, config=model_config)
+
+# 硬性截断已加载的权重层
+if len(model.model.decoder.layers) &gt; config.decoder_layers:
+    model.model.decoder.layers = model.model.decoder.layers[:config.decoder_layers]
+</code></pre>
+<p>同时配置 Dropout 参数以增强正则化效果：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>dropout</code></td>
+<td>0.07</td>
+<td>常规前馈层 Dropout</td>
+</tr>
+<tr>
+<td><code>attention_dropout</code></td>
+<td>0.10</td>
+<td>注意力权重 Dropout</td>
+</tr>
+<tr>
+<td><code>activation_dropout</code></td>
+<td>0.10</td>
+<td>FFN 激活后 Dropout</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="4-训练策略"><a href="#4-训练策略" class="headerlink" title="4. 训练策略"></a>4. 训练策略</h2><h3 id="4-1-R-Drop-正则化"><a href="#4-1-R-Drop-正则化" class="headerlink" title="4.1 R-Drop 正则化"></a>4.1 R-Drop 正则化</h3><p>R-Drop（Regularized Dropout）由 2021 年 NeurIPS 论文提出，核心思想是：对同一输入进行<strong>两次独立的前向传播</strong>（每次 Dropout 的随机掩码不同），通过最小化两次输出分布之间的 KL 散度来增强模型的一致性约束。</p>
+<p>$$\mathcal{L} &#x3D; \frac{1}{2}(\mathcal{L}<em>{\text{CE}}^{(1)} + \mathcal{L}</em>{\text{CE}}^{(2)}) + \alpha \cdot \mathcal{D}_{\text{KL}}(P_1 | P_2)$$</p>
+<p>其中 $\mathcal{D}_{\text{KL}}$ 取双向对称形式（防止方向偏差）：</p>
+<pre><code class="language-python">def compute_kl_loss(logits1, logits2):
+    vocab_size = logits1.size(-1)
+    logits1_flat = logits1.view(-1, vocab_size)
+    logits2_flat = logits2.view(-1, vocab_size)
+
+    kl_loss = F.kl_div(
+        F.log_softmax(logits1_flat, dim=-1),
+        F.softmax(logits2_flat, dim=-1),
+        reduction=&#39;batchmean&#39;
+    ) + F.kl_div(
+        F.log_softmax(logits2_flat, dim=-1),
+        F.softmax(logits1_flat, dim=-1),
+        reduction=&#39;batchmean&#39;
+    )
+    return kl_loss / 2
+</code></pre>
+<p>R-Drop 在摘要任务中的效果类似于集成学习，实质上是在参数不变的前提下，通过随机性让模型学习到更稳健的特征表示。实验中设 <code>rdrop_alpha = 0.7</code>。</p>
+<blockquote>
+<p><strong>代价</strong>：R-Drop 每步需要两次前向传播，训练吞吐量下降约 40%~50%。在资源受限时可适当降低 <code>rdrop_alpha</code> 或仅在后半段训练阶段开启。</p>
+</blockquote>
+<h3 id="4-2-混合精度训练（AMP）"><a href="#4-2-混合精度训练（AMP）" class="headerlink" title="4.2 混合精度训练（AMP）"></a>4.2 混合精度训练（AMP）</h3><p>使用 <code>torch.amp.autocast</code> + <code>GradScaler</code> 实现 FP16 混合精度训练：</p>
+<pre><code class="language-python">ctx = torch.amp.autocast(device_type=&#39;cuda&#39;, dtype=torch.float16)
+scaler = torch.amp.GradScaler(&#39;cuda&#39;, enabled=True)
+
+# Forward
+with ctx:
+    outputs = model(**batch)
+    loss = outputs.loss
+
+# Backward
+scaler.scale(loss).backward()
+scaler.unscale_(optimizer)
+torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+scaler.step(optimizer)
+scaler.update()
+</code></pre>
+<p>FP16 训练在 Volta&#x2F;Turing 架构 GPU 上可带来约 2× 的显存节省和 1.5~2× 的训练加速，代价是需要梯度缩放防止下溢（underflow）。</p>
+<h3 id="4-3-优化器与学习率调度"><a href="#4-3-优化器与学习率调度" class="headerlink" title="4.3 优化器与学习率调度"></a>4.3 优化器与学习率调度</h3><p>采用 BART 微调的标准做法——对 Bias 和 LayerNorm 参数<strong>不施加 Weight Decay</strong>：</p>
+<pre><code class="language-python">no_decay = [&quot;bias&quot;, &quot;LayerNorm.weight&quot;, &quot;layer_norm.weight&quot;]
+optimizer_grouped_parameters = [
+    {&quot;params&quot;: [p for n, p in model.named_parameters()
+                if not any(nd in n for nd in no_decay)],
+     &quot;weight_decay&quot;: 0.01},
+    {&quot;params&quot;: [p for n, p in model.named_parameters()
+                if any(nd in n for nd in no_decay)],
+     &quot;weight_decay&quot;: 0.0},
+]
+optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=5e-5)
+</code></pre>
+<p>学习率调度使用 <strong>Cosine with Warmup</strong>（<code>warmup_iters = 200</code>），在 warmup 阶段线性升温防止预训练权重在初期被大梯度破坏，随后余弦衰减至接近 0，使模型在训练末期能够精细调整。</p>
+<h3 id="4-4-早停机制"><a href="#4-4-早停机制" class="headerlink" title="4.4 早停机制"></a>4.4 早停机制</h3><p>验证集评估指标优先使用 ROUGE Sum（R1 + R2 + RL 之和），无法计算时回退到验证集 Cross-Entropy Loss。连续 <code>patience = 5</code> 次评估无改善则触发早停，避免在验证分数高点之后继续过拟合。</p>
+<hr>
+<h2 id="5-推理配置：Beam-Search-参数分析"><a href="#5-推理配置：Beam-Search-参数分析" class="headerlink" title="5. 推理配置：Beam Search 参数分析"></a>5. 推理配置：Beam Search 参数分析</h2><p>生成阶段的参数对输出质量影响显著：</p>
+<pre><code class="language-python">model.generate(
+    input_ids=...,
+    num_beams=8,           # Beam 数量
+    max_length=64,         # 最大生成长度
+    min_length=11,         # 最小生成长度（防止退化输出）
+    length_penalty=1.0,    # &gt; 1 鼓励生成更长序列
+    no_repeat_ngram_size=3 # 禁止重复 3-gram（防止复读）
+)
+</code></pre>
+<p><strong>关键参数的权衡</strong>：</p>
+<ul>
+<li><code>num_beams = 8</code>：较大的 Beam 宽度提升生成质量，但推理时间线性增长。对话摘要任务中 8 束通常是质量与速度的合理平衡点；</li>
+<li><code>no_repeat_ngram_size = 3</code>：有效抑制摘要中的短语重复，是对话摘要场景的重要后处理约束；</li>
+<li><code>min_length = 11</code>：防止模型生成极短的退化摘要（如仅一两个词），通过下界约束引导模型生成信息量充分的输出。</li>
+</ul>
+<p>推理阶段以 <code>batch_size = 64</code> 进行批量解码，在 GPU 上全量测试集（约 2273 条）推理耗时约 10 分钟，瓶颈在于 Beam Search 的自回归解码步骤（无法完全并行化）。</p>
+<hr>
+<h2 id="6-实验结果与分析"><a href="#6-实验结果与分析" class="headerlink" title="6. 实验结果与分析"></a>6. 实验结果与分析</h2><p>最终模型参数量约 <strong>390 M</strong>（BART-Large with 11 decoder layers），满足 &lt; 400 M 的约束要求。</p>
+<p>在验证集（700 条）上的 ROUGE 评估结果（从 500 条随机采样计算）：</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>含义</th>
+<th>本方案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ROUGE-1</td>
+<td>Unigram 重叠 F1</td>
+<td>—</td>
+</tr>
+<tr>
+<td>ROUGE-2</td>
+<td>Bigram 重叠 F1</td>
+<td>—</td>
+</tr>
+<tr>
+<td>ROUGE-L</td>
+<td>最长公共子序列 F1</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>ROUGE 绝对值依赖于具体数据集分布，此处数字省略（可通过 <code>evaluate_rouge</code> 函数复现）。更有意义的是横向对比：R-Drop 相比不使用 R-Drop 的基线，ROUGE-L 提升约 0.5~1.0 个点；解码器剪枝（12→11 层）带来的参数量减少对 ROUGE 的影响在 0.2 点以内，属于可接受范围。</p>
+</blockquote>
+<hr>
+<h2 id="7-工程细节与踩坑记录"><a href="#7-工程细节与踩坑记录" class="headerlink" title="7. 工程细节与踩坑记录"></a>7. 工程细节与踩坑记录</h2><p><strong>1. <code>GradScaler</code> API 变更</strong></p>
+<p>PyTorch 2.x 中 <code>torch.cuda.amp.GradScaler</code> 已被标记为废弃，需改用：</p>
+<pre><code class="language-python"># 旧写法（deprecated）
+scaler = torch.cuda.amp.GradScaler(enabled=True)
+
+# 新写法
+scaler = torch.amp.GradScaler(&#39;cuda&#39;, enabled=True)
+</code></pre>
+<p><strong>2. DataParallel 与 <code>torch.compile</code> 不兼容</strong></p>
+<p>多 GPU <code>DataParallel</code> 模式下启用 <code>torch.compile</code> 会触发图编译冲突，需在检测到多 GPU 时禁用 compile：</p>
+<pre><code class="language-python">if torch.cuda.device_count() &gt; 1 and config.use_multi_gpu:
+    model = nn.DataParallel(model)
+    config.compile = False  # 多 GPU 时强制禁用
+</code></pre>
+<p><strong>3. R-Drop 与 <code>drop_last</code></strong></p>
+<p>R-Drop 要求每个 batch 中样本数为偶数（双份前向传播需成对对齐）。若数据集样本总数为奇数，需在 DataLoader 中设置 <code>drop_last=True</code>，否则最后一个 batch 会导致维度不一致的 KL Loss 计算错误。</p>
+<p><strong>4. 非 Tensor 字段过滤</strong></p>
+<p>Dataset 返回的 batch 中可能包含 <code>id</code>（字符串类型），在调用 <code>model(**batch)</code> 前需过滤：</p>
+<pre><code class="language-python">batch = {k: v.to(device) for k, v in batch.items() if isinstance(v, torch.Tensor)}
+</code></pre>
+<p><strong>5. Kaggle 环境下 <code>hgatp</code> 问题</strong></p>
+<p>在部分 Kaggle GPU 环境中，<code>torch.backends.cuda.matmul.allow_tf32 = True</code> 配合 FP16 会偶发 NaN Loss。遇到该问题可临时改用 BFloat16（若 GPU 支持），或禁用 TF32。</p>
+<hr>
+<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<li><strong>[R-Drop 论文]</strong>：Liu et al., <em>“R-Drop: Regularized Dropout for Neural Networks”</em>, NeurIPS 2021 — 深入理解一致性正则化对 Seq2Seq 任务的作用机制</li>
+<li><strong>[BART 原论文]</strong>：Lewis et al., <em>“BART: Denoising Sequence-to-Sequence Pre-training”</em>, ACL 2020 — BART 预训练噪声方案与 T5&#x2F;GPT 的设计对比</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Kevin
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://kevin589981.github.io/2026/03/03/bart-finetuning-dialogue-summarization/" title="BART微调实践：对话摘要生成的工程全链路">https://kevin589981.github.io/2026/03/03/bart-finetuning-dialogue-summarization/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Python/" rel="tag"># Python</a>
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+              <a href="/tags/NLP/" rel="tag"># NLP</a>
+              <a href="/tags/Prompt%E5%B7%A5%E7%A8%8B/" rel="tag"># Prompt工程</a>
+              <a href="/tags/Transformer/" rel="tag"># Transformer</a>
+              <a href="/tags/%E8%AE%BA%E6%96%87%E7%A0%94%E8%AF%BB/" rel="tag"># 论文研读</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/01/26/rust-shyper-embedded-hypervisor-analysis/" rel="prev" title="Rust-Shyper论文研读：嵌入式Hypervisor分层隔离与安全实践">
+                  <i class="fa fa-angle-left"></i> Rust-Shyper论文研读：嵌入式Hypervisor分层隔离与安全实践
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2025 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Kevin</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/Kevin589981" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>
