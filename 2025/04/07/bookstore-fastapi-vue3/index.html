@@ -19,12 +19,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"kevin589981.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":false,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"default"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInDown"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/local-search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI、从 pytest 转向 Postman 调试的全过程思考，以及那个调了三天的”200 OK 但前">
+    <meta name="description" content="代码地址：https:&#x2F;&#x2F;github.com&#x2F;Kevin589981&#x2F;BookDataBase  一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI">
 <meta property="og:type" content="article">
 <meta property="og:title" content="全栈图书管理系统：FastAPI + Vue3 工程实践">
 <meta property="og:url" content="https://kevin589981.github.io/2025/04/07/bookstore-fastapi-vue3/index.html">
 <meta property="og:site_name" content="Kevin&#39;s Tech Blog">
-<meta property="og:description" content="一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI、从 pytest 转向 Postman 调试的全过程思考，以及那个调了三天的”200 OK 但前">
+<meta property="og:description" content="代码地址：https:&#x2F;&#x2F;github.com&#x2F;Kevin589981&#x2F;BookDataBase  一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-1.png">
 <meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image.png">
@@ -38,7 +38,7 @@
 <meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-22.png">
 <meta property="og:image" content="https://kevin589981.github.io/images/bookstore-fastapi-vue3/image-25.png">
 <meta property="article:published_time" content="2025-04-06T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-03T05:50:22.575Z">
+<meta property="article:modified_time" content="2026-03-03T06:56:16.637Z">
 <meta property="article:author" content="Kevin">
 <meta property="article:tag" content="FastAPI">
 <meta property="article:tag" content="Python">
@@ -275,7 +275,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-03 13:50:22" itemprop="dateModified" datetime="2026-03-03T13:50:22+08:00">2026-03-03</time>
+      <time title="修改时间：2026-03-03 14:56:16" itemprop="dateModified" datetime="2026-03-03T14:56:16+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -296,7 +296,8 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><blockquote>
+    <div class="post-body" itemprop="articleBody"><p>代码地址：<br><a target="_blank" rel="noopener" href="https://github.com/Kevin589981/BookDataBase">https://github.com/Kevin589981/BookDataBase</a></p>
+<blockquote>
 <p>一次从零开始的全栈开发实践：后端选用 FastAPI + SQLAlchemy ORM + SQLite，前端采用 Vue3 + Vite，实现了一套完整的书城图书销售管理系统。本文记录数据库 Schema 设计中的权衡、RESTful API 的认证方案，以及从 Django 转向 FastAPI、从 pytest 转向 Postman 调试的全过程思考，以及那个调了三天的”200 OK 但前端不显示”的神奇 bug。</p>
 </blockquote>
 <h2 id="1-项目概述与技术选型"><a href="#1-项目概述与技术选型" class="headerlink" title="1. 项目概述与技术选型"></a>1. 项目概述与技术选型</h2><h3 id="业务边界"><a href="#业务边界" class="headerlink" title="业务边界"></a>业务边界</h3><p>系统覆盖一个书城的核心管理流程：</p>
