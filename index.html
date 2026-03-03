@@ -355,8 +355,8 @@ if len(model.model.decoder.layers) &gt; config.decoder_layers:
 </div>
 <hr>
 <h2 id="4-训练策略"><a href="#4-训练策略" class="headerlink" title="4. 训练策略"></a>4. 训练策略</h2><h3 id="4-1-R-Drop-正则化"><a href="#4-1-R-Drop-正则化" class="headerlink" title="4.1 R-Drop 正则化"></a>4.1 R-Drop 正则化</h3><p>R-Drop（Regularized Dropout）由 2021 年 NeurIPS 论文提出，核心思想是：对同一输入进行<strong>两次独立的前向传播</strong>（每次 Dropout 的随机掩码不同），通过最小化两次输出分布之间的 KL 散度来增强模型的一致性约束。</p>
-<script type="math/tex; mode=display">
-\mathcal{L} = \frac{1}{2}(\mathcal{L}_{\text{CE}}^{(1)} + \mathcal{L}_{\text{CE}}^{(2)}) + \alpha \cdot \mathcal{D}_{\text{KL}}(P_1 \| P_2)</script><p>其中 $\mathcal{D}_{\text{KL}}$ 取双向对称形式（防止方向偏差）：</p>
+\[
+\mathcal{L} = \frac{1}{2}(\mathcal{L}_{\text{CE}}^{(1)} + \mathcal{L}_{\text{CE}}^{(2)}) + \alpha \cdot \mathcal{D}_{\text{KL}}(P_1 \| P_2)\]<p>其中 $\mathcal{D}_{\text{KL}}$ 取双向对称形式（防止方向偏差）：</p>
 <pre><code class="lang-python">def compute_kl_loss(logits1, logits2):
     vocab_size = logits1.size(-1)
     logits1_flat = logits1.view(-1, vocab_size)
