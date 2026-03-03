@@ -2,8 +2,8 @@
 title: Rust-Shyper论文研读：嵌入式Hypervisor分层隔离与安全实践
 date: 2026-01-26
 categories:
-  - Systems-HPC
-  - Paper Reading
+  - [Systems-HPC]
+  - [Paper-Reading]
 tags:
   - 微内核
   - 操作系统

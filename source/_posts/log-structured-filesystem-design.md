@@ -2,8 +2,8 @@
 title: 日志结构文件系统：磁盘带宽利用的极致追求
 date: 2025-09-23
 categories:
-  - Systems-HPC
-  - Paper Reading
+  - [Systems-HPC]
+  - [Paper-Reading]
 tags:
   - 文件系统
   - LFS

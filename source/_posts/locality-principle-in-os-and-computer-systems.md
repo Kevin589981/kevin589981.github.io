@@ -2,8 +2,8 @@
 title: 局部性原理：计算机系统资源管理的底层逻辑
 date: 2025-10-11
 categories:
-  - CS-FundSmFntmls
-  - Paper Reading
+  - [CS-Fundamentals]
+  - [Paper-Reading]
 tags:
   - 局部性原理
   - 操作系统

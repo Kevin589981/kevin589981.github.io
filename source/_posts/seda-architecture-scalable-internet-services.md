@@ -2,8 +2,8 @@
 title: SEDA论文研读：面向高并发互联网服务的阶段式事件驱动架构
 date: 2025-12-17
 categories:
-  - Systems-HPC
-  - Paper Reading
+  - [Systems-HPC]
+  - [Paper-Reading]
 tags:
   - 服务器架构
   - 事件驱动

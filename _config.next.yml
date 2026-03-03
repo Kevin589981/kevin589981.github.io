@@ -142,7 +142,7 @@ github_banner:
 # 数学公式（KaTeX）
 # ---------------------------------------------------------------
 math:
-  every_page: false
+  every_page: true
   mathjax:
     enable: false
   katex:

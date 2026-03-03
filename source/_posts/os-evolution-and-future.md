@@ -2,8 +2,8 @@
 title: 操作系统的演进：从批处理到万物互联的架构变革
 date: 2025-09-02
 categories:
-  - CS-Fundamentals
-  - Paper Reading
+  - [CS-Fundamentals]
+  - [Paper-Reading]
 tags:
   - 操作系统
   - 系统架构

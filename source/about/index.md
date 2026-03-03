@@ -11,7 +11,7 @@ layout: page
 ## 研究兴趣
 
 - **系统驱动的 AI 优化**：探索如何用底层系统知识加速机器学习工作负载
-- **高性能计算（HPC）**：并发编程、内存模型、SIMD、NUMA 拓扑
+- **高性能计算（HPC）**：并发编程、内存模型、SIMD
 - **AI/ML 前沿**：LLM、Diffusion Model、模型压缩与边缘部署
 - **操作系统与编译器**：内核机制、进程调度、编译优化
 
@@ -27,4 +27,4 @@ layout: page
 ## 联系方式
 
 - **GitHub**：[Kevin589981](https://github.com/Kevin589981)
-- 欢迎通过 GitHub Issues 或邮件交流技术问题
+- 欢迎通过 GitHub Issues 或[邮件](23307110122@m.fudan.edu.cn)交流技术问题

@@ -2,8 +2,8 @@
 title: 内存模型与无锁编程：从 CPU 缓存到 C++ 原子操作
 date: 2025-12-28
 categories:
-  - Systems-HPC
-  - Paper Reading
+  - [Systems-HPC]
+  - [Paper-Reading]
 tags:
   - C++
   - 并发编程

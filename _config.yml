@@ -50,6 +50,10 @@ highlight:
 prismjs:
   enable: false
 
+# hexo-renderer-marked：开启 math 模式，避免 $...$ 内的 _ 被解析为斜体
+marked:
+  math: true
+
 # Home page setting
 # path: Root path for your blogs index page. (default = '')
 # per_page: Posts displayed per page. (0 = disable pagination)

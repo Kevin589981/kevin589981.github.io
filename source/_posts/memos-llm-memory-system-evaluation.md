@@ -2,8 +2,8 @@
 title: 改进 MemOS 记忆操作系统：LLM 长程记忆工程实践
 date: 2025-12-20
 categories:
-  - AI-Research
-  - Projects
+  - [AI-Research]
+  - [Projects]
 tags:
   - LLM记忆
   - RAG

@@ -1,8 +1,8 @@
 ---
 title: 基于 UDP 在应用层实现可靠传输：Go-Back-N 与 SACK 的工程实践
-date: 2025-11-14
+date: 2024-11-14
 categories:
-  - Projects
+  - [Projects]
 tags:
   - 网络编程
   - UDP

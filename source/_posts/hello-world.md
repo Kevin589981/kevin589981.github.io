@@ -2,7 +2,7 @@
 title: 博客上线啦！
 date: 2023-12-02
 categories:
-  - CS-Fundamentals
+  - [CS-Fundamentals]
 tags:
   - 随笔
 ---

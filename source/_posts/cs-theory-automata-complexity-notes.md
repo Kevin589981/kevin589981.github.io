@@ -2,7 +2,7 @@
 title: 计算理论全景：从渐近记号到 NP 完全性
 date: 2026-01-02
 categories:
-  - CS-Fundamentals
+  - [CS-Fundamentals]
 tags:
   - 计算理论
   - 渐近记号

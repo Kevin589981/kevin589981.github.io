@@ -2,7 +2,7 @@
 title: "Imitation Learning for Robotic Manipulation: Generalization Challenges in Architecture, Data, and Sim-to-Real Transfer"
 date: 2026-01-10
 categories:
-  - AI-Research
+  - [AI-Research]
 tags:
   - 模仿学习
   - 机器人操控
