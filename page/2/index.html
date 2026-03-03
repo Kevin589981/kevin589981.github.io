@@ -254,7 +254,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-03 13:50:36" itemprop="dateModified" datetime="2026-03-03T13:50:36+08:00">2026-03-03</time>
+      <time title="修改时间：2026-03-03 14:16:24" itemprop="dateModified" datetime="2026-03-03T14:16:24+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -276,7 +276,8 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <blockquote>
+          <p>代码链接：<br><a target="_blank" rel="noopener" href="https://github.com/Kevin589981/BNLJ">https://github.com/Kevin589981/BNLJ</a></p>
+<blockquote>
 <p>嵌套循环连接（Nested Loop Join）是关系型数据库最基础的连接算法，但其糟糕的缓存利用率一直是性能瓶颈所在。本文记录了在 PostgreSQL 源码层面实现块嵌套循环连接（Block Nested Loop Join，BNLJ）的完整过程：从 GUC 参数注册、执行节点状态扩展，到流水线状态机的设计，以及用 <code>palloc</code> 替代 <code>malloc</code> 踩坑的教训。最终实验表明，将块大小调至 128 可获得约 48.5% 的性能提升。</p>
 </blockquote>
 <h2 id="1-背景：嵌套循环连接的缓存困境"><a href="#1-背景：嵌套循环连接的缓存困境" class="headerlink" title="1. 背景：嵌套循环连接的缓存困境"></a>1. 背景：嵌套循环连接的缓存困境</h2><p>PostgreSQL 原始嵌套循环连接的逻辑极为直白：</p>
