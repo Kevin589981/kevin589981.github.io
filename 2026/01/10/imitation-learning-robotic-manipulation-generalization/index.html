@@ -41,7 +41,7 @@
 <meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/seg.png">
 <meta property="og:image" content="https://kevin589981.github.io/images/imitation-learning-robotic-manipulation-generalization/output.png">
 <meta property="article:published_time" content="2026-01-09T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-03T05:03:50.965Z">
+<meta property="article:modified_time" content="2026-03-03T07:29:11.986Z">
 <meta property="article:author" content="Kevin">
 <meta property="article:tag" content="MimicGen">
 <meta property="article:tag" content="Spatial-Softmax">
@@ -279,7 +279,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-03 13:03:50" itemprop="dateModified" datetime="2026-03-03T13:03:50+08:00">2026-03-03</time>
+      <time title="修改时间：2026-03-03 15:29:11" itemprop="dateModified" datetime="2026-03-03T15:29:11+08:00">2026-03-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -337,9 +337,9 @@
 <p><img src="/images/imitation-learning-robotic-manipulation-generalization/teleop-pipeline.png" alt="Teleoperation pipeline"><br><em>Complete pipeline: Vision Pro hand tracking → OpenXR → coordinate transformation &amp; kinematic retargeting → smooth joint commands for Franka Panda arm.</em></p>
 <hr>
 <h2 id="4-Policy-Architecture"><a href="#4-Policy-Architecture" class="headerlink" title="4. Policy Architecture"></a>4. Policy Architecture</h2><h3 id="4-1-Observation-Spaces"><a href="#4-1-Observation-Spaces" class="headerlink" title="4.1 Observation Spaces"></a>4.1 Observation Spaces</h3><p>Two distinct input modalities are compared:</p>
-<p><strong>Privileged State Space</strong> $\mathcal{O}<em>{priv}$:<br>$$\mathbf{s}</em>{priv} &#x3D; [\mathbf{q}, \dot{\mathbf{q}}, \mathbf{x}<em>{ee}, \mathbf{x}</em>{obj}^{ee}, \mathbf{x}<em>{target}^{ee}] \in \mathbb{R}^{d</em>{priv}}$$</p>
+<p><strong>Privileged State Space</strong> $\mathcal{O}<em>{priv}$:<br>$$<br>\mathbf{s}</em>{priv} &#x3D; [\mathbf{q}, \dot{\mathbf{q}}, \mathbf{x}<em>{ee}, \mathbf{x}</em>{obj}^{ee}, \mathbf{x}<em>{target}^{ee}] \in \mathbb{R}^{d</em>{priv}}<br>$$</p>
 <p>Ground-truth joint positions&#x2F;velocities plus relative object and target positions with respect to the end-effector. Fully observable and Markovian.</p>
-<p><strong>Visual Observation Space</strong> $\mathcal{O}<em>{vis}$:<br>$$\mathbf{o}</em>{vis} &#x3D; [\mathbf{I}<em>{front}, \mathbf{I}</em>{wrist}, \mathbf{p}_{proprio}]$$</p>
+<p><strong>Visual Observation Space</strong> $\mathcal{O}<em>{vis}$:<br>$$<br>\mathbf{o}</em>{vis} &#x3D; [\mathbf{I}<em>{front}, \mathbf{I}</em>{wrist}, \mathbf{p}_{proprio}]<br>$$</p>
 <p>Stacked RGB-D images $\mathbf{I} \in \mathbb{R}^{4 \times 112 \times 112}$ from two camera views plus proprioceptive data. Critically, <strong>no ground-truth object coordinates</strong> are provided — the policy must localize objects purely from pixels.</p>
 <h3 id="4-2-MLP-Base-Privileged-Agent"><a href="#4-2-MLP-Base-Privileged-Agent" class="headerlink" title="4.2 MLP-Base (Privileged Agent)"></a>4.2 MLP-Base (Privileged Agent)</h3><p>Since $\mathcal{O}_{priv}$ is Markovian, a <strong>deep Residual MLP</strong> without temporal memory suffices. Architecture: input projection → 6 Residual Blocks, each following:</p>
 <pre><code>Linear → LayerNorm → Mish → Dropout(0.1) → Linear → LayerNorm
@@ -358,7 +358,7 @@
 <li><strong>Action Head</strong>: Predicts end-effector delta $\Delta \mathbf{x} \in \mathbb{R}^3$ and gripper action $a_{grip} \in [0,1]$</li>
 <li><strong>Phase Head (Auxiliary)</strong>: Predicts current sub-task phase $p_{phase} \in {1…7}$</li>
 </ul>
-<p>The composite loss:<br>$$\mathcal{L}<em>{total} &#x3D; \lambda</em>{pos} \mathcal{L}<em>{Huber}(\Delta \mathbf{x}, \Delta \hat{\mathbf{x}}) + \lambda</em>{grip} \mathcal{L}<em>{BCE}(a, \hat{a}) + \lambda</em>{phase} \mathcal{L}_{CE}(p, \hat{p})$$</p>
+<p>The composite loss:<br>$$<br>\mathcal{L}<em>{total} &#x3D; \lambda</em>{pos} \mathcal{L}<em>{Huber}(\Delta \mathbf{x}, \Delta \hat{\mathbf{x}}) + \lambda</em>{grip} \mathcal{L}<em>{BCE}(a, \hat{a}) + \lambda</em>{phase} \mathcal{L}_{CE}(p, \hat{p})<br>$$</p>
 <p>with $\lambda_{pos}&#x3D;1.0$, $\lambda_{grip}&#x3D;0.5$, $\lambda_{phase}&#x3D;0.2$. Dense phase supervision forces the LSTM to explicitly model the logical structure of the task, preventing oscillation at critical boundaries (e.g., “almost grasped” vs. “grasped”).</p>
 <hr>
 <h2 id="5-Experimental-Results"><a href="#5-Experimental-Results" class="headerlink" title="5. Experimental Results"></a>5. Experimental Results</h2><h3 id="5-1-Architecture-Comparison"><a href="#5-1-Architecture-Comparison" class="headerlink" title="5.1 Architecture Comparison"></a>5.1 Architecture Comparison</h3><table>
@@ -507,7 +507,7 @@
 <p>Doubling augmented data from 1k to 2k raises success from 60% to <strong>97%</strong> — a striking demonstration of data volume’s role in imitation learning for contact-rich, multi-step tasks. Even synthetically interpolated trajectories provide meaningful distributional coverage.</p>
 <p><img src="/images/imitation-learning-robotic-manipulation-generalization/mimic.png" alt="MimicGen augmentation pipeline"><br><em>MimicGen trajectory augmentation: key-frame extraction, cubic spline interpolation, IK re-solving, and gripper action replay.</em></p>
 <h3 id="6-2-Cosmos-Transfer-Visual-Domain-Randomization"><a href="#6-2-Cosmos-Transfer-Visual-Domain-Randomization" class="headerlink" title="6.2 Cosmos-Transfer: Visual Domain Randomization"></a>6.2 Cosmos-Transfer: Visual Domain Randomization</h3><p>To close the <em>perceptual</em> sim-to-real gap, <strong>Cosmos-Transfer 1.0</strong> (NVIDIA, 7B parameters) was applied. It is a diffusion-based multimodal controllable world generator that takes multiple conditional inputs — RGB video, semantic segmentation masks, and depth maps — and generates photorealistic video sequences conditioned on these modalities.</p>
-<p>For each control branch $i$ and diffusion block $l$, intermediate activations $h_l^i$ are modulated by the corresponding adaptive spatiotemporal control map $w_l^i \in \mathbb{R}^{H \times W \times T \times N}$. The contribution to the main branch is:<br>$$\text{output}_l &#x3D; w_l^i \cdot h_l^i$$</p>
+<p>For each control branch $i$ and diffusion block $l$, intermediate activations $h_l^i$ are modulated by the corresponding adaptive spatiotemporal control map $w_l^i \in \mathbb{R}^{H \times W \times T \times N}$. The contribution to the main branch is:<br>$$<br>\text{output}_l &#x3D; w_l^i \cdot h_l^i<br>$$</p>
 <p>This adaptive fusion allows the model to dynamically emphasize the most informative modality in different spatial regions and timesteps, enabling fine-grained appearance stylization while preserving the underlying robot motion and scene geometry.</p>
 <p><img src="/images/imitation-learning-robotic-manipulation-generalization/cosmos-transfer.png" alt="Cosmos-Transfer architecture"><br><em>Cosmos-Transfer1 contains multiple ControlNet branches to extract control information from different modality inputs (segmentation, depth, edge), enabling adaptive multimodal world generation.</em></p>
 <p><strong>Qualitative results</strong> demonstrate successful transfer of: indoor&#x2F;outdoor lighting, surface textures (wood, metal, plastic), background scenes, and rendering artifacts — all while keeping cube positions and robot trajectories intact.</p>
