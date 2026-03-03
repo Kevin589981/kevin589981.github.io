@@ -50,9 +50,11 @@ highlight:
 prismjs:
   enable: false
 
-# hexo-renderer-marked：开启 math 模式，避免 $...$ 内的 _ 被解析为斜体
-marked:
-  math: true
+# hexo-renderer-markdown-it + markdown-it-mathjax3
+# 直接输出 $$...$$ 文本节点，与 MathJax v3 完全兼容
+markdown:
+  plugins:
+    - markdown-it-mathjax3
 
 # Home page setting
 # path: Root path for your blogs index page. (default = '')

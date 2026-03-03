@@ -90,12 +90,16 @@ The picture shows my collaborator
 Two distinct input modalities are compared:
 
 **Privileged State Space** $\mathcal{O}_{priv}$:
-$$\mathbf{s}_{priv} = [\mathbf{q}, \dot{\mathbf{q}}, \mathbf{x}_{ee}, \mathbf{x}_{obj}^{ee}, \mathbf{x}_{target}^{ee}] \in \mathbb{R}^{d_{priv}}$$
+$$
+\mathbf{s}_{priv} = [\mathbf{q}, \dot{\mathbf{q}}, \mathbf{x}_{ee}, \mathbf{x}_{obj}^{ee}, \mathbf{x}_{target}^{ee}] \in \mathbb{R}^{d_{priv}}
+$$
 
 Ground-truth joint positions/velocities plus relative object and target positions with respect to the end-effector. Fully observable and Markovian.
 
 **Visual Observation Space** $\mathcal{O}_{vis}$:
-$$\mathbf{o}_{vis} = [\mathbf{I}_{front}, \mathbf{I}_{wrist}, \mathbf{p}_{proprio}]$$
+$$
+\mathbf{o}_{vis} = [\mathbf{I}_{front}, \mathbf{I}_{wrist}, \mathbf{p}_{proprio}]
+$$
 
 Stacked RGB-D images $\mathbf{I} \in \mathbb{R}^{4 \times 112 \times 112}$ from two camera views plus proprioceptive data. Critically, **no ground-truth object coordinates** are provided — the policy must localize objects purely from pixels.
 
@@ -133,7 +137,9 @@ Two parallel output heads:
 - **Phase Head (Auxiliary)**: Predicts current sub-task phase $p_{phase} \in \{1...7\}$
 
 The composite loss:
-$$\mathcal{L}_{total} = \lambda_{pos} \mathcal{L}_{Huber}(\Delta \mathbf{x}, \Delta \hat{\mathbf{x}}) + \lambda_{grip} \mathcal{L}_{BCE}(a, \hat{a}) + \lambda_{phase} \mathcal{L}_{CE}(p, \hat{p})$$
+$$
+\mathcal{L}_{total} = \lambda_{pos} \mathcal{L}_{Huber}(\Delta \mathbf{x}, \Delta \hat{\mathbf{x}}) + \lambda_{grip} \mathcal{L}_{BCE}(a, \hat{a}) + \lambda_{phase} \mathcal{L}_{CE}(p, \hat{p})
+$$
 
 with $\lambda_{pos}=1.0$, $\lambda_{grip}=0.5$, $\lambda_{phase}=0.2$. Dense phase supervision forces the LSTM to explicitly model the logical structure of the task, preventing oscillation at critical boundaries (e.g., "almost grasped" vs. "grasped").
 
@@ -243,7 +249,9 @@ Doubling augmented data from 1k to 2k raises success from 60% to **97%** — a s
 To close the *perceptual* sim-to-real gap, **Cosmos-Transfer 1.0** (NVIDIA, 7B parameters) was applied. It is a diffusion-based multimodal controllable world generator that takes multiple conditional inputs — RGB video, semantic segmentation masks, and depth maps — and generates photorealistic video sequences conditioned on these modalities.
 
 For each control branch $i$ and diffusion block $l$, intermediate activations $h_l^i$ are modulated by the corresponding adaptive spatiotemporal control map $w_l^i \in \mathbb{R}^{H \times W \times T \times N}$. The contribution to the main branch is:
-$$\text{output}_l = w_l^i \cdot h_l^i$$
+$$
+\text{output}_l = w_l^i \cdot h_l^i
+$$
 
 This adaptive fusion allows the model to dynamically emphasize the most informative modality in different spatial regions and timesteps, enabling fine-grained appearance stylization while preserving the underlying robot motion and scene geometry.
 

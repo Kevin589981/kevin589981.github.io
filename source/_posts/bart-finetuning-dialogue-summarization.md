@@ -109,7 +109,9 @@ if len(model.model.decoder.layers) > config.decoder_layers:
 
 R-Drop（Regularized Dropout）由 2021 年 NeurIPS 论文提出，核心思想是：对同一输入进行**两次独立的前向传播**（每次 Dropout 的随机掩码不同），通过最小化两次输出分布之间的 KL 散度来增强模型的一致性约束。
 
-$$\mathcal{L} = \frac{1}{2}(\mathcal{L}_{\text{CE}}^{(1)} + \mathcal{L}_{\text{CE}}^{(2)}) + \alpha \cdot \mathcal{D}_{\text{KL}}(P_1 \| P_2)$$
+$$
+\mathcal{L} = \frac{1}{2}(\mathcal{L}_{\text{CE}}^{(1)} + \mathcal{L}_{\text{CE}}^{(2)}) + \alpha \cdot \mathcal{D}_{\text{KL}}(P_1 \| P_2)
+$$
 
 其中 $\mathcal{D}_{\text{KL}}$ 取双向对称形式（防止方向偏差）：
 

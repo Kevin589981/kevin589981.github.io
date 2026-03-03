@@ -137,7 +137,9 @@ impl AsyncTask {
 
 Shyper 利用 ARMv8 / RISC-V Hypervisor Extension 的二级地址翻译（IPA → PA）实现 VM 内存隔离。对于 MVM 和 HRTVM，采用**直接映射或固定偏移映射**，使得地址转换可以通过算术运算完成：
 
-$$\text{PA} = \text{IPA} + \text{offset}$$
+$$
+\text{PA} = \text{IPA} + \text{offset}
+$$
 
 `src/kernel/vm.rs` 中的 `vm_ipa2pa` 函数即实现了这一语义，避免了页表遍历带来的时间不确定性，满足 DMA 操作和硬实时任务对访存延迟的严格要求。GVM 则使用 Buddy System 动态分配，兼顾内存利用率。
 

@@ -28,7 +28,9 @@ $$(\exists c > 0)(\exists N)(\forall x \ge N)\;|f(x)| \le c \cdot |g(x)|$$
 
 **小 o 记号（严格上界）：** $f(x) = o(g(x))$ 当且仅当
 
-$$\lim_{n \to \infty} \frac{f(n)}{g(n)} = 0$$
+$$
+\lim_{n \to \infty} \frac{f(n)}{g(n)} = 0
+$$
 
 例如 $2n = o(n^2)$，但 $2n \ne o(n)$。
 
@@ -65,7 +67,9 @@ $$\lim_{n \to \infty} \frac{f(n)}{g(n)} = 0$$
 
 **字母表** $\Sigma$ 是符号的有限集合，其上的**字符串**是有限符号序列，空字符串记 $\epsilon$。
 
-$$\Sigma^* = \{\epsilon\} \cup \Sigma \cup \Sigma^2 \cup \dots$$
+$$
+\Sigma^* = \{\epsilon\} \cup \Sigma \cup \Sigma^2 \cup \dots
+$$
 
 **语言** $L \subseteq \Sigma^*$ 是字符串的集合。语言支持布尔运算（并、交、补）、连接运算 $L_1 L_2 = \{xy \mid x \in L_1, y \in L_2\}$ 以及**克林闭包** $L^* = \{w_1 \dots w_k \mid k \ge 0, w_i \in L\}$。
 
