@@ -3,7 +3,7 @@
   <entry>
     <title>BART微调实践：对话摘要生成的工程全链路</title>
     <url>/2026/03/03/bart-finetuning-dialogue-summarization/</url>
-    <content><![CDATA[代码链接：https://github.com/Kevin589981/nlp/blob/main/last-handin.ipynb?short_path=48e261c本策略在课程kaggle竞赛中获得rank2&#x2F;152：https://www.kaggle.com/competitions/nanogpt-fudannlp-cs-30040/leaderboard?
+    <content><![CDATA[代码链接：https://github.com/Kevin589981/nlp/blob/main/last-handin.ipynb?short_path=48e261c本策略在课程kaggle竞赛中获得rank2&#x2F;152（以有效参与人数计）：https://www.kaggle.com/competitions/nanogpt-fudannlp-cs-30040/leaderboard?
 
 抽象式摘要（Abstractive Summarization）要求模型真正”理解”输入文本并重新生成简洁表述，而非简单地抽取原句。本文记录了以 facebook/bart-large 为骨干模型，在对话摘要数据集上进行全流程微调的工程实践，涵盖数据清洗、模型剪枝、R-Drop 正则化、混合精度训练与 Beam Search 推理优化，并报告模型在参数量约束（&lt; 400 M）下的 ROUGE 评估结果。
 
