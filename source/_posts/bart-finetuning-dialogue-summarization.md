@@ -14,7 +14,7 @@ tags:
 ---
 代码链接：
 https://github.com/Kevin589981/nlp/blob/main/last-handin.ipynb?short_path=48e261c
-本策略在课程kaggle竞赛中获得rank2/152：
+本策略在课程kaggle竞赛中获得rank2/152（以有效参与人数计）：
 https://www.kaggle.com/competitions/nanogpt-fudannlp-cs-30040/leaderboard?
 
 
