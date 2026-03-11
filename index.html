@@ -246,9 +246,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2026-03-03 00:00:00 / 修改时间：15:37:40" itemprop="dateCreated datePublished" datetime="2026-03-03T00:00:00+08:00">2026-03-03</time>
+      <time title="创建时间：2026-03-03 00:00:00" itemprop="dateCreated datePublished" datetime="2026-03-03T00:00:00+08:00">2026-03-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-11 11:56:49" itemprop="dateModified" datetime="2026-03-11T11:56:49+08:00">2026-03-11</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -274,11 +280,15 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <p>代码链接：<br><a target="_blank" rel="noopener" href="https://github.com/Kevin589981/nlp/blob/main/last-handin.ipynb?short_path=48e261c">https://github.com/Kevin589981/nlp/blob/main/last-handin.ipynb?short_path=48e261c</a><br>本策略在课程kaggle竞赛中获得rank2/152（以有效参与人数计）：<br><a target="_blank" rel="noopener" href="https://www.kaggle.com/competitions/nanogpt-fudannlp-cs-30040/leaderboard?">https://www.kaggle.com/competitions/nanogpt-fudannlp-cs-30040/leaderboard?</a></p>
+          <p>代码链接：<br>
+<a target="_blank" rel="noopener" href="https://github.com/Kevin589981/nlp/blob/main/last-handin.ipynb?short_path=48e261c">https://github.com/Kevin589981/nlp/blob/main/last-handin.ipynb?short_path=48e261c</a><br>
+本策略在复旦NLP kaggle竞赛中获得rank2/152（以有效参与人数计）：<br>
+<a target="_blank" rel="noopener" href="https://www.kaggle.com/competitions/nanogpt-fudannlp-cs-30040/leaderboard">https://www.kaggle.com/competitions/nanogpt-fudannlp-cs-30040/leaderboard</a>?</p>
 <blockquote>
-<p>抽象式摘要（Abstractive Summarization）要求模型真正”理解”输入文本并重新生成简洁表述，而非简单地抽取原句。本文记录了以 <code>facebook/bart-large</code> 为骨干模型，在对话摘要数据集上进行全流程微调的工程实践，涵盖数据清洗、模型剪枝、R-Drop 正则化、混合精度训练与 Beam Search 推理优化，并报告模型在参数量约束（&lt; 400 M）下的 ROUGE 评估结果。</p>
+<p>抽象式摘要（Abstractive Summarization）要求模型真正&quot;理解&quot;输入文本并重新生成简洁表述，而非简单地抽取原句。本文记录了以 <code>facebook/bart-large</code> 为骨干模型，在对话摘要数据集上进行全流程微调的工程实践，涵盖数据清洗、模型剪枝、R-Drop 正则化、混合精度训练与 Beam Search 推理优化，并报告模型在参数量约束（&lt; 400 M）下的 ROUGE 评估结果。</p>
 </blockquote>
-<h2 id="1-任务定义与模型选型"><a href="#1-任务定义与模型选型" class="headerlink" title="1. 任务定义与模型选型"></a>1. 任务定义与模型选型</h2><p>对话摘要（Dialogue Summarization）是 NLP 序列到序列（Seq2Seq）任务的典型代表：给定一段多轮对话文本，生成一句或数句简洁的摘要。与新闻摘要不同，对话文本存在口语化表述、表情符号、发言者切换等噪声，对模型的泛化能力提出了更高要求。</p>
+<h2 id="1-任务定义与模型选型">1. 任务定义与模型选型</h2>
+<p>对话摘要（Dialogue Summarization）是 NLP 序列到序列（Seq2Seq）任务的典型代表：给定一段多轮对话文本，生成一句或数句简洁的摘要。与新闻摘要不同，对话文本存在口语化表述、表情符号、发言者切换等噪声，对模型的泛化能力提出了更高要求。</p>
 <p><strong>为什么选择 BART？</strong></p>
 <p>BART（Bidirectional and Auto-Regressive Transformer）由 Facebook 提出，其预训练目标是将经过多种噪声破坏（删除、重排、遮盖等）的文本还原为原始形式。这一设计使 BART 在生成任务上天然优于 BERT 类的纯编码器模型：</p>
 <ul>
@@ -288,34 +298,522 @@
 </ul>
 <p>本项目基于 <code>facebook/bart-large</code>（~400 M 参数）进行微调，并通过<strong>解码器层剪枝</strong>将参数量压缩至约束范围内。</p>
 <hr>
-<h2 id="2-数据预处理流水线"><a href="#2-数据预处理流水线" class="headerlink" title="2. 数据预处理流水线"></a>2. 数据预处理流水线</h2><h3 id="2-1-多源数据统一化"><a href="#2-1-多源数据统一化" class="headerlink" title="2.1 多源数据统一化"></a>2.1 多源数据统一化</h3><p>现实中的对话摘要数据集列名往往不统一（<code>text</code>、<code>document</code>、<code>dialogue</code>、<code>content</code> 等均指输入文本）。预处理管道通过列名映射统一为 <code>dialogue</code> / <code>summary</code>，再进行后续处理：</p>
-<pre><code class="lang-python">col_map = {}
+<h2 id="2-数据预处理流水线">2. 数据预处理流水线</h2>
+<h3 id="2-1-多源数据统一化">2.1 多源数据统一化</h3>
+<p>现实中的对话摘要数据集列名往往不统一（<code>text</code>、<code>document</code>、<code>dialogue</code>、<code>content</code> 等均指输入文本）。预处理管道通过列名映射统一为 <code>dialogue</code> / <code>summary</code>，再进行后续处理：</p>
+<pre><code class="language-python">col_map = {}
 for col in df.columns:
-    if col.lower() in [&#39;text&#39;, &#39;document&#39;, &#39;dialogue&#39;, &#39;content&#39;]:
-        col_map[col] = &#39;dialogue&#39;
-    elif col.lower() in [&#39;summary&#39;, &#39;target&#39;, &#39;headline&#39;]:
-        col_map[col] = &#39;summary&#39;
+    if col.lower() in ['text', 'document', 'dialogue', 'content']:
+        col_map[col] = 'dialogue'
+    elif col.lower() in ['summary', 'target', 'headline']:
+        col_map[col] = 'summary'
 if col_map:
     df.rename(columns=col_map, inplace=True)
 </code></pre>
-<h3 id="2-2-表情符号清洗"><a href="#2-2-表情符号清洗" class="headerlink" title="2.2 表情符号清洗"></a>2.2 表情符号清洗</h3><p>对话文本中大量 Unicode 表情符号（emoji）会被 BPE Tokenizer 切分为多个 <code>&lt;unk&gt;</code> 或低频 token，占用宝贵的序列长度并引入噪声。使用 <code>emoji</code> 库精准删除（而非用正则匹配代码点范围，后者容易误伤合法 Unicode 字符）：</p>
-<pre><code class="lang-python">import emoji
+<h3 id="2-2-表情符号清洗">2.2 表情符号清洗</h3>
+<p>对话文本中大量 Unicode 表情符号（emoji）会被 BPE Tokenizer 切分为多个 <code>&lt;unk&gt;</code> 或低频 token，占用宝贵的序列长度并引入噪声。使用 <code>emoji</code> 库精准删除（而非用正则匹配代码点范围，后者容易误伤合法 Unicode 字符）：</p>
+<pre><code class="language-python">import emoji
 
 def clean_text_remove_emoji(text: str) -&gt; str:
     if not isinstance(text, str):
         return &quot;&quot;
-    text = emoji.replace_emoji(text, replace=&#39;&#39;)
-    return re.sub(r&#39;\s+&#39;, &#39; &#39;, text).strip()
+    text = emoji.replace_emoji(text, replace='')
+    return re.sub(r'\s+', ' ', text).strip()
 </code></pre>
-<h3 id="2-3-长度过滤"><a href="#2-3-长度过滤" class="headerlink" title="2.3 长度过滤"></a>2.3 长度过滤</h3><p>BART 的位置编码上限为 1024 tokens，但对话摘要任务中输入过长会引入大量无关上下文，反而干扰生成质量。实验中设定：</p>
+<h3 id="2-3-长度过滤">2.3 长度过滤</h3>
+<p>BART 的位置编码上限为 1024 tokens，但对话摘要任务中输入过长会引入大量无关上下文，反而干扰生成质量。实验中设定：</p>
 <ul>
-<li><strong>对话</strong>：$\leq 364$ tokens（为 <code>[BOS]</code>、<code>[EOS]</code> 等特殊 token 预留空间，实际 <code>max_source_length = 384</code>）；</li>
-<li><strong>摘要</strong>：$\leq 64$ tokens，且 $&gt; 10$ tokens（过短的摘要在训练时会引导模型生成退化输出）。</li>
+<li><strong>对话</strong>：
+    <span id="mjx-06f4b38">
+      <style>
+      #mjx-06f4b38{
+        display:contents;
+        mjx-assistive-mml {
+          user-select: text !important;
+          clip: auto !important;
+          color: rgba(0,0,0,0);
+        }
+        
+mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+  min-height: 1px;
+  min-width: 1px;
+}
+
+mjx-container[jax="SVG"] > svg a {
+  fill: blue;
+  stroke: blue;
+}
+
+mjx-assistive-mml {
+  position: absolute !important;
+  top: 0px;
+  left: 0px;
+  clip: rect(1px, 1px, 1px, 1px);
+  padding: 1px 0px 0px 0px !important;
+  border: 0px !important;
+  display: block !important;
+  width: auto !important;
+  overflow: hidden !important;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+mjx-assistive-mml[display="block"] {
+  width: 100% !important;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][display="true"][width="full"] {
+  display: flex;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line], svg[data-table] > g > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame], svg[data-table] > g > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed, svg[data-table] > g > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted, svg[data-table] > g > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > g > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"] path[data-c], mjx-container[jax="SVG"] use[data-c] {
+  stroke-width: 3;
+}
+
+g[data-mml-node="xypic"] path {
+  stroke-width: inherit;
+}
+
+.MathJax g[data-mml-node="xypic"] path {
+  stroke-width: inherit;
+}
+
+      }
+      </style>
+      <mjx-container class="MathJax" jax="SVG" style="position: relative;"><svg style="vertical-align: -0.312ex;" xmlns="http://www.w3.org/2000/svg" width="5.782ex" height="1.844ex" role="img" focusable="false" viewBox="0 -677 2555.8 815" aria-hidden="true"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mo"><path data-c="2264" d="M674 636Q682 636 688 630T694 615T687 601Q686 600 417 472L151 346L399 228Q687 92 691 87Q694 81 694 76Q694 58 676 56H670L382 192Q92 329 90 331Q83 336 83 348Q84 359 96 365Q104 369 382 500T665 634Q669 636 674 636ZM84 -118Q84 -108 99 -98H678Q694 -104 694 -118Q694 -130 679 -138H98Q84 -131 84 -118Z"></path></g><g data-mml-node="mn" transform="translate(1055.8,0)"><path data-c="33" d="M127 463Q100 463 85 480T69 524Q69 579 117 622T233 665Q268 665 277 664Q351 652 390 611T430 522Q430 470 396 421T302 350L299 348Q299 347 308 345T337 336T375 315Q457 262 457 175Q457 96 395 37T238 -22Q158 -22 100 21T42 130Q42 158 60 175T105 193Q133 193 151 175T169 130Q169 119 166 110T159 94T148 82T136 74T126 70T118 67L114 66Q165 21 238 21Q293 21 321 74Q338 107 338 175V195Q338 290 274 322Q259 328 213 329L171 330L168 332Q166 335 166 348Q166 366 174 366Q202 366 232 371Q266 376 294 413T322 525V533Q322 590 287 612Q265 626 240 626Q208 626 181 615T143 592T132 580H135Q138 579 143 578T153 573T165 566T175 555T183 540T186 520Q186 498 172 481T127 463Z"></path><path data-c="36" d="M42 313Q42 476 123 571T303 666Q372 666 402 630T432 550Q432 525 418 510T379 495Q356 495 341 509T326 548Q326 592 373 601Q351 623 311 626Q240 626 194 566Q147 500 147 364L148 360Q153 366 156 373Q197 433 263 433H267Q313 433 348 414Q372 400 396 374T435 317Q456 268 456 210V192Q456 169 451 149Q440 90 387 34T253 -22Q225 -22 199 -14T143 16T92 75T56 172T42 313ZM257 397Q227 397 205 380T171 335T154 278T148 216Q148 133 160 97T198 39Q222 21 251 21Q302 21 329 59Q342 77 347 104T352 209Q352 289 347 316T329 361Q302 397 257 397Z" transform="translate(500,0)"></path><path data-c="34" d="M462 0Q444 3 333 3Q217 3 199 0H190V46H221Q241 46 248 46T265 48T279 53T286 61Q287 63 287 115V165H28V211L179 442Q332 674 334 675Q336 677 355 677H373L379 671V211H471V165H379V114Q379 73 379 66T385 54Q393 47 442 46H471V0H462ZM293 211V545L74 212L183 211H293Z" transform="translate(1000,0)"></path></g></g></g></svg><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML"><mo>≤</mo><mn>364</mn></math></mjx-assistive-mml></mjx-container>
+    </span>
+   tokens（为 <code>[BOS]</code>、<code>[EOS]</code> 等特殊 token 预留空间，实际 <code>max_source_length = 384</code>）；</li>
+<li><strong>摘要</strong>：
+    <span id="mjx-3daaf29">
+      <style>
+      #mjx-3daaf29{
+        display:contents;
+        mjx-assistive-mml {
+          user-select: text !important;
+          clip: auto !important;
+          color: rgba(0,0,0,0);
+        }
+        
+mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+  min-height: 1px;
+  min-width: 1px;
+}
+
+mjx-container[jax="SVG"] > svg a {
+  fill: blue;
+  stroke: blue;
+}
+
+mjx-assistive-mml {
+  position: absolute !important;
+  top: 0px;
+  left: 0px;
+  clip: rect(1px, 1px, 1px, 1px);
+  padding: 1px 0px 0px 0px !important;
+  border: 0px !important;
+  display: block !important;
+  width: auto !important;
+  overflow: hidden !important;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+mjx-assistive-mml[display="block"] {
+  width: 100% !important;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][display="true"][width="full"] {
+  display: flex;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line], svg[data-table] > g > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame], svg[data-table] > g > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed, svg[data-table] > g > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted, svg[data-table] > g > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > g > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"] path[data-c], mjx-container[jax="SVG"] use[data-c] {
+  stroke-width: 3;
+}
+
+g[data-mml-node="xypic"] path {
+  stroke-width: inherit;
+}
+
+.MathJax g[data-mml-node="xypic"] path {
+  stroke-width: inherit;
+}
+
+      }
+      </style>
+      <mjx-container class="MathJax" jax="SVG" style="position: relative;"><svg style="vertical-align: -0.312ex;" xmlns="http://www.w3.org/2000/svg" width="4.651ex" height="1.844ex" role="img" focusable="false" viewBox="0 -677 2055.8 815" aria-hidden="true"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mo"><path data-c="2264" d="M674 636Q682 636 688 630T694 615T687 601Q686 600 417 472L151 346L399 228Q687 92 691 87Q694 81 694 76Q694 58 676 56H670L382 192Q92 329 90 331Q83 336 83 348Q84 359 96 365Q104 369 382 500T665 634Q669 636 674 636ZM84 -118Q84 -108 99 -98H678Q694 -104 694 -118Q694 -130 679 -138H98Q84 -131 84 -118Z"></path></g><g data-mml-node="mn" transform="translate(1055.8,0)"><path data-c="36" d="M42 313Q42 476 123 571T303 666Q372 666 402 630T432 550Q432 525 418 510T379 495Q356 495 341 509T326 548Q326 592 373 601Q351 623 311 626Q240 626 194 566Q147 500 147 364L148 360Q153 366 156 373Q197 433 263 433H267Q313 433 348 414Q372 400 396 374T435 317Q456 268 456 210V192Q456 169 451 149Q440 90 387 34T253 -22Q225 -22 199 -14T143 16T92 75T56 172T42 313ZM257 397Q227 397 205 380T171 335T154 278T148 216Q148 133 160 97T198 39Q222 21 251 21Q302 21 329 59Q342 77 347 104T352 209Q352 289 347 316T329 361Q302 397 257 397Z"></path><path data-c="34" d="M462 0Q444 3 333 3Q217 3 199 0H190V46H221Q241 46 248 46T265 48T279 53T286 61Q287 63 287 115V165H28V211L179 442Q332 674 334 675Q336 677 355 677H373L379 671V211H471V165H379V114Q379 73 379 66T385 54Q393 47 442 46H471V0H462ZM293 211V545L74 212L183 211H293Z" transform="translate(500,0)"></path></g></g></g></svg><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML"><mo>≤</mo><mn>64</mn></math></mjx-assistive-mml></mjx-container>
+    </span>
+   tokens，且 
+    <span id="mjx-b972c0d">
+      <style>
+      #mjx-b972c0d{
+        display:contents;
+        mjx-assistive-mml {
+          user-select: text !important;
+          clip: auto !important;
+          color: rgba(0,0,0,0);
+        }
+        
+mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+  min-height: 1px;
+  min-width: 1px;
+}
+
+mjx-container[jax="SVG"] > svg a {
+  fill: blue;
+  stroke: blue;
+}
+
+mjx-assistive-mml {
+  position: absolute !important;
+  top: 0px;
+  left: 0px;
+  clip: rect(1px, 1px, 1px, 1px);
+  padding: 1px 0px 0px 0px !important;
+  border: 0px !important;
+  display: block !important;
+  width: auto !important;
+  overflow: hidden !important;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+mjx-assistive-mml[display="block"] {
+  width: 100% !important;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][display="true"][width="full"] {
+  display: flex;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line], svg[data-table] > g > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame], svg[data-table] > g > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed, svg[data-table] > g > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted, svg[data-table] > g > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > g > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"] path[data-c], mjx-container[jax="SVG"] use[data-c] {
+  stroke-width: 3;
+}
+
+g[data-mml-node="xypic"] path {
+  stroke-width: inherit;
+}
+
+.MathJax g[data-mml-node="xypic"] path {
+  stroke-width: inherit;
+}
+
+      }
+      </style>
+      <mjx-container class="MathJax" jax="SVG" style="position: relative;"><svg style="vertical-align: -0.09ex;" xmlns="http://www.w3.org/2000/svg" width="4.651ex" height="1.597ex" role="img" focusable="false" viewBox="0 -666 2055.8 706" aria-hidden="true"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mo"><path data-c="3E" d="M84 520Q84 528 88 533T96 539L99 540Q106 540 253 471T544 334L687 265Q694 260 694 250T687 235Q685 233 395 96L107 -40H101Q83 -38 83 -20Q83 -19 83 -17Q82 -10 98 -1Q117 9 248 71Q326 108 378 132L626 250L378 368Q90 504 86 509Q84 513 84 520Z"></path></g><g data-mml-node="mn" transform="translate(1055.8,0)"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path data-c="30" d="M96 585Q152 666 249 666Q297 666 345 640T423 548Q460 465 460 320Q460 165 417 83Q397 41 362 16T301 -15T250 -22Q224 -22 198 -16T137 16T82 83Q39 165 39 320Q39 494 96 585ZM321 597Q291 629 250 629Q208 629 178 597Q153 571 145 525T137 333Q137 175 145 125T181 46Q209 16 250 16Q290 16 318 46Q347 76 354 130T362 333Q362 478 354 524T321 597Z" transform="translate(500,0)"></path></g></g></g></svg><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML"><mo>&gt;</mo><mn>10</mn></math></mjx-assistive-mml></mjx-container>
+    </span>
+   tokens（过短的摘要在训练时会引导模型生成退化输出）。</li>
 </ul>
 <p>过滤后训练集约保留原始数据的 85%~90%，验证集固定 700 条用于稳定的 ROUGE 对比。</p>
 <hr>
-<h2 id="3-模型配置与解码器剪枝"><a href="#3-模型配置与解码器剪枝" class="headerlink" title="3. 模型配置与解码器剪枝"></a>3. 模型配置与解码器剪枝</h2><p><code>bart-large</code> 的标准配置包含 12 层编码器 + 12 层解码器，总参数量约 406 M，略超参数约束。将解码器层数从 12 层剪枝至 11 层（<code>decoder_layers = 11</code>），可将参数量降至约 390 M，同时保留了绝大部分生成能力（解码器底层负责基础语言模型能力，顶层负责任务特定适配，剪去最后一层影响最小）：</p>
-<pre><code class="lang-python">model_config = BartConfig.from_pretrained(model_load_path)
+<h2 id="3-模型配置与解码器剪枝">3. 模型配置与解码器剪枝</h2>
+<p><code>bart-large</code> 的标准配置包含 12 层编码器 + 12 层解码器，总参数量约 406 M，略超参数约束。将解码器层数从 12 层剪枝至 11 层（<code>decoder_layers = 11</code>），可将参数量降至约 390 M，同时保留了绝大部分生成能力（解码器底层负责基础语言模型能力，顶层负责任务特定适配，剪去最后一层影响最小）：</p>
+<pre><code class="language-python">model_config = BartConfig.from_pretrained(model_load_path)
 model_config.decoder_layers = config.decoder_layers  # 11
 
 model = BartForConditionalGeneration.from_pretrained(model_load_path, config=model_config)
@@ -325,7 +823,6 @@ if len(model.model.decoder.layers) &gt; config.decoder_layers:
     model.model.decoder.layers = model.model.decoder.layers[:config.decoder_layers]
 </code></pre>
 <p>同时配置 Dropout 参数以增强正则化效果：</p>
-<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -352,12 +849,334 @@ if len(model.model.decoder.layers) &gt; config.decoder_layers:
 </tr>
 </tbody>
 </table>
-</div>
 <hr>
-<h2 id="4-训练策略"><a href="#4-训练策略" class="headerlink" title="4. 训练策略"></a>4. 训练策略</h2><h3 id="4-1-R-Drop-正则化"><a href="#4-1-R-Drop-正则化" class="headerlink" title="4.1 R-Drop 正则化"></a>4.1 R-Drop 正则化</h3><p>R-Drop（Regularized Dropout）由 2021 年 NeurIPS 论文提出，核心思想是：对同一输入进行<strong>两次独立的前向传播</strong>（每次 Dropout 的随机掩码不同），通过最小化两次输出分布之间的 KL 散度来增强模型的一致性约束。</p>
-\[
-\mathcal{L} = \frac{1}{2}(\mathcal{L}_{\text{CE}}^{(1)} + \mathcal{L}_{\text{CE}}^{(2)}) + \alpha \cdot \mathcal{D}_{\text{KL}}(P_1 \| P_2)\]<p>其中 $\mathcal{D}_{\text{KL}}$ 取双向对称形式（防止方向偏差）：</p>
-<pre><code class="lang-python">def compute_kl_loss(logits1, logits2):
+<h2 id="4-训练策略">4. 训练策略</h2>
+<h3 id="4-1-R-Drop-正则化">4.1 R-Drop 正则化</h3>
+<p>R-Drop（Regularized Dropout）由 2021 年 NeurIPS 论文提出，核心思想是：对同一输入进行<strong>两次独立的前向传播</strong>（每次 Dropout 的随机掩码不同），通过最小化两次输出分布之间的 KL 散度来增强模型的一致性约束。</p>
+
+    <span id="mjx-190ea31">
+      <style>
+      #mjx-190ea31{
+        display:contents;
+        mjx-assistive-mml {
+          user-select: text !important;
+          clip: auto !important;
+          color: rgba(0,0,0,0);
+        }
+        
+mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+  min-height: 1px;
+  min-width: 1px;
+}
+
+mjx-container[jax="SVG"] > svg a {
+  fill: blue;
+  stroke: blue;
+}
+
+mjx-assistive-mml {
+  position: absolute !important;
+  top: 0px;
+  left: 0px;
+  clip: rect(1px, 1px, 1px, 1px);
+  padding: 1px 0px 0px 0px !important;
+  border: 0px !important;
+  display: block !important;
+  width: auto !important;
+  overflow: hidden !important;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+mjx-assistive-mml[display="block"] {
+  width: 100% !important;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][display="true"][width="full"] {
+  display: flex;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line], svg[data-table] > g > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame], svg[data-table] > g > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed, svg[data-table] > g > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted, svg[data-table] > g > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > g > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"] path[data-c], mjx-container[jax="SVG"] use[data-c] {
+  stroke-width: 3;
+}
+
+g[data-mml-node="xypic"] path {
+  stroke-width: inherit;
+}
+
+.MathJax g[data-mml-node="xypic"] path {
+  stroke-width: inherit;
+}
+
+      }
+      </style>
+      <mjx-container class="MathJax" jax="SVG" display="true" style="position: relative;"><svg style="vertical-align: -1.552ex;" xmlns="http://www.w3.org/2000/svg" width="37.014ex" height="4.588ex" role="img" focusable="false" viewBox="0 -1342 16360.2 2028" aria-hidden="true"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="TeXAtom" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="4C" d="M62 -22T47 -22T32 -11Q32 -1 56 24T83 55Q113 96 138 172T180 320T234 473T323 609Q364 649 419 677T531 705Q559 705 578 696T604 671T615 645T618 623V611Q618 582 615 571T598 548Q581 531 558 520T518 509Q503 509 503 520Q503 523 505 536T507 560Q507 590 494 610T452 630Q423 630 410 617Q367 578 333 492T271 301T233 170Q211 123 204 112L198 103L224 102Q281 102 369 79T509 52H523Q535 64 544 87T579 128Q616 152 641 152Q656 152 656 142Q656 101 588 40T433 -22Q381 -22 289 1T156 28L141 29L131 20Q111 0 87 -11Z"></path></g></g><g data-mml-node="mo" transform="translate(967.8,0)"><path data-c="3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path></g><g data-mml-node="mfrac" transform="translate(2023.6,0)"><g data-mml-node="mn" transform="translate(220,676)"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></g><g data-mml-node="mn" transform="translate(220,-686)"><path data-c="32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z"></path></g><rect width="700" height="60" x="120" y="220"></rect></g><g data-mml-node="mo" transform="translate(2963.6,0)"><path data-c="28" d="M94 250Q94 319 104 381T127 488T164 576T202 643T244 695T277 729T302 750H315H319Q333 750 333 741Q333 738 316 720T275 667T226 581T184 443T167 250T184 58T225 -81T274 -167T316 -220T333 -241Q333 -250 318 -250H315H302L274 -226Q180 -141 137 -14T94 250Z"></path></g><g data-mml-node="msubsup" transform="translate(3352.6,0)"><g data-mml-node="TeXAtom" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="4C" d="M62 -22T47 -22T32 -11Q32 -1 56 24T83 55Q113 96 138 172T180 320T234 473T323 609Q364 649 419 677T531 705Q559 705 578 696T604 671T615 645T618 623V611Q618 582 615 571T598 548Q581 531 558 520T518 509Q503 509 503 520Q503 523 505 536T507 560Q507 590 494 610T452 630Q423 630 410 617Q367 578 333 492T271 301T233 170Q211 123 204 112L198 103L224 102Q281 102 369 79T509 52H523Q535 64 544 87T579 128Q616 152 641 152Q656 152 656 142Q656 101 588 40T433 -22Q381 -22 289 1T156 28L141 29L131 20Q111 0 87 -11Z"></path></g></g><g data-mml-node="TeXAtom" transform="translate(723,530.4) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mo"><path data-c="28" d="M94 250Q94 319 104 381T127 488T164 576T202 643T244 695T277 729T302 750H315H319Q333 750 333 741Q333 738 316 720T275 667T226 581T184 443T167 250T184 58T225 -81T274 -167T316 -220T333 -241Q333 -250 318 -250H315H302L274 -226Q180 -141 137 -14T94 250Z"></path></g><g data-mml-node="mn" transform="translate(389,0)"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></g><g data-mml-node="mo" transform="translate(889,0)"><path data-c="29" d="M60 749L64 750Q69 750 74 750H86L114 726Q208 641 251 514T294 250Q294 182 284 119T261 12T224 -76T186 -143T145 -194T113 -227T90 -246Q87 -249 86 -250H74Q66 -250 63 -250T58 -247T55 -238Q56 -237 66 -225Q221 -64 221 250T66 725Q56 737 55 738Q55 746 60 749Z"></path></g></g><g data-mml-node="TeXAtom" transform="translate(723,-324.9) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mtext"><path data-c="43" d="M56 342Q56 428 89 500T174 615T283 681T391 705Q394 705 400 705T408 704Q499 704 569 636L582 624L612 663Q639 700 643 704Q644 704 647 704T653 705H657Q660 705 666 699V419L660 413H626Q620 419 619 430Q610 512 571 572T476 651Q457 658 426 658Q322 658 252 588Q173 509 173 342Q173 221 211 151Q232 111 263 84T328 45T384 29T428 24Q517 24 571 93T626 244Q626 251 632 257H660L666 251V236Q661 133 590 56T403 -21Q262 -21 159 83T56 342Z"></path><path data-c="45" d="M128 619Q121 626 117 628T101 631T58 634H25V680H597V676Q599 670 611 560T625 444V440H585V444Q584 447 582 465Q578 500 570 526T553 571T528 601T498 619T457 629T411 633T353 634Q266 634 251 633T233 622Q233 622 233 621Q232 619 232 497V376H286Q359 378 377 385Q413 401 416 469Q416 471 416 473V493H456V213H416V233Q415 268 408 288T383 317T349 328T297 330Q290 330 286 330H232V196V114Q232 57 237 52Q243 47 289 47H340H391Q428 47 452 50T505 62T552 92T584 146Q594 172 599 200T607 247T612 270V273H652V270Q651 267 632 137T610 3V0H25V46H58Q100 47 109 49T128 61V619Z" transform="translate(722,0)"></path></g></g></g><g data-mml-node="mo" transform="translate(5339.8,0)"><path data-c="2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z"></path></g><g data-mml-node="msubsup" transform="translate(6340.1,0)"><g data-mml-node="TeXAtom" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="4C" d="M62 -22T47 -22T32 -11Q32 -1 56 24T83 55Q113 96 138 172T180 320T234 473T323 609Q364 649 419 677T531 705Q559 705 578 696T604 671T615 645T618 623V611Q618 582 615 571T598 548Q581 531 558 520T518 509Q503 509 503 520Q503 523 505 536T507 560Q507 590 494 610T452 630Q423 630 410 617Q367 578 333 492T271 301T233 170Q211 123 204 112L198 103L224 102Q281 102 369 79T509 52H523Q535 64 544 87T579 128Q616 152 641 152Q656 152 656 142Q656 101 588 40T433 -22Q381 -22 289 1T156 28L141 29L131 20Q111 0 87 -11Z"></path></g></g><g data-mml-node="TeXAtom" transform="translate(723,530.4) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mo"><path data-c="28" d="M94 250Q94 319 104 381T127 488T164 576T202 643T244 695T277 729T302 750H315H319Q333 750 333 741Q333 738 316 720T275 667T226 581T184 443T167 250T184 58T225 -81T274 -167T316 -220T333 -241Q333 -250 318 -250H315H302L274 -226Q180 -141 137 -14T94 250Z"></path></g><g data-mml-node="mn" transform="translate(389,0)"><path data-c="32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z"></path></g><g data-mml-node="mo" transform="translate(889,0)"><path data-c="29" d="M60 749L64 750Q69 750 74 750H86L114 726Q208 641 251 514T294 250Q294 182 284 119T261 12T224 -76T186 -143T145 -194T113 -227T90 -246Q87 -249 86 -250H74Q66 -250 63 -250T58 -247T55 -238Q56 -237 66 -225Q221 -64 221 250T66 725Q56 737 55 738Q55 746 60 749Z"></path></g></g><g data-mml-node="TeXAtom" transform="translate(723,-324.9) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mtext"><path data-c="43" d="M56 342Q56 428 89 500T174 615T283 681T391 705Q394 705 400 705T408 704Q499 704 569 636L582 624L612 663Q639 700 643 704Q644 704 647 704T653 705H657Q660 705 666 699V419L660 413H626Q620 419 619 430Q610 512 571 572T476 651Q457 658 426 658Q322 658 252 588Q173 509 173 342Q173 221 211 151Q232 111 263 84T328 45T384 29T428 24Q517 24 571 93T626 244Q626 251 632 257H660L666 251V236Q661 133 590 56T403 -21Q262 -21 159 83T56 342Z"></path><path data-c="45" d="M128 619Q121 626 117 628T101 631T58 634H25V680H597V676Q599 670 611 560T625 444V440H585V444Q584 447 582 465Q578 500 570 526T553 571T528 601T498 619T457 629T411 633T353 634Q266 634 251 633T233 622Q233 622 233 621Q232 619 232 497V376H286Q359 378 377 385Q413 401 416 469Q416 471 416 473V493H456V213H416V233Q415 268 408 288T383 317T349 328T297 330Q290 330 286 330H232V196V114Q232 57 237 52Q243 47 289 47H340H391Q428 47 452 50T505 62T552 92T584 146Q594 172 599 200T607 247T612 270V273H652V270Q651 267 632 137T610 3V0H25V46H58Q100 47 109 49T128 61V619Z" transform="translate(722,0)"></path></g></g></g><g data-mml-node="mo" transform="translate(8105.1,0)"><path data-c="29" d="M60 749L64 750Q69 750 74 750H86L114 726Q208 641 251 514T294 250Q294 182 284 119T261 12T224 -76T186 -143T145 -194T113 -227T90 -246Q87 -249 86 -250H74Q66 -250 63 -250T58 -247T55 -238Q56 -237 66 -225Q221 -64 221 250T66 725Q56 737 55 738Q55 746 60 749Z"></path></g><g data-mml-node="mo" transform="translate(8716.4,0)"><path data-c="2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z"></path></g><g data-mml-node="mi" transform="translate(9716.6,0)"><path data-c="1D6FC" d="M34 156Q34 270 120 356T309 442Q379 442 421 402T478 304Q484 275 485 237V208Q534 282 560 374Q564 388 566 390T582 393Q603 393 603 385Q603 376 594 346T558 261T497 161L486 147L487 123Q489 67 495 47T514 26Q528 28 540 37T557 60Q559 67 562 68T577 70Q597 70 597 62Q597 56 591 43Q579 19 556 5T512 -10H505Q438 -10 414 62L411 69L400 61Q390 53 370 41T325 18T267 -2T203 -11Q124 -11 79 39T34 156ZM208 26Q257 26 306 47T379 90L403 112Q401 255 396 290Q382 405 304 405Q235 405 183 332Q156 292 139 224T121 120Q121 71 146 49T208 26Z"></path></g><g data-mml-node="mo" transform="translate(10578.8,0)"><path data-c="22C5" d="M78 250Q78 274 95 292T138 310Q162 310 180 294T199 251Q199 226 182 208T139 190T96 207T78 250Z"></path></g><g data-mml-node="msub" transform="translate(11079,0)"><g data-mml-node="TeXAtom" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="44" d="M37 475Q19 475 19 487Q19 536 103 604T327 682H356Q386 683 408 683H419Q475 683 506 681T582 668T667 633Q766 571 766 450Q766 365 723 287T611 152T455 57T279 6Q248 1 160 0Q148 0 131 0T108 -1Q72 -1 72 11Q72 24 90 40T133 64L144 68L152 88Q247 328 272 587Q275 613 272 613Q272 613 269 613Q225 610 195 602T149 579T129 556T119 532Q118 530 116 525T113 518Q102 502 80 490T37 475ZM665 407Q665 596 412 613Q403 614 383 614Q370 614 370 612Q370 598 363 542T323 357T242 103L228 69H265Q391 73 481 119Q536 148 575 188T633 268T658 338T665 392V407Z"></path></g></g><g data-mml-node="TeXAtom" transform="translate(804,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mtext"><path data-c="4B" d="M128 622Q121 629 117 631T101 634T58 637H25V683H36Q57 680 180 680Q315 680 324 683H335V637H313Q235 637 233 620Q232 618 232 462L233 307L379 449Q425 494 479 546Q518 584 524 591T531 607V608Q531 630 503 636Q501 636 498 636T493 637H489V683H499Q517 680 630 680Q704 680 716 683H722V637H708Q633 633 589 597Q584 592 495 506T406 419T515 254T631 80Q644 60 662 54T715 46H736V0H728Q719 3 615 3Q493 3 472 0H461V46H469Q515 46 515 72Q515 78 512 84L336 351Q332 348 278 296L232 251V156Q232 62 235 58Q243 47 302 46H335V0H324Q303 3 180 3Q45 3 36 0H25V46H58Q100 47 109 49T128 61V622Z"></path><path data-c="4C" d="M128 622Q121 629 117 631T101 634T58 637H25V683H36Q48 680 182 680Q324 680 348 683H360V637H333Q273 637 258 635T233 622L232 342V129Q232 57 237 52Q243 47 313 47Q384 47 410 53Q470 70 498 110T536 221Q536 226 537 238T540 261T542 272T562 273H582V268Q580 265 568 137T554 5V0H25V46H58Q100 47 109 49T128 61V622Z" transform="translate(778,0)"></path></g></g></g><g data-mml-node="mo" transform="translate(12925.1,0)"><path data-c="28" d="M94 250Q94 319 104 381T127 488T164 576T202 643T244 695T277 729T302 750H315H319Q333 750 333 741Q333 738 316 720T275 667T226 581T184 443T167 250T184 58T225 -81T274 -167T316 -220T333 -241Q333 -250 318 -250H315H302L274 -226Q180 -141 137 -14T94 250Z"></path></g><g data-mml-node="msub" transform="translate(13314.1,0)"><g data-mml-node="mi"><path data-c="1D443" d="M287 628Q287 635 230 637Q206 637 199 638T192 648Q192 649 194 659Q200 679 203 681T397 683Q587 682 600 680Q664 669 707 631T751 530Q751 453 685 389Q616 321 507 303Q500 302 402 301H307L277 182Q247 66 247 59Q247 55 248 54T255 50T272 48T305 46H336Q342 37 342 35Q342 19 335 5Q330 0 319 0Q316 0 282 1T182 2Q120 2 87 2T51 1Q33 1 33 11Q33 13 36 25Q40 41 44 43T67 46Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628ZM645 554Q645 567 643 575T634 597T609 619T560 635Q553 636 480 637Q463 637 445 637T416 636T404 636Q391 635 386 627Q384 621 367 550T332 412T314 344Q314 342 395 342H407H430Q542 342 590 392Q617 419 631 471T645 554Z"></path></g><g data-mml-node="mn" transform="translate(675,-150) scale(0.707)"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></g></g><g data-mml-node="mo" transform="translate(14392.7,0)"><path data-c="2225" d="M133 736Q138 750 153 750Q164 750 170 739Q172 735 172 250T170 -239Q164 -250 152 -250Q144 -250 138 -244L137 -243Q133 -241 133 -179T132 250Q132 731 133 736ZM329 739Q334 750 346 750Q353 750 361 744L362 743Q366 741 366 679T367 250T367 -178T362 -243L361 -244Q355 -250 347 -250Q335 -250 329 -239Q327 -235 327 250T329 739Z"></path></g><g data-mml-node="msub" transform="translate(14892.7,0)"><g data-mml-node="mi"><path data-c="1D443" d="M287 628Q287 635 230 637Q206 637 199 638T192 648Q192 649 194 659Q200 679 203 681T397 683Q587 682 600 680Q664 669 707 631T751 530Q751 453 685 389Q616 321 507 303Q500 302 402 301H307L277 182Q247 66 247 59Q247 55 248 54T255 50T272 48T305 46H336Q342 37 342 35Q342 19 335 5Q330 0 319 0Q316 0 282 1T182 2Q120 2 87 2T51 1Q33 1 33 11Q33 13 36 25Q40 41 44 43T67 46Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628ZM645 554Q645 567 643 575T634 597T609 619T560 635Q553 636 480 637Q463 637 445 637T416 636T404 636Q391 635 386 627Q384 621 367 550T332 412T314 344Q314 342 395 342H407H430Q542 342 590 392Q617 419 631 471T645 554Z"></path></g><g data-mml-node="mn" transform="translate(675,-150) scale(0.707)"><path data-c="32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z"></path></g></g><g data-mml-node="mo" transform="translate(15971.2,0)"><path data-c="29" d="M60 749L64 750Q69 750 74 750H86L114 726Q208 641 251 514T294 250Q294 182 284 119T261 12T224 -76T186 -143T145 -194T113 -227T90 -246Q87 -249 86 -250H74Q66 -250 63 -250T58 -247T55 -238Q56 -237 66 -225Q221 -64 221 250T66 725Q56 737 55 738Q55 746 60 749Z"></path></g></g></g></svg><mjx-assistive-mml unselectable="on" display="block"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow data-mjx-texclass="ORD"><mi data-mjx-variant="-tex-calligraphic" mathvariant="script">L</mi></mrow><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mo stretchy="false">(</mo><msubsup><mrow data-mjx-texclass="ORD"><mi data-mjx-variant="-tex-calligraphic" mathvariant="script">L</mi></mrow><mrow data-mjx-texclass="ORD"><mtext>CE</mtext></mrow><mrow data-mjx-texclass="ORD"><mo stretchy="false">(</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></msubsup><mo>+</mo><msubsup><mrow data-mjx-texclass="ORD"><mi data-mjx-variant="-tex-calligraphic" mathvariant="script">L</mi></mrow><mrow data-mjx-texclass="ORD"><mtext>CE</mtext></mrow><mrow data-mjx-texclass="ORD"><mo stretchy="false">(</mo><mn>2</mn><mo stretchy="false">)</mo></mrow></msubsup><mo stretchy="false">)</mo><mo>+</mo><mi>α</mi><mo>⋅</mo><msub><mrow data-mjx-texclass="ORD"><mi data-mjx-variant="-tex-calligraphic" mathvariant="script">D</mi></mrow><mrow data-mjx-texclass="ORD"><mtext>KL</mtext></mrow></msub><mo stretchy="false">(</mo><msub><mi>P</mi><mn>1</mn></msub><mo data-mjx-texclass="ORD">∥</mo><msub><mi>P</mi><mn>2</mn></msub><mo stretchy="false">)</mo></math></mjx-assistive-mml></mjx-container>
+    </span>
+  <p>其中 
+    <span id="mjx-ebe8a95">
+      <style>
+      #mjx-ebe8a95{
+        display:contents;
+        mjx-assistive-mml {
+          user-select: text !important;
+          clip: auto !important;
+          color: rgba(0,0,0,0);
+        }
+        
+mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+  min-height: 1px;
+  min-width: 1px;
+}
+
+mjx-container[jax="SVG"] > svg a {
+  fill: blue;
+  stroke: blue;
+}
+
+mjx-assistive-mml {
+  position: absolute !important;
+  top: 0px;
+  left: 0px;
+  clip: rect(1px, 1px, 1px, 1px);
+  padding: 1px 0px 0px 0px !important;
+  border: 0px !important;
+  display: block !important;
+  width: auto !important;
+  overflow: hidden !important;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+mjx-assistive-mml[display="block"] {
+  width: 100% !important;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][display="true"][width="full"] {
+  display: flex;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line], svg[data-table] > g > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame], svg[data-table] > g > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed, svg[data-table] > g > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted, svg[data-table] > g > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > g > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"] path[data-c], mjx-container[jax="SVG"] use[data-c] {
+  stroke-width: 3;
+}
+
+g[data-mml-node="xypic"] path {
+  stroke-width: inherit;
+}
+
+.MathJax g[data-mml-node="xypic"] path {
+  stroke-width: inherit;
+}
+
+      }
+      </style>
+      <mjx-container class="MathJax" jax="SVG" style="position: relative;"><svg style="vertical-align: -0.339ex;" xmlns="http://www.w3.org/2000/svg" width="4.177ex" height="1.885ex" role="img" focusable="false" viewBox="0 -683 1846.1 833" aria-hidden="true"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msub"><g data-mml-node="TeXAtom" data-mjx-texclass="ORD"><g data-mml-node="mi"><path data-c="44" d="M37 475Q19 475 19 487Q19 536 103 604T327 682H356Q386 683 408 683H419Q475 683 506 681T582 668T667 633Q766 571 766 450Q766 365 723 287T611 152T455 57T279 6Q248 1 160 0Q148 0 131 0T108 -1Q72 -1 72 11Q72 24 90 40T133 64L144 68L152 88Q247 328 272 587Q275 613 272 613Q272 613 269 613Q225 610 195 602T149 579T129 556T119 532Q118 530 116 525T113 518Q102 502 80 490T37 475ZM665 407Q665 596 412 613Q403 614 383 614Q370 614 370 612Q370 598 363 542T323 357T242 103L228 69H265Q391 73 481 119Q536 148 575 188T633 268T658 338T665 392V407Z"></path></g></g><g data-mml-node="TeXAtom" transform="translate(804,-150) scale(0.707)" data-mjx-texclass="ORD"><g data-mml-node="mtext"><path data-c="4B" d="M128 622Q121 629 117 631T101 634T58 637H25V683H36Q57 680 180 680Q315 680 324 683H335V637H313Q235 637 233 620Q232 618 232 462L233 307L379 449Q425 494 479 546Q518 584 524 591T531 607V608Q531 630 503 636Q501 636 498 636T493 637H489V683H499Q517 680 630 680Q704 680 716 683H722V637H708Q633 633 589 597Q584 592 495 506T406 419T515 254T631 80Q644 60 662 54T715 46H736V0H728Q719 3 615 3Q493 3 472 0H461V46H469Q515 46 515 72Q515 78 512 84L336 351Q332 348 278 296L232 251V156Q232 62 235 58Q243 47 302 46H335V0H324Q303 3 180 3Q45 3 36 0H25V46H58Q100 47 109 49T128 61V622Z"></path><path data-c="4C" d="M128 622Q121 629 117 631T101 634T58 637H25V683H36Q48 680 182 680Q324 680 348 683H360V637H333Q273 637 258 635T233 622L232 342V129Q232 57 237 52Q243 47 313 47Q384 47 410 53Q470 70 498 110T536 221Q536 226 537 238T540 261T542 272T562 273H582V268Q580 265 568 137T554 5V0H25V46H58Q100 47 109 49T128 61V622Z" transform="translate(778,0)"></path></g></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mrow data-mjx-texclass="ORD"><mi data-mjx-variant="-tex-calligraphic" mathvariant="script">D</mi></mrow><mrow data-mjx-texclass="ORD"><mtext>KL</mtext></mrow></msub></math></mjx-assistive-mml></mjx-container>
+    </span>
+   取双向对称形式（防止方向偏差）：</p>
+<pre><code class="language-python">def compute_kl_loss(logits1, logits2):
     vocab_size = logits1.size(-1)
     logits1_flat = logits1.view(-1, vocab_size)
     logits2_flat = logits2.view(-1, vocab_size)
@@ -365,11 +1184,11 @@ if len(model.model.decoder.layers) &gt; config.decoder_layers:
     kl_loss = F.kl_div(
         F.log_softmax(logits1_flat, dim=-1),
         F.softmax(logits2_flat, dim=-1),
-        reduction=&#39;batchmean&#39;
+        reduction='batchmean'
     ) + F.kl_div(
         F.log_softmax(logits2_flat, dim=-1),
         F.softmax(logits1_flat, dim=-1),
-        reduction=&#39;batchmean&#39;
+        reduction='batchmean'
     )
     return kl_loss / 2
 </code></pre>
@@ -377,9 +1196,10 @@ if len(model.model.decoder.layers) &gt; config.decoder_layers:
 <blockquote>
 <p><strong>代价</strong>：R-Drop 每步需要两次前向传播，训练吞吐量下降约 40%~50%。在资源受限时可适当降低 <code>rdrop_alpha</code> 或仅在后半段训练阶段开启。</p>
 </blockquote>
-<h3 id="4-2-混合精度训练（AMP）"><a href="#4-2-混合精度训练（AMP）" class="headerlink" title="4.2 混合精度训练（AMP）"></a>4.2 混合精度训练（AMP）</h3><p>使用 <code>torch.amp.autocast</code> + <code>GradScaler</code> 实现 FP16 混合精度训练：</p>
-<pre><code class="lang-python">ctx = torch.amp.autocast(device_type=&#39;cuda&#39;, dtype=torch.float16)
-scaler = torch.amp.GradScaler(&#39;cuda&#39;, enabled=True)
+<h3 id="4-2-混合精度训练（AMP）">4.2 混合精度训练（AMP）</h3>
+<p>使用 <code>torch.amp.autocast</code> + <code>GradScaler</code> 实现 FP16 混合精度训练：</p>
+<pre><code class="language-python">ctx = torch.amp.autocast(device_type='cuda', dtype=torch.float16)
+scaler = torch.amp.GradScaler('cuda', enabled=True)
 
 # Forward
 with ctx:
@@ -394,8 +1214,9 @@ scaler.step(optimizer)
 scaler.update()
 </code></pre>
 <p>FP16 训练在 Volta/Turing 架构 GPU 上可带来约 2× 的显存节省和 1.5~2× 的训练加速，代价是需要梯度缩放防止下溢（underflow）。</p>
-<h3 id="4-3-优化器与学习率调度"><a href="#4-3-优化器与学习率调度" class="headerlink" title="4.3 优化器与学习率调度"></a>4.3 优化器与学习率调度</h3><p>采用 BART 微调的标准做法——对 Bias 和 LayerNorm 参数<strong>不施加 Weight Decay</strong>：</p>
-<pre><code class="lang-python">no_decay = [&quot;bias&quot;, &quot;LayerNorm.weight&quot;, &quot;layer_norm.weight&quot;]
+<h3 id="4-3-优化器与学习率调度">4.3 优化器与学习率调度</h3>
+<p>采用 BART 微调的标准做法——对 Bias 和 LayerNorm 参数<strong>不施加 Weight Decay</strong>：</p>
+<pre><code class="language-python">no_decay = [&quot;bias&quot;, &quot;LayerNorm.weight&quot;, &quot;layer_norm.weight&quot;]
 optimizer_grouped_parameters = [
     {&quot;params&quot;: [p for n, p in model.named_parameters()
                 if not any(nd in n for nd in no_decay)],
@@ -407,10 +1228,12 @@ optimizer_grouped_parameters = [
 optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=5e-5)
 </code></pre>
 <p>学习率调度使用 <strong>Cosine with Warmup</strong>（<code>warmup_iters = 200</code>），在 warmup 阶段线性升温防止预训练权重在初期被大梯度破坏，随后余弦衰减至接近 0，使模型在训练末期能够精细调整。</p>
-<h3 id="4-4-早停机制"><a href="#4-4-早停机制" class="headerlink" title="4.4 早停机制"></a>4.4 早停机制</h3><p>验证集评估指标优先使用 ROUGE Sum（R1 + R2 + RL 之和），无法计算时回退到验证集 Cross-Entropy Loss。连续 <code>patience = 5</code> 次评估无改善则触发早停，避免在验证分数高点之后继续过拟合。</p>
+<h3 id="4-4-早停机制">4.4 早停机制</h3>
+<p>验证集评估指标优先使用 ROUGE Sum（R1 + R2 + RL 之和），无法计算时回退到验证集 Cross-Entropy Loss。连续 <code>patience = 5</code> 次评估无改善则触发早停，避免在验证分数高点之后继续过拟合。</p>
 <hr>
-<h2 id="5-推理配置：Beam-Search-参数分析"><a href="#5-推理配置：Beam-Search-参数分析" class="headerlink" title="5. 推理配置：Beam Search 参数分析"></a>5. 推理配置：Beam Search 参数分析</h2><p>生成阶段的参数对输出质量影响显著：</p>
-<pre><code class="lang-python">model.generate(
+<h2 id="5-推理配置：Beam-Search-参数分析">5. 推理配置：Beam Search 参数分析</h2>
+<p>生成阶段的参数对输出质量影响显著：</p>
+<pre><code class="language-python">model.generate(
     input_ids=...,
     num_beams=8,           # Beam 数量
     max_length=64,         # 最大生成长度
@@ -427,9 +1250,9 @@ optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=5e-5)
 </ul>
 <p>推理阶段以 <code>batch_size = 64</code> 进行批量解码，在 GPU 上全量测试集（约 2273 条）推理耗时约 10 分钟，瓶颈在于 Beam Search 的自回归解码步骤（无法完全并行化）。</p>
 <hr>
-<h2 id="6-实验结果与分析"><a href="#6-实验结果与分析" class="headerlink" title="6. 实验结果与分析"></a>6. 实验结果与分析</h2><p>最终模型参数量约 <strong>390 M</strong>（BART-Large with 11 decoder layers），满足 &lt; 400 M 的约束要求。</p>
+<h2 id="6-实验结果与分析">6. 实验结果与分析</h2>
+<p>最终模型参数量约 <strong>390 M</strong>（BART-Large with 11 decoder layers），满足 &lt; 400 M 的约束要求。</p>
 <p>在验证集（700 条）上的 ROUGE 评估结果（从 500 条随机采样计算）：</p>
-<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -456,22 +1279,22 @@ optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=5e-5)
 </tr>
 </tbody>
 </table>
-</div>
 <blockquote>
 <p>ROUGE 绝对值依赖于具体数据集分布，此处数字省略（可通过 <code>evaluate_rouge</code> 函数复现）。更有意义的是横向对比：R-Drop 相比不使用 R-Drop 的基线，ROUGE-L 提升约 0.5~1.0 个点；解码器剪枝（12→11 层）带来的参数量减少对 ROUGE 的影响在 0.2 点以内，属于可接受范围。</p>
 </blockquote>
 <hr>
-<h2 id="7-工程细节与踩坑记录"><a href="#7-工程细节与踩坑记录" class="headerlink" title="7. 工程细节与踩坑记录"></a>7. 工程细节与踩坑记录</h2><p><strong>1. <code>GradScaler</code> API 变更</strong></p>
+<h2 id="7-工程细节与踩坑记录">7. 工程细节与踩坑记录</h2>
+<p><strong>1. <code>GradScaler</code> API 变更</strong></p>
 <p>PyTorch 2.x 中 <code>torch.cuda.amp.GradScaler</code> 已被标记为废弃，需改用：</p>
-<pre><code class="lang-python"># 旧写法（deprecated）
+<pre><code class="language-python"># 旧写法（deprecated）
 scaler = torch.cuda.amp.GradScaler(enabled=True)
 
 # 新写法
-scaler = torch.amp.GradScaler(&#39;cuda&#39;, enabled=True)
+scaler = torch.amp.GradScaler('cuda', enabled=True)
 </code></pre>
 <p><strong>2. DataParallel 与 <code>torch.compile</code> 不兼容</strong></p>
 <p>多 GPU <code>DataParallel</code> 模式下启用 <code>torch.compile</code> 会触发图编译冲突，需在检测到多 GPU 时禁用 compile：</p>
-<pre><code class="lang-python">if torch.cuda.device_count() &gt; 1 and config.use_multi_gpu:
+<pre><code class="language-python">if torch.cuda.device_count() &gt; 1 and config.use_multi_gpu:
     model = nn.DataParallel(model)
     config.compile = False  # 多 GPU 时强制禁用
 </code></pre>
@@ -479,12 +1302,13 @@ scaler = torch.amp.GradScaler(&#39;cuda&#39;, enabled=True)
 <p>R-Drop 要求每个 batch 中样本数为偶数（双份前向传播需成对对齐）。若数据集样本总数为奇数，需在 DataLoader 中设置 <code>drop_last=True</code>，否则最后一个 batch 会导致维度不一致的 KL Loss 计算错误。</p>
 <p><strong>4. 非 Tensor 字段过滤</strong></p>
 <p>Dataset 返回的 batch 中可能包含 <code>id</code>（字符串类型），在调用 <code>model(**batch)</code> 前需过滤：</p>
-<pre><code class="lang-python">batch = {k: v.to(device) for k, v in batch.items() if isinstance(v, torch.Tensor)}
+<pre><code class="language-python">batch = {k: v.to(device) for k, v in batch.items() if isinstance(v, torch.Tensor)}
 </code></pre>
 <p><strong>5. Kaggle 环境下 <code>hgatp</code> 问题</strong></p>
 <p>在部分 Kaggle GPU 环境中，<code>torch.backends.cuda.matmul.allow_tf32 = True</code> 配合 FP16 会偶发 NaN Loss。遇到该问题可临时改用 BFloat16（若 GPU 支持），或禁用 TF32。</p>
 <hr>
-<h2 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h2><ul>
+<h2 id="延伸阅读">延伸阅读</h2>
+<ul>
 <li><strong>[R-Drop 论文]</strong>：Liu et al., <em>“R-Drop: Regularized Dropout for Neural Networks”</em>, NeurIPS 2021 — 深入理解一致性正则化对 Seq2Seq 任务的作用机制</li>
 <li><strong>[BART 原论文]</strong>：Lewis et al., <em>“BART: Denoising Sequence-to-Sequence Pre-training”</em>, ACL 2020 — BART 预训练噪声方案与 T5/GPT 的设计对比</li>
 </ul>
